@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 780" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1280" height="780" fill="#F5F7FA"/>
+
+  <!-- Cabeçalho -->
+  <rect width="1280" height="60" fill="#1F4E79"/>
+  <text x="20" y="38" fill="#FFFFFF" font-size="22" font-weight="700">SIGBEF</text>
+  <text x="120" y="38" fill="#B7CCE5" font-size="14">Sistema Integrado de Gestão da Biblioteca</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="60" width="240" height="720" fill="#1F4E79"/>
+  <g fill="#FFFFFF" font-size="14">
+    <text x="20" y="92">Painel inicial</text>
+    <text x="20" y="142">Livros e exemplares</text>
+    <text x="20" y="192">Usuários</text>
+  </g>
+  <rect x="0" y="220" width="240" height="50" fill="#2E75B6"/>
+  <text x="20" y="252" fill="#FFFFFF" font-size="14" font-weight="700">Empréstimos abertos</text>
+  <text x="20" y="292" fill="#FFFFFF" font-size="14">Relatórios</text>
+
+  <!-- Conteúdo -->
+  <text x="270" y="100" fill="#1F4E79" font-size="28" font-weight="700">Empréstimos e devoluções</text>
+  <text x="270" y="125" fill="#6B7280" font-size="13">Operações de balcão para apoiar o atendimento presencial. Aceita código de barras OU número de tombo.</text>
+
+  <!-- Card empréstimo -->
+  <rect x="270" y="150" width="980" height="170" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="290" y="180" fill="#1A1A1A" font-size="14" font-weight="700">Empréstimo rápido</text>
+
+  <text x="290" y="220" fill="#1A1A1A" font-size="13">Matrícula ou cartão:</text>
+  <rect x="430" y="205" width="180" height="26" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="438" y="223" fill="#1A1A1A" font-size="13">aluna</text>
+  <rect x="618" y="200" width="170" height="32" fill="#2E75B6"/>
+  <text x="703" y="222" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Buscar usuário...</text>
+
+  <text x="290" y="262" fill="#1A1A1A" font-size="13">Código ou tombo:</text>
+  <rect x="430" y="247" width="180" height="26" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="438" y="265" fill="#1A1A1A" font-size="13" font-family="Consolas, monospace">EX2604301...</text>
+  <rect x="618" y="242" width="190" height="32" fill="#2E75B6"/>
+  <text x="713" y="264" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Selecionar exemplar...</text>
+  <rect x="816" y="242" width="200" height="32" fill="#2E7D32"/>
+  <text x="916" y="264" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">✓ Registrar empréstimo</text>
+
+  <text x="290" y="305" fill="#2E7D32" font-size="13" font-weight="600">✓ Empréstimo registrado: 'Dom Casmurro' para Ana Aluna. Devolução prevista: 07/05/2026 (7 dias).</text>
+
+  <!-- Card devolução -->
+  <rect x="270" y="335" width="980" height="100" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="290" y="365" fill="#1A1A1A" font-size="14" font-weight="700">Devolução rápida</text>
+  <text x="290" y="405" fill="#1A1A1A" font-size="13">Código ou tombo:</text>
+  <rect x="430" y="390" width="200" height="26" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <rect x="640" y="385" width="200" height="32" fill="#EF6C00"/>
+  <text x="740" y="406" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">↻ Registrar devolução</text>
+
+  <!-- Tabela empréstimos -->
+  <text x="270" y="475" fill="#2E75B6" font-size="18" font-weight="700">Empréstimos em aberto</text>
+
+  <!-- Header tabela -->
+  <rect x="270" y="495" width="980" height="38" fill="#1F4E79"/>
+  <g fill="#FFFFFF" font-size="12" font-weight="700">
+    <text x="290" y="519">ID</text>
+    <text x="340" y="519">Usuário</text>
+    <text x="510" y="519">Matrícula</text>
+    <text x="610" y="519">Título</text>
+    <text x="850" y="519">Código</text>
+    <text x="980" y="519">Empréstimo</text>
+    <text x="1110" y="519">Previsto</text>
+    <text x="1200" y="519">Atraso?</text>
+  </g>
+
+  <!-- Linhas -->
+  <g font-size="12">
+    <rect x="270" y="533" width="980" height="34" fill="#FFFFFF"/>
+    <text x="290" y="553">1</text>
+    <text x="340" y="553">Pedro Aluno</text>
+    <text x="510" y="553">pedro</text>
+    <text x="610" y="553">Algoritmos: Teoria e Prática</text>
+    <text x="850" y="553" font-family="Consolas, monospace" font-size="10">EX260430...</text>
+    <text x="980" y="553">28/04/2026</text>
+    <text x="1110" y="553">05/05/2026</text>
+    <text x="1200" y="553">—</text>
+
+    <rect x="270" y="567" width="980" height="34" fill="#F8FAFC"/>
+    <text x="290" y="587">2</text>
+    <text x="340" y="587">Ana Aluna</text>
+    <text x="510" y="587">aluna</text>
+    <text x="610" y="587">Dom Casmurro</text>
+    <text x="850" y="587" font-family="Consolas, monospace" font-size="10">EX260430...</text>
+    <text x="980" y="587">30/04/2026</text>
+    <text x="1110" y="587">07/05/2026</text>
+    <text x="1200" y="587">—</text>
+
+    <rect x="270" y="601" width="980" height="34" fill="#FDECEA"/>
+    <text x="290" y="621" fill="#C62828">3</text>
+    <text x="340" y="621" fill="#C62828">João Professor</text>
+    <text x="510" y="621" fill="#C62828">prof</text>
+    <text x="610" y="621" fill="#C62828">Sapiens</text>
+    <text x="850" y="621" fill="#C62828" font-family="Consolas, monospace" font-size="10">EX260415...</text>
+    <text x="980" y="621" fill="#C62828">15/04/2026</text>
+    <text x="1110" y="621" fill="#C62828">29/04/2026</text>
+    <text x="1200" y="621" fill="#C62828" font-weight="700">SIM</text>
+  </g>
+
+  <!-- Botões inferiores -->
+  <rect x="270" y="660" width="160" height="32" fill="#2E75B6"/>
+  <text x="350" y="681" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Renovar selecionado</text>
+  <rect x="438" y="660" width="120" height="32" fill="#2E75B6"/>
+  <text x="498" y="681" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">Quitar multa</text>
+</svg>

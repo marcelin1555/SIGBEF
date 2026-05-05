@@ -1,0 +1,10 @@
+# SIGBEF — Sistema Integrado de Gestão da Biblioteca do CEFE
+#
+# O protótipo foi desenhado para rodar SEM dependências externas, usando
+# apenas a biblioteca padrão do Python (sqlite3, hashlib, tkinter).
+#
+# Caso queira gerar PNGs de código de barras reais para impressão em massa,
+# instale as bibliotecas opcionais abaixo:
+#
+# python-barcode==0.15.1
+# Pillow==10.4.0

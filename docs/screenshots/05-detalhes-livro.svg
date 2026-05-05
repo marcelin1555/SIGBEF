@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 640" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="720" height="640" fill="#F5F7FA"/>
+  <text x="40" y="60" fill="#1F4E79" font-size="26" font-weight="700">Dom Casmurro</text>
+  <text x="40" y="84" fill="#6B7280" font-size="13">Machado de Assis</text>
+
+  <!-- Info -->
+  <g font-size="13">
+    <text x="40" y="125" font-weight="700">ISBN:</text>
+    <text x="120" y="125">9788535910663</text>
+    <text x="40" y="148" font-weight="700">Editora:</text>
+    <text x="120" y="148">Companhia das Letras</text>
+    <text x="40" y="171" font-weight="700">Categoria:</text>
+    <text x="120" y="171">Literatura Brasileira</text>
+    <text x="40" y="194" font-weight="700">Edição/Ano:</text>
+    <text x="120" y="194">1ª / 1899</text>
+  </g>
+
+  <text x="40" y="240" fill="#2E75B6" font-size="16" font-weight="700">Sinopse</text>
+  <text x="40" y="262" font-size="12" fill="#1A1A1A">Romance clássico de Machado de Assis sobre Bento e Capitu.</text>
+
+  <text x="40" y="305" fill="#2E75B6" font-size="16" font-weight="700">Exemplares e códigos de barras</text>
+
+  <!-- Tabela exemplares -->
+  <rect x="40" y="320" width="640" height="34" fill="#1F4E79"/>
+  <g fill="#FFFFFF" font-size="12" font-weight="700">
+    <text x="55" y="342">Tombo</text>
+    <text x="170" y="342">Código de barras</text>
+    <text x="380" y="342">Localização</text>
+    <text x="560" y="342">Status</text>
+  </g>
+  <g font-size="12">
+    <rect x="40" y="354" width="640" height="34" fill="#FFFFFF"/>
+    <text x="55" y="376" font-family="Consolas, monospace">00001-001</text>
+    <text x="170" y="376" font-family="Consolas, monospace">EX2604301108560664</text>
+    <text x="380" y="376">Estante A — Prateleira 1</text>
+    <text x="560" y="376" fill="#2E7D32" font-weight="700">Disponível</text>
+
+    <rect x="40" y="388" width="640" height="34" fill="#F8FAFC"/>
+    <text x="55" y="410" font-family="Consolas, monospace">00001-002</text>
+    <text x="170" y="410" font-family="Consolas, monospace">EX2604301108560665</text>
+    <text x="380" y="410">Estante A — Prateleira 1</text>
+    <text x="560" y="410" fill="#EF6C00" font-weight="700">Emprestado</text>
+
+    <rect x="40" y="422" width="640" height="34" fill="#FFFFFF"/>
+    <text x="55" y="444" font-family="Consolas, monospace">00001-003</text>
+    <text x="170" y="444" font-family="Consolas, monospace">EX2604301108560666</text>
+    <text x="380" y="444">Estante A — Prateleira 1</text>
+    <text x="560" y="444" fill="#2E7D32" font-weight="700">Disponível</text>
+  </g>
+
+  <!-- Botão -->
+  <rect x="220" y="500" width="280" height="40" fill="#1F4E79"/>
+  <text x="360" y="525" fill="#FFFFFF" font-size="13" font-weight="700" text-anchor="middle">Imprimir etiquetas (visualizar)</text>
+
+  <!-- Preview de barcode -->
+  <text x="40" y="585" fill="#6B7280" font-size="11" font-style="italic">Pré-visualização da etiqueta:</text>
+  <g transform="translate(40,595)">
+    <rect width="3" height="30" fill="#000"/>
+    <rect x="6" width="2" height="30" fill="#000"/>
+    <rect x="11" width="4" height="30" fill="#000"/>
+    <rect x="18" width="2" height="30" fill="#000"/>
+    <rect x="23" width="3" height="30" fill="#000"/>
+    <rect x="29" width="5" height="30" fill="#000"/>
+    <rect x="37" width="2" height="30" fill="#000"/>
+    <rect x="42" width="4" height="30" fill="#000"/>
+    <rect x="49" width="2" height="30" fill="#000"/>
+    <rect x="54" width="3" height="30" fill="#000"/>
+    <rect x="60" width="5" height="30" fill="#000"/>
+    <rect x="68" width="2" height="30" fill="#000"/>
+    <rect x="73" width="4" height="30" fill="#000"/>
+    <rect x="80" width="2" height="30" fill="#000"/>
+    <rect x="85" width="3" height="30" fill="#000"/>
+    <rect x="91" width="2" height="30" fill="#000"/>
+    <rect x="96" width="5" height="30" fill="#000"/>
+    <rect x="104" width="3" height="30" fill="#000"/>
+    <rect x="110" width="2" height="30" fill="#000"/>
+    <rect x="115" width="4" height="30" fill="#000"/>
+    <text x="60" y="44" font-size="9" font-family="Consolas, monospace" text-anchor="middle">EX2604301108560664</text>
+  </g>
+</svg>

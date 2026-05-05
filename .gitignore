@@ -1,0 +1,54 @@
+# =====================================================================
+# SIGBEF — .gitignore
+# =====================================================================
+
+# --- Banco de dados local (criado em runtime) ---
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Bytecode e caches do Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# --- Ambientes virtuais ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Distribuição / empacotamento ---
+build/
+dist/
+*.egg-info/
+*.egg
+*.spec
+
+# --- Editores / IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Logs e temporários ---
+*.log
+*.tmp
+*.bak
+~$*.docx
+~$*.xlsx
+~$*.pptx
+
+# --- Saídas geradas ---
+relatorios/
+exports/
+*.csv
+!sigbef/seed.py
+
+# --- Pacote desativado ---
+db.py

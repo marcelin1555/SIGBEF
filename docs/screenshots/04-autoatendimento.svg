@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 760" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1100" height="760" fill="#F5F7FA"/>
+
+  <!-- Cabeçalho azul grande -->
+  <rect width="1100" height="120" fill="#1F4E79"/>
+  <text x="550" y="65" fill="#FFFFFF" font-size="32" font-weight="700" text-anchor="middle">Olá, Ana!</text>
+  <text x="550" y="100" fill="#CFE2F8" font-size="16" text-anchor="middle">OK — 1 de 3 empréstimos em uso.</text>
+
+  <!-- Três botões grandes -->
+  <g>
+    <!-- Pegar emprestado -->
+    <rect x="60" y="170" width="320" height="420" fill="#2E7D32"/>
+    <text x="220" y="290" fill="#FFFFFF" font-size="26" font-weight="700" text-anchor="middle">Pegar emprestado</text>
+    <text x="220" y="380" fill="#FFFFFF" font-size="14" text-anchor="middle">Pegue um livro escaneando</text>
+    <text x="220" y="400" fill="#FFFFFF" font-size="14" text-anchor="middle">o código de barras.</text>
+    <!-- Ícone livro -->
+    <rect x="180" y="430" width="80" height="60" fill="#FFFFFF" rx="2"/>
+    <rect x="190" y="445" width="60" height="3" fill="#2E7D32"/>
+    <rect x="190" y="455" width="50" height="3" fill="#2E7D32"/>
+    <rect x="190" y="465" width="55" height="3" fill="#2E7D32"/>
+
+    <!-- Devolver -->
+    <rect x="390" y="170" width="320" height="420" fill="#EF6C00"/>
+    <text x="550" y="290" fill="#FFFFFF" font-size="26" font-weight="700" text-anchor="middle">Devolver</text>
+    <text x="550" y="380" fill="#FFFFFF" font-size="14" text-anchor="middle">Aproxime o livro do leitor</text>
+    <text x="550" y="400" fill="#FFFFFF" font-size="14" text-anchor="middle">para devolvê-lo.</text>
+    <!-- Ícone seta -->
+    <path d="M 510,440 L 590,440 L 590,420 L 620,460 L 590,500 L 590,480 L 510,480 Z"
+          fill="#FFFFFF"/>
+
+    <!-- Meus empréstimos -->
+    <rect x="720" y="170" width="320" height="420" fill="#2E75B6"/>
+    <text x="880" y="290" fill="#FFFFFF" font-size="26" font-weight="700" text-anchor="middle">Meus empréstimos</text>
+    <text x="880" y="380" fill="#FFFFFF" font-size="14" text-anchor="middle">Veja os livros que estão</text>
+    <text x="880" y="400" fill="#FFFFFF" font-size="14" text-anchor="middle">com você.</text>
+    <!-- Ícone lista -->
+    <rect x="830" y="430" width="100" height="60" fill="#FFFFFF" rx="2"/>
+    <rect x="840" y="442" width="80" height="3" fill="#2E75B6"/>
+    <rect x="840" y="452" width="80" height="3" fill="#2E75B6"/>
+    <rect x="840" y="462" width="80" height="3" fill="#2E75B6"/>
+    <rect x="840" y="472" width="60" height="3" fill="#2E75B6"/>
+  </g>
+
+  <!-- Botão Sair -->
+  <rect x="900" y="690" width="160" height="44" fill="#C62828"/>
+  <text x="980" y="719" fill="#FFFFFF" font-size="14" font-weight="700" text-anchor="middle">Encerrar sessão</text>
+</svg>

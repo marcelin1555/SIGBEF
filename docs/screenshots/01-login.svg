@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Janela -->
+  <rect width="1280" height="760" fill="#F5F7FA"/>
+  <!-- Lateral azul -->
+  <rect width="540" height="760" fill="#1F4E79"/>
+  <text x="60" y="170" fill="#FFFFFF" font-size="72" font-weight="700">SIGBEF</text>
+  <text x="60" y="210" fill="#FFFFFF" font-size="22" font-weight="600">Sistema Integrado de Gestão</text>
+  <text x="60" y="240" fill="#FFFFFF" font-size="22" font-weight="600">da Biblioteca do CEFE</text>
+  <rect x="60" y="262" width="120" height="4" fill="#F2A900"/>
+  <g fill="#FFFFFF" font-size="16">
+    <text x="60" y="320">• Cadastro e busca de livros</text>
+    <text x="60" y="350">• Empréstimos e devoluções</text>
+    <text x="60" y="380">• Autoatendimento por código de barras</text>
+    <text x="60" y="410">• Relatórios e gestão de usuários</text>
+  </g>
+  <text x="270" y="730" fill="#9CB7D6" font-size="14" text-anchor="middle">Versão 1.0 — protótipo funcional</text>
+
+  <!-- Formulário -->
+  <text x="600" y="120" fill="#1F4E79" font-size="34" font-weight="700">Acessar o sistema</text>
+  <text x="600" y="155" fill="#6B7280" font-size="14">Informe sua matrícula e senha para continuar.</text>
+
+  <text x="600" y="210" fill="#1A1A1A" font-size="14" font-weight="600">Matrícula</text>
+  <rect x="600" y="222" width="620" height="40" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="615" y="247" fill="#1A1A1A" font-size="16">aluna</text>
+
+  <text x="600" y="290" fill="#1A1A1A" font-size="14" font-weight="600">Senha</text>
+  <rect x="600" y="302" width="620" height="40" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="615" y="327" fill="#1A1A1A" font-size="20" letter-spacing="3">••••••••</text>
+
+  <rect x="600" y="362" width="20" height="20" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="630" y="378" fill="#1A1A1A" font-size="14">Iniciar em modo de Autoatendimento (kiosk)</text>
+
+  <rect x="600" y="404" width="620" height="48" fill="#1F4E79"/>
+  <text x="910" y="434" fill="#FFFFFF" font-size="16" font-weight="700" text-anchor="middle">Entrar</text>
+
+  <!-- Card credenciais demo -->
+  <rect x="600" y="478" width="620" height="180" fill="#FFFFFF" stroke="#D5DAE0"/>
+  <text x="618" y="504" fill="#1A1A1A" font-size="14" font-weight="700">Credenciais de demonstração</text>
+  <g fill="#6B7280" font-size="12" font-family="Consolas, monospace">
+    <text x="618" y="528">admin / admin123  →  Administrador</text>
+    <text x="618" y="548">bibliotecaria / biblio123  →  Bibliotecária</text>
+    <text x="618" y="568">prof / prof123  →  Professor</text>
+    <text x="618" y="588">aluna / aluna123  →  Aluna</text>
+    <text x="618" y="608">pedro / pedro123  →  Aluno</text>
+  </g>
+</svg>
