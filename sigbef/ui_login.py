@@ -39,7 +39,7 @@ class JanelaLogin(tk.Tk):
                  ).pack(pady=(80, 0), padx=40, anchor="w")
 
         tk.Label(lateral, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
-                 text="Sistema Integrado de Gestão\nda Biblioteca do CEFE",
+                 text="Sistema Integrado de Gestão\nda Biblioteca Escolar",
                  font=("Segoe UI", 16), justify="left"
                  ).pack(padx=40, anchor="w", pady=(8, 30))
 
@@ -58,7 +58,7 @@ class JanelaLogin(tk.Tk):
 
         rodape_lat = tk.Label(
             lateral, bg=tema.COR_PRIMARIA, fg="#9CB7D6",
-            text="Versão 1.0 — protótipo funcional",
+            text="Versão 1.2.0 — produto em produção",
             font=("Segoe UI", 9))
         rodape_lat.pack(side="bottom", pady=20)
 
@@ -87,21 +87,22 @@ class JanelaLogin(tk.Tk):
         ttk.Button(direita, text="Entrar", style="Primario.TButton",
                    command=self._fazer_login).pack(fill="x", ipady=4)
 
-        # Credenciais demo
-        demo = ttk.Frame(direita, style="Card.TFrame", padding=(16, 12))
-        demo.pack(fill="x", pady=(28, 0))
-        ttk.Label(demo, text="Credenciais de demonstração",
+        # Informações institucionais (não mais credenciais expostas)
+        info = ttk.Frame(direita, style="Card.TFrame", padding=(16, 14))
+        info.pack(fill="x", pady=(28, 0))
+        try:
+            from .database import get_config
+            nome_inst = get_config("NOME_INSTITUICAO", "CEFE")
+        except Exception:
+            nome_inst = "CEFE"
+        ttk.Label(info, text=nome_inst,
                   style="Card.TLabel",
-                  font=("Segoe UI Semibold", 10)).pack(anchor="w")
-        for txt in (
-            "admin / admin123  →  Administrador",
-            "bibliotecaria / biblio123  →  Bibliotecária",
-            "prof / prof123  →  Professor",
-            "aluna / aluna123  →  Aluna",
-            "pedro / pedro123  →  Aluno",
-        ):
-            ttk.Label(demo, text=txt, style="CardHint.TLabel",
-                      font=("Consolas", 10)).pack(anchor="w", pady=1)
+                  font=("Segoe UI Semibold", 11)).pack(anchor="w")
+        ttk.Label(info,
+                  text=("Em caso de esquecimento de senha, procure o "
+                        "administrador do sistema."),
+                  style="CardHint.TLabel",
+                  wraplength=420).pack(anchor="w", pady=(4, 0))
 
         self.ent_matricula.focus_set()
 

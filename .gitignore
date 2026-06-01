@@ -44,6 +44,12 @@ Thumbs.db
 ~$*.xlsx
 ~$*.pptx
 
+# --- Material interno / privado (repositório é PÚBLICO, NÃO versionar) ---
+# Estratégia do pitch, nomes da equipe, rascunhos de mensagens, projeções
+# financeiras e roteiros do vídeo. Mantém isso fora do GitHub público.
+apresentacao/
+HANDOFF_CLAUDE_CODE.md
+
 # --- Saídas geradas ---
 relatorios/
 exports/
@@ -52,3 +58,13 @@ exports/
 
 # --- Pacote desativado ---
 db.py
+
+# --- Artefatos locais do Claude/Cowork (não versionar) ---
+.claude/
+skills-lock.json
+.git/index.broken*
+
+# --- Backups locais (não versionar) ---
+*.corrupted.*
+*.broken
+*.bak.*

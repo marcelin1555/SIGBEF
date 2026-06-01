@@ -14,11 +14,11 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-prot%C3%B3tipo%20funcional-2E7D32?style=flat-square)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-blue?style=flat-square)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue?style=flat-square)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-lightgrey?style=flat-square)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
-[![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat-square)](SIGBEF_Documento_Requisitos.docx)
+[![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat-square)](docs/SIGBEF_Documento_Requisitos.docx)
 
 </div>
 
@@ -181,11 +181,11 @@ manutenção e testes.
 
 ### Roteiro sugerido (3 minutos)
 
-1. **0:00 – Login** como `bibliotecaria` para mostrar o painel administrativo
+1. **0:00 – Login** como `laiane` para mostrar o painel administrativo
 2. **0:20 – Cadastro de livro** com geração automática de exemplares
 3. **0:50 – Etiquetas de barras** dos exemplares
 4. **1:20 – Empréstimo de balcão** usando o seletor de exemplares
-5. **1:50 – Autoatendimento** logado como `aluna`
+5. **1:50 – Autoatendimento** logado como `2024001`
 6. **2:30 – Empréstimo autônomo** lendo o código de barras
 7. **2:50 – Comprovante e logout** automático
 
@@ -212,7 +212,7 @@ Depois é só substituir o link do badge acima.
 
 ### Gerar o executável a partir do código
 
-Veja o guia completo: [`COMO_GERAR_EXECUTAVEL.md`](COMO_GERAR_EXECUTAVEL.md)
+Veja o guia completo: [`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md)
 
 **Resumo:**
 
@@ -255,8 +255,12 @@ o script `tools/sigbef_installer.iss` que já está no repositório.
 git clone https://github.com/<seu-usuario>/sigbef.git
 cd sigbef
 
-# 2. Execute o sistema (cria o banco e popula dados de demo na primeira vez)
+# 2. Execute o sistema
+#    Primeira vez: abre o assistente de configuração inicial
 python sigbef.py
+
+# Opcional: pular o wizard e popular com dados de demo
+python sigbef.py --demo
 ```
 
 ### Modo Autoatendimento (kiosk)
@@ -270,19 +274,42 @@ python sigbef.py --autoatendimento
 
 ---
 
-## Credenciais de demonstração
+## Primeira execução
 
-Os usuários abaixo são criados automaticamente na primeira execução:
+Na primeira vez que o sistema é aberto, ele exibe um **assistente de
+configuração** com 3 passos:
 
-| Matrícula        | Senha       | Perfil         |
-|------------------|-------------|----------------|
-| `admin`          | `admin123`  | Administrador  |
-| `bibliotecaria`  | `biblio123` | Bibliotecário  |
-| `prof`           | `prof123`   | Professor      |
-| `aluna`          | `aluna123`  | Aluno          |
-| `pedro`          | `pedro123`  | Aluno          |
+1. **Boas-vindas** — explica o que será feito
+2. **Instituição** — informe o nome da escola/biblioteca
+3. **Conta de administrador** — crie a primeira conta com matrícula,
+   nome e senha
 
-Use `admin` para acessar todas as configurações do sistema.
+Depois disso, o login normal é exibido.
+
+### Dados de demonstração (opcional)
+
+Quer ver o sistema funcionando antes de cadastrar o acervo real?
+
+- **Pela interface:** após o setup, entre como admin e vá em
+  **Configurações → Ferramentas → Carregar dados de demonstração**.
+- **Por linha de comando:** rode `python sigbef.py --demo` na primeira
+  vez. O sistema pula o wizard e popula com 10 livros e 4 usuários.
+
+Credenciais dos usuários de demo (somente quando carregados):
+
+| Matrícula    | Senha          | Perfil         |
+|--------------|----------------|----------------|
+| `laiane`     | `laiane123`    | Bibliotecário  |
+| `jaqueline`  | `jaqueline123` | Bibliotecário  |
+| `macilene`   | `macilene123`  | Professor      |
+| `2024001`    | `lucas123`     | Aluno          |
+| `2024002`    | `beatriz123`   | Aluno          |
+
+> **Importante:** essas senhas são públicas. Trocar (ou desativar essas
+> contas) antes de usar em produção.
+
+📖 **Veja também:** [Manual do Usuário completo](docs/MANUAL_DO_USUARIO.md) —
+fluxos passo a passo por perfil de usuário.
 
 ---
 
@@ -455,41 +482,55 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 
 ```
 SIGBIB/
-├── sigbef.py                  # ponto de entrada (atalho)
-├── requirements.txt           # dependências (vazio — só std lib)
-├── README.md                  # este arquivo
-├── LICENSE                    # licença MIT
+├── sigbef.py                          # ponto de entrada (atalho)
+├── requirements.txt                   # dependências (vazio — só std lib)
+├── README.md                          # este arquivo
+├── LICENSE                            # licença MIT
+├── VERSION                            # versão atual
 ├── .gitignore
-├── build.bat                  # gera o executável (Windows)
-├── sigbef.spec                # configuração do PyInstaller
-├── COMO_GERAR_EXECUTAVEL.md   # guia de build
-├── PUBLICAR_NO_GITHUB.md      # guia rápido de publicação
-├── setup_github.bat           # script Windows: git init + push
-├── SIGBEF_Documento_Requisitos.docx
-├── assets/
-│   ├── sigbef.svg             # logo / ícone
-│   └── sigbef.ico             # gerado pelo build
-├── docs/
-│   └── screenshots/           # mockups SVG das telas
-├── tools/
-│   ├── gerar_icone.py         # gera assets/sigbef.ico
-│   └── sigbef_installer.iss   # script Inno Setup
-├── data/
-│   └── sigbef.db              # banco SQLite (criado em runtime)
-└── sigbef/
-    ├── __init__.py
-    ├── app.py                 # ponto de entrada principal
-    ├── database.py            # schema, conexão, configurações
-    ├── auth.py                # autenticação e hash de senha
-    ├── servicos.py            # regras de negócio
-    ├── seed.py                # dados de demonstração
-    ├── barcode_util.py        # geração e renderização de barcode
-    ├── formato.py             # formatação BR (datas, R$)
-    ├── ui_tema.py             # tema visual e estilos ttk
-    ├── ui_login.py            # tela de login
-    ├── ui_painel.py           # painel principal (todas as seções)
-    ├── ui_dialogos.py         # diálogos modais reutilizáveis
-    └── ui_selfservice.py      # terminal de autoatendimento
+├── build.bat                          # gera o executável (Windows)
+├── sigbef.spec                        # configuração do PyInstaller
+│
+├── sigbef/                            # código-fonte da aplicação
+│   ├── __init__.py
+│   ├── app.py                         # bootstrap da aplicação
+│   ├── database.py                    # schema, conexão, configurações
+│   ├── auth.py                        # autenticação e hash de senha
+│   ├── servicos.py                    # regras de negócio
+│   ├── seed.py                        # dados de demonstração
+│   ├── barcode_util.py                # geração de código de barras
+│   ├── formato.py                     # formatação BR (datas, R$)
+│   ├── ui_tema.py                     # tema visual e estilos ttk
+│   ├── ui_login.py                    # tela de login
+│   ├── ui_painel.py                   # painel principal
+│   ├── ui_dialogos.py                 # diálogos modais reutilizáveis
+│   ├── ui_selfservice.py              # terminal de autoatendimento
+│   └── ui_setup.py                    # assistente de primeira execução
+│
+├── docs/                              # documentação completa
+│   ├── MANUAL_DO_USUARIO.md           # manual do usuário final
+│   ├── CHANGELOG.md                   # histórico de versões
+│   ├── COMO_GERAR_EXECUTAVEL.md       # guia de build
+│   ├── PUBLICAR_NO_GITHUB.md          # guia de publicação
+│   ├── SIGBEF_Documento_Requisitos.docx  # documento de requisitos
+│   └── screenshots/                   # mockups SVG das telas
+│
+├── apresentacao/                      # material institucional / pitch
+│   ├── pptx/                          # apresentação pronta (PPTX + HTML)
+│   ├── geradores/                     # scripts que regeneram a apresentação
+│   └── sebrae/                        # material do Desafio Liga Jovem
+│
+├── assets/                            # identidade visual
+│   ├── sigbef.svg                     # logo / ícone
+│   └── sigbef.ico                     # gerado pelo build
+│
+├── tools/                             # scripts de desenvolvimento
+│   ├── gerar_icone.py                 # gera assets/sigbef.ico
+│   ├── sigbef_installer.iss           # script Inno Setup
+│   └── setup_github.bat               # init + push do repo
+│
+└── data/                              # (gitignored) banco SQLite em runtime
+    └── sigbef.db
 ```
 
 ---
@@ -514,7 +555,7 @@ pyinstaller sigbef.spec
 ```
 
 O executável e suas dependências ficam em `dist/SIGBEF/`. Veja o guia
-[`COMO_GERAR_EXECUTAVEL.md`](COMO_GERAR_EXECUTAVEL.md) para o instalador
+[`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md) para o instalador
 profissional com Inno Setup.
 
 ### Adicionando uma nova tabela
@@ -577,13 +618,13 @@ O software é fornecido "como está", sem garantias.
 Desenvolvido por **Marcello** como protótipo do Sistema Integrado de
 Gestão da Biblioteca do CEFE.
 
-Documento de requisitos completo: [`SIGBEF_Documento_Requisitos.docx`](SIGBEF_Documento_Requisitos.docx)
+Documento de requisitos completo: [`docs/SIGBEF_Documento_Requisitos.docx`](docs/SIGBEF_Documento_Requisitos.docx)
 
 ---
 
 <div align="center">
 
-**SIGBEF v1.0** — Abril/2026
+**SIGBEF v1.2.0** — Maio/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

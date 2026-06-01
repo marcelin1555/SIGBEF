@@ -321,16 +321,17 @@ class SecaoUsuarios(SecaoBase):
         ttk.Button(filtros, text="Pesquisar",
                     command=self.atualizar).pack(side="left")
 
-        cols = ("id", "nome", "matricula", "perfil", "email", "cartao",
-                "ativo")
+        cols = ("id", "nome", "matricula", "turma", "perfil", "email",
+                "cartao", "ativo")
         self.tree = ttk.Treeview(self, columns=cols, show="headings",
                                   height=18)
-        for c, t, w in [("id", "ID", 50), ("nome", "Nome", 240),
-                        ("matricula", "Matrícula", 110),
-                        ("perfil", "Perfil", 130),
-                        ("email", "E-mail", 220),
-                        ("cartao", "Cartão", 200),
-                        ("ativo", "Ativo", 70)]:
+        for c, t, w in [("id", "ID", 50), ("nome", "Nome", 220),
+                        ("matricula", "Matrícula", 100),
+                        ("turma", "Série / Turma", 180),
+                        ("perfil", "Perfil", 120),
+                        ("email", "E-mail", 200),
+                        ("cartao", "Cartão", 180),
+                        ("ativo", "Ativo", 60)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.pack(fill="both", expand=True, pady=(8, 0))
@@ -356,7 +357,9 @@ class SecaoUsuarios(SecaoBase):
             self.tree.delete(it)
         for u in servicos.listar_usuarios(self.ent_busca.get()):
             self.tree.insert("", "end", values=(
-                u["id"], u["nome"], u["matricula"], u["perfil"],
+                u["id"], u["nome"], u["matricula"],
+                u.get("turma") or "—",
+                u["perfil"],
                 u.get("email") or "—",
                 u.get("codigo_barras") or "—",
                 "Sim" if u["ativo"] else "Não",
@@ -438,17 +441,18 @@ class SecaoEmprestimos(SecaoBase):
         ttk.Label(self, text="Empréstimos em aberto",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(20, 6))
 
-        cols = ("id", "usuario", "matricula", "titulo", "codigo",
+        cols = ("id", "usuario", "matricula", "turma", "titulo", "codigo",
                 "emprestado", "previsto", "atrasado")
         self.tree = ttk.Treeview(self, columns=cols, show="headings",
                                   height=14)
-        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 180),
-                        ("matricula", "Matrícula", 100),
-                        ("titulo", "Título", 280),
-                        ("codigo", "Código", 160),
-                        ("emprestado", "Empréstimo", 130),
-                        ("previsto", "Previsto", 110),
-                        ("atrasado", "Atraso?", 80)]:
+        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 160),
+                        ("matricula", "Matrícula", 90),
+                        ("turma", "Série / Turma", 170),
+                        ("titulo", "Título", 240),
+                        ("codigo", "Código", 150),
+                        ("emprestado", "Empréstimo", 120),
+                        ("previsto", "Previsto", 100),
+                        ("atrasado", "Atraso?", 70)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
@@ -551,7 +555,9 @@ class SecaoEmprestimos(SecaoBase):
             atrasado = bool(e["atrasado"])
             tag = ("atrasado",) if atrasado else ()
             self.tree.insert("", "end", tags=tag, values=(
-                e["id"], e["usuario"], e["matricula"], e["titulo"],
+                e["id"], e["usuario"], e["matricula"],
+                e.get("turma") or "—",
+                e["titulo"],
                 e["codigo_barras"], data_hora_br(e["data_emprestimo"]),
                 data_br(e["data_prevista"]), "SIM" if atrasado else "—",
             ))
@@ -756,15 +762,43 @@ class SecaoRelatorios(SecaoBase):
 class SecaoConfig(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
-        ttk.Label(self, text="Configurações do sistema",
+
+        # ---- Scroll container (conteudo passa do tamanho da viewport) ----
+        canvas = tk.Canvas(self, bg=tema.COR_FUNDO, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(self, orient="vertical",
+                                  command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        body = ttk.Frame(canvas)
+        inner_window = canvas.create_window((0, 0), window=body,
+                                            anchor="nw")
+
+        def _on_canvas_configure(e):
+            canvas.itemconfig(inner_window, width=e.width)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        def _on_inner_configure(e):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        body.bind("<Configure>", _on_inner_configure)
+
+        def _on_mousewheel(e):
+            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        canvas.bind("<Enter>",
+                    lambda e: canvas.bind_all("<MouseWheel>",
+                                              _on_mousewheel))
+        canvas.bind("<Leave>",
+                    lambda e: canvas.unbind_all("<MouseWheel>"))
+
+        ttk.Label(body, text="Configurações do sistema",
                   style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(self, text=("Ajuste prazos, limites e valores de multa. As "
+        ttk.Label(body, text=("Ajuste prazos, limites e valores de multa. As "
                                "alterações entram em vigor imediatamente."),
                   style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
 
         from .database import get_config
 
-        form = ttk.Frame(self, style="Card.TFrame", padding=20)
+        form = ttk.Frame(body, style="Card.TFrame", padding=20)
         form.pack(fill="x")
         self._entries: dict[str, ttk.Entry] = {}
         for i, (chave, rotulo) in enumerate([
@@ -785,9 +819,147 @@ class SecaoConfig(SecaoBase):
             form.columnconfigure(1, weight=1)
             self._entries[chave] = ent
 
-        ttk.Button(self, text="Salvar configurações",
+        ttk.Button(body, text="Salvar configurações",
                     style="Primario.TButton",
                     command=self._salvar).pack(anchor="e", pady=(16, 0))
+
+        # ---------------- Ferramentas adicionais ----------------
+        ttk.Label(body, text="Ferramentas",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+
+        ferramentas = ttk.Frame(body, style="Card.TFrame", padding=16)
+        ferramentas.pack(fill="x")
+        ferramentas.columnconfigure(1, weight=1)
+
+        # Backup
+        ttk.Label(ferramentas, text="Backup do banco de dados",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=0, column=0, sticky="w", pady=(0, 2))
+        ttk.Label(ferramentas,
+                  text=("Cria uma cópia do banco em um local seguro. "
+                        "Faça backup periodicamente."),
+                  style="CardHint.TLabel"
+                  ).grid(row=1, column=0, sticky="w")
+        ttk.Button(ferramentas, text="Fazer backup agora",
+                    command=self._backup
+                    ).grid(row=0, column=1, rowspan=2, sticky="e", padx=12)
+
+        # Dados de demo
+        ttk.Label(ferramentas, text="Dados de demonstração",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=2, column=0, sticky="w", pady=(14, 2))
+        ttk.Label(ferramentas,
+                  text=("Adiciona 10 livros e 4 usuários de exemplo. "
+                        "Útil para testar o sistema antes do uso real."),
+                  style="CardHint.TLabel", wraplength=600
+                  ).grid(row=3, column=0, sticky="w")
+        ttk.Button(ferramentas, text="Carregar dados de demonstração",
+                    command=self._carregar_demo
+                    ).grid(row=2, column=1, rowspan=2, sticky="e",
+                            padx=12, pady=(14, 0))
+
+        # Sobre
+        ttk.Label(ferramentas, text="Sobre o sistema",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=4, column=0, sticky="w", pady=(14, 2))
+        ttk.Label(ferramentas,
+                  text="Versão, licença, autor e informações de contato.",
+                  style="CardHint.TLabel"
+                  ).grid(row=5, column=0, sticky="w")
+        ttk.Button(ferramentas, text="Mostrar sobre...",
+                    command=self._sobre
+                    ).grid(row=4, column=1, rowspan=2, sticky="e",
+                            padx=12, pady=(14, 0))
+
+        # ---------------- Integrações ----------------
+        ttk.Label(body, text="Integrações (online)",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        integ = ttk.Frame(body, style="Card.TFrame", padding=16)
+        integ.pack(fill="x")
+        self.var_isbn = tk.BooleanVar(value=servicos.isbn_lookup_ativo())
+        ttk.Checkbutton(
+            integ,
+            text="Buscar dados do livro por ISBN (Open Library / Google Books)",
+            variable=self.var_isbn,
+            command=self._toggle_isbn).pack(anchor="w")
+        ttk.Label(
+            integ,
+            text=("Desligado por padrão. Quando ligado, o cadastro de livro "
+                  "ganha um botão que busca título, autor, editora e ano pela "
+                  "internet. Requer conexão; o resto do sistema continua "
+                  "funcionando offline."),
+            style="CardHint.TLabel", wraplength=700
+            ).pack(anchor="w", pady=(4, 0))
+
+        # ---------------- Aparencia ----------------
+        ttk.Label(body, text="Aparência",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        ttk.Label(body,
+                  text=("Personalize as cores da interface. As cores de "
+                        "sucesso, erro e aviso seguem convenção universal "
+                        "de UI e não são editáveis."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 8))
+
+        aparencia = ttk.Frame(body, style="Card.TFrame", padding=16)
+        aparencia.pack(fill="x")
+
+        # Predefinicoes
+        ttk.Label(aparencia, text="Predefinições",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=0, column=0, sticky="w", pady=(0, 8))
+        presets_frame = ttk.Frame(aparencia, style="Card.TFrame")
+        presets_frame.grid(row=0, column=1, columnspan=3, sticky="w",
+                           padx=12, pady=(0, 8))
+        for chave_p, preset in tema.PRESETS.items():
+            ttk.Button(presets_frame, text=preset["nome"],
+                       command=lambda c=chave_p: self._aplicar_preset_aparencia(c)
+                       ).pack(side="left", padx=(0, 6))
+
+        # 4 cores editaveis
+        self._cor_entries = {}
+        self._cor_swatches = {}
+        from .database import get_config
+        cores_edicao = [
+            ("primaria", "Cor primária", "tema.cor_primaria", tema.COR_PRIMARIA),
+            ("secundaria", "Cor secundária", "tema.cor_secundaria", tema.COR_SECUNDARIA),
+            ("destaque", "Cor de destaque", "tema.cor_destaque", tema.COR_DESTAQUE),
+            ("fundo", "Cor de fundo", "tema.cor_fundo", tema.COR_FUNDO),
+        ]
+        for i, (chave_c, rotulo, db_chave, padrao) in enumerate(cores_edicao):
+            ttk.Label(aparencia, text=rotulo, style="Card.TLabel"
+                      ).grid(row=i + 1, column=0, sticky="w", pady=6)
+            valor = get_config(db_chave, padrao) or padrao
+            swatch = tk.Frame(aparencia, bg=valor, width=32, height=24,
+                              highlightthickness=1,
+                              highlightbackground=tema.COR_BORDA)
+            swatch.grid(row=i + 1, column=1, padx=(8, 8))
+            swatch.grid_propagate(False)
+            ent = ttk.Entry(aparencia, width=10)
+            ent.insert(0, valor)
+            ent.grid(row=i + 1, column=2, sticky="w", padx=(0, 8))
+            ttk.Button(aparencia, text="Escolher",
+                       command=lambda c=chave_c: self._escolher_cor(c)
+                       ).grid(row=i + 1, column=3, sticky="w")
+            self._cor_entries[chave_c] = ent
+            self._cor_swatches[chave_c] = swatch
+
+        # Botoes de acao
+        botoes_aparencia = ttk.Frame(self)
+        botoes_aparencia.pack(fill="x", pady=(12, 0))
+        ttk.Button(botoes_aparencia, text="Salvar aparência",
+                   style="Primario.TButton",
+                   command=self._salvar_aparencia
+                   ).pack(side="right")
+        ttk.Button(botoes_aparencia, text="Restaurar padrão",
+                   command=self._restaurar_aparencia_padrao
+                   ).pack(side="right", padx=(0, 8))
+        ttk.Label(body,
+                  text="As alterações de cor têm efeito após reiniciar o sistema.",
+                  style="Hint.TLabel").pack(anchor="w", pady=(8, 0))
 
     def _salvar(self):
         from .database import set_config
@@ -795,6 +967,131 @@ class SecaoConfig(SecaoBase):
             set_config(chave, ent.get().strip())
         messagebox.showinfo("Configurações", "Salvo com sucesso.",
                              parent=self.painel)
+
+    def _backup(self):
+        from datetime import datetime as _dt
+        import shutil
+        from .database import DB_PATH
+        sugestao = f"sigbef_backup_{_dt.now().strftime('%Y%m%d_%H%M')}.db"
+        destino = filedialog.asksaveasfilename(
+            parent=self.painel,
+            title="Salvar backup do banco de dados",
+            initialfile=sugestao,
+            defaultextension=".db",
+            filetypes=[("Banco SQLite", "*.db"), ("Todos", "*.*")],
+        )
+        if not destino:
+            return
+        try:
+            shutil.copy2(DB_PATH, destino)
+        except Exception as e:
+            messagebox.showerror("Erro no backup",
+                                   f"Não foi possível copiar o banco:\n{e}",
+                                   parent=self.painel)
+            return
+        messagebox.showinfo("Backup concluído",
+                              f"Arquivo gerado em:\n{destino}",
+                              parent=self.painel)
+
+    def _carregar_demo(self):
+        from . import seed
+        if not seed.banco_vazio():
+            # Banco já tem dados — confirmar
+            if not messagebox.askyesno(
+                "Carregar dados de demonstração",
+                ("O banco já contém dados.\n\n"
+                 "Os dados de demonstração serão ADICIONADOS aos existentes. "
+                 "Deseja continuar?"),
+                parent=self.painel):
+                return
+        try:
+            seed.popular_dados_demo()
+        except Exception as e:
+            messagebox.showerror("Erro",
+                                   f"Falha ao carregar demo:\n{e}",
+                                   parent=self.painel)
+            return
+        messagebox.showinfo(
+            "Dados carregados",
+            "Foram adicionados livros e usuários de demonstração.\n\n"
+            "As credenciais dos usuários de demo são:\n"
+            "  laiane / laiane123\n"
+            "  jaqueline / jaqueline123\n"
+            "  macilene / macilene123\n"
+            "  2024001 / lucas123\n"
+            "  2024002 / beatriz123\n\n"
+            "TROQUE essas senhas antes de usar em produção.",
+            parent=self.painel)
+
+    def _sobre(self):
+        from .ui_dialogos import DialogoSobre
+        DialogoSobre(self.painel)
+
+    def _toggle_isbn(self):
+        servicos.definir_isbn_lookup(self.var_isbn.get())
+
+    # ---------------- Aparencia ----------------
+    def _aplicar_preset_aparencia(self, chave_preset):
+        preset = tema.PRESETS.get(chave_preset)
+        if not preset:
+            return
+        mapa = {
+            "primaria": preset["primaria"],
+            "secundaria": preset["secundaria"],
+            "destaque": preset["destaque"],
+            "fundo": preset["fundo"],
+        }
+        for chave, valor in mapa.items():
+            ent = self._cor_entries[chave]
+            ent.delete(0, "end")
+            ent.insert(0, valor)
+            self._cor_swatches[chave].configure(bg=valor)
+
+    def _escolher_cor(self, chave):
+        from tkinter import colorchooser
+        atual = self._cor_entries[chave].get().strip()
+        resultado = colorchooser.askcolor(color=atual or None,
+                                          parent=self.painel,
+                                          title="Escolher cor")
+        if resultado and resultado[1]:
+            cor = resultado[1].upper()
+            self._cor_entries[chave].delete(0, "end")
+            self._cor_entries[chave].insert(0, cor)
+            self._cor_swatches[chave].configure(bg=cor)
+
+    def _salvar_aparencia(self):
+        valores = {}
+        for chave, ent in self._cor_entries.items():
+            v = ent.get().strip().upper()
+            if not v.startswith("#") or len(v) != 7:
+                messagebox.showwarning(
+                    "Cor invalida",
+                    f"O valor '{v}' nao e uma cor hex valida "
+                    "(esperado #RRGGBB).",
+                    parent=self.painel)
+                return
+            valores[chave] = v
+        tema.salvar_cores(valores["primaria"], valores["secundaria"],
+                          valores["destaque"], valores["fundo"])
+        messagebox.showinfo(
+            "Aparência salva",
+            "As novas cores foram salvas.\n\n"
+            "Reinicie o SIGBEF para ver as mudancas.",
+            parent=self.painel)
+
+    def _restaurar_aparencia_padrao(self):
+        if not messagebox.askyesno(
+            "Restaurar padrao",
+            "Voltar ao tema azul institucional padrao?\n\n"
+            "As cores personalizadas serao substituidas.",
+            parent=self.painel):
+            return
+        tema.restaurar_padrao()
+        self._aplicar_preset_aparencia("padrao")
+        messagebox.showinfo(
+            "Padrao restaurado",
+            "Tema padrao restaurado.\n\nReinicie o SIGBEF para aplicar.",
+            parent=self.painel)
 
 
 # ---------------------------------------------------------------------------

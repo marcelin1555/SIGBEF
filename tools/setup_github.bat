@@ -16,7 +16,8 @@ REM      https://github.com/settings/tokens (escopo "repo")
 REM =====================================================================
 
 setlocal enabledelayedexpansion
-cd /d "%~dp0"
+REM Sobe para a raiz do projeto (este script vive em tools\)
+cd /d "%~dp0\.."
 
 echo ======================================================
 echo  SIGBEF v1.0.0 - Publicacao no GitHub
@@ -123,7 +124,7 @@ echo.
 echo PROXIMOS PASSOS RECOMENDADOS:
 echo.
 echo 1) Editar a Release no GitHub (acesse o link acima) e colar
-echo    o conteudo do arquivo CHANGELOG.md como descricao.
+echo    o conteudo do arquivo docs\CHANGELOG.md como descricao.
 echo.
 echo 2) Para anexar o executavel SIGBEF.exe na release:
 echo    - Rode build.bat para gerar dist\SIGBEF\

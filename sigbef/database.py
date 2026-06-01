@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS usuario (
     matricula TEXT UNIQUE NOT NULL,
     email TEXT,
     telefone TEXT,
+    turma TEXT,
     perfil TEXT NOT NULL CHECK (perfil IN ('ALUNO','PROFESSOR','BIBLIOTECARIO','ADMINISTRADOR')),
     senha_hash TEXT NOT NULL,
     codigo_barras TEXT UNIQUE,
@@ -180,18 +181,33 @@ CONFIG_PADRAO = {
     "MULTA_POR_DIA": "1.50",
     "MULTA_TETO": "60.00",
     "NOME_INSTITUICAO": "CEFE — Centro de Ensino e Formação",
+    "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
 }
 
 
 def init_database() -> None:
-    """Cria o schema e popula as configurações padrão se ainda não existirem."""
+    """Cria o schema e popula as configurações padrão se ainda não existirem.
+
+    Também executa migrações leves para bancos existentes que ainda não
+    têm colunas novas (ex.: usuario.turma adicionado em v1.2.0).
+    """
     with db_cursor() as cur:
         cur.executescript(SCHEMA_SQL)
+        _migrar_schema(cur)
         for chave, valor in CONFIG_PADRAO.items():
             cur.execute(
                 "INSERT OR IGNORE INTO configuracao (chave, valor) VALUES (?, ?)",
                 (chave, valor),
             )
+
+
+def _migrar_schema(cur) -> None:
+    """Aplica ALTER TABLE em colunas que foram adicionadas em versões
+    posteriores e podem não existir em bancos criados antes."""
+    cur.execute("PRAGMA table_info(usuario)")
+    colunas = {r["name"] for r in cur.fetchall()}
+    if "turma" not in colunas:
+        cur.execute("ALTER TABLE usuario ADD COLUMN turma TEXT")
 
 
 # ---------------------------------------------------------------------------

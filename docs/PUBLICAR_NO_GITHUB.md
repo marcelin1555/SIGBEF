@@ -18,8 +18,8 @@ confortável para você.
    - **NÃO** marque "Initialize this repository with a README" (o nosso
      já existe)
 
-3. Dê **duplo-clique** em `setup_github.bat` (na raiz do projeto).
-   O script vai:
+3. Dê **duplo-clique** em `tools\setup_github.bat`. O script muda
+   automaticamente para a raiz do projeto antes de executar e vai:
    - Inicializar o git
    - Fazer o primeiro commit
    - Pedir seu usuário do GitHub
@@ -67,8 +67,9 @@ Vão para o repositório:
 
 - Todo o código-fonte em `sigbef/`
 - `sigbef.py`, `requirements.txt`, `README.md`, `LICENSE`
-- `SIGBEF_Documento_Requisitos.docx` (documento de requisitos)
-- Este guia e o script `.bat` de setup
+- `docs/` (documento de requisitos, manual do usuário, changelog, guias)
+- `apresentacao/` (slides e material institucional)
+- `tools/setup_github.bat` e demais scripts auxiliares
 
 ---
 

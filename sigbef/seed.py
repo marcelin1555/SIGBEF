@@ -14,12 +14,13 @@ from .servicos import cadastrar_livro, cadastrar_usuario
 
 
 USUARIOS_PADRAO = [
-    # (nome, matricula, perfil, senha, email)
-    ("Administrador do Sistema", "admin",        "ADMINISTRADOR", "admin123",  "admin@cefe.edu"),
-    ("Maria Bibliotecária",      "bibliotecaria", "BIBLIOTECARIO", "biblio123", "maria@cefe.edu"),
-    ("João Professor",           "prof",          "PROFESSOR",     "prof123",   "joao@cefe.edu"),
-    ("Ana Aluna",                 "aluna",         "ALUNO",         "aluna123",  "ana@cefe.edu"),
-    ("Pedro Aluno",               "pedro",         "ALUNO",         "pedro123",  "pedro@cefe.edu"),
+    # (nome, matricula, perfil, senha, email, turma)
+    ("Marcello Melo",            "admin",     "ADMINISTRADOR", "admin123",     "marcello@cefe.edu",        ""),
+    ("Laiane Souza",             "laiane",    "BIBLIOTECARIO", "laiane123",    "laiane@cefe.edu",          ""),
+    ("Jaqueline Oliveira",       "jaqueline", "BIBLIOTECARIO", "jaqueline123", "jaqueline@cefe.edu",       ""),
+    ("Macilene Lima",            "macilene",  "PROFESSOR",     "macilene123",  "macilene@cefe.edu",        ""),
+    ("Lucas Pereira Santos",     "2024001",   "ALUNO",         "lucas123",     "lucas.santos@cefe.edu",    "3º Ano Técnico em Informática"),
+    ("Beatriz Almeida Rocha",    "2024002",   "ALUNO",         "beatriz123",   "beatriz.rocha@cefe.edu",   "2º Ano Técnico em Administração"),
 ]
 
 
@@ -157,19 +158,43 @@ def popular_se_vazio() -> bool:
     """Popula o banco apenas se ainda não houver dados. Retorna True se populou."""
     if not banco_vazio():
         return False
-
-    # Usuários
-    for nome, matr, perfil, senha, email in USUARIOS_PADRAO:
-        cadastrar_usuario(
-            nome=nome, matricula=matr, perfil=perfil,
-            senha=senha, email=email,
-        )
-
-    # Livros
-    for liv in LIVROS_PADRAO:
-        cadastrar_livro(**liv)
-
+    popular_dados_demo()
     return True
+
+
+def popular_dados_demo() -> None:
+    """Adiciona livros e usuários de demonstração ao banco.
+
+    Usado pelo administrador a partir da tela de Configurações quando
+    quiser testar o sistema. Diferente de `popular_se_vazio`, esta função
+    pode ser chamada mesmo com o banco já contendo dados.
+    """
+    from .database import db_cursor
+
+    # Cadastrar apenas usuários de demo que ainda não existem
+    for nome, matr, perfil, senha, email, turma in USUARIOS_PADRAO:
+        if matr == "admin":
+            # Não recriar admin — o primeiro admin é criado no wizard
+            continue
+        with db_cursor() as cur:
+            cur.execute("SELECT 1 FROM usuario WHERE matricula = ?", (matr,))
+            if cur.fetchone():
+                continue
+        try:
+            cadastrar_usuario(
+                nome=nome, matricula=matr, perfil=perfil,
+                senha=senha, email=email, turma=turma,
+            )
+        except Exception:
+            pass
+
+    # Cadastrar livros (não checa duplicidade — pode chamar várias vezes
+    # se quiser mais dados de teste)
+    for liv in LIVROS_PADRAO:
+        try:
+            cadastrar_livro(**liv)
+        except Exception:
+            pass
 
 
 def main():

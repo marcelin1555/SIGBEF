@@ -2,19 +2,16 @@
 REM =====================================================================
 REM  SIGBEF - Gerador de executavel para Windows
 REM
-REM  Este script:
-REM    1. Garante que o PyInstaller esta instalado
-REM    2. Gera o executavel SIGBEF.exe na pasta dist\SIGBEF\
-REM    3. Cria um atalho com instrucoes para a biblioteca
-REM
-REM  Pre-requisito: Python 3.10+ instalado e no PATH
+REM  Usa %LOCALAPPDATA%\SIGBEF-build para o build intermediario
+REM  (sempre gravavel) e copia o resultado final para a pasta dist\
+REM  do projeto so no final.
 REM =====================================================================
 
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 echo ======================================================
-echo  SIGBEF - Build do Executavel
+echo  SIGBEF - Build do Executavel (v2)
 echo ======================================================
 echo.
 
@@ -34,8 +31,8 @@ REM 2. Verificar / instalar PyInstaller
 python -c "import PyInstaller" 2>nul
 if errorlevel 1 (
     echo Instalando PyInstaller...
-    python -m pip install --upgrade pip
-    python -m pip install pyinstaller
+    python -m pip install --upgrade pip --quiet
+    python -m pip install pyinstaller --quiet
     if errorlevel 1 (
         echo [ERRO] Falha ao instalar PyInstaller.
         pause
@@ -57,39 +54,92 @@ if not exist "assets\sigbef.ico" (
     echo Aviso: sigbef.ico nao gerado; build continuara sem icone customizado.
 )
 
-REM 4. Limpar builds anteriores
-if exist "build" rmdir /s /q build
-if exist "dist" rmdir /s /q dist
+REM 4. Pastas de trabalho em local sempre gravavel
+set BUILD_DIR=%LOCALAPPDATA%\SIGBEF-build\build
+set DIST_DIR=%LOCALAPPDATA%\SIGBEF-build\dist
+set WORK_PATH=%LOCALAPPDATA%\SIGBEF-build
 
-REM 5. Executar PyInstaller
+echo.
+echo Workspace temporario: %WORK_PATH%
+
+REM Limpar workspace temporario
+if exist "%WORK_PATH%" (
+    echo Limpando build anterior...
+    rmdir /s /q "%WORK_PATH%" 2>nul
+)
+mkdir "%WORK_PATH%" 2>nul
+
+REM 5. Executar PyInstaller redirecionando saidas
 echo.
 echo Compilando executavel... isso pode levar alguns minutos.
-python -m PyInstaller sigbef.spec --clean --noconfirm
+echo.
+python -m PyInstaller sigbef.spec ^
+    --clean ^
+    --noconfirm ^
+    --distpath "%DIST_DIR%" ^
+    --workpath "%BUILD_DIR%"
 if errorlevel 1 (
+    echo.
     echo [ERRO] Build falhou. Verifique as mensagens acima.
     pause
     exit /b 1
 )
 
-REM 6. Copiar README e dados iniciais para a pasta de distribuicao
-copy README.md "dist\SIGBEF\" >nul
-copy LICENSE "dist\SIGBEF\" >nul
-echo.> "dist\SIGBEF\COMO_USAR.txt"
-echo SIGBEF - Sistema Integrado de Gestao da Biblioteca do CEFE>> "dist\SIGBEF\COMO_USAR.txt"
-echo ============================================================>> "dist\SIGBEF\COMO_USAR.txt"
-echo.>> "dist\SIGBEF\COMO_USAR.txt"
-echo Para iniciar o sistema, de duplo-clique em SIGBEF.exe>> "dist\SIGBEF\COMO_USAR.txt"
-echo.>> "dist\SIGBEF\COMO_USAR.txt"
-echo Para iniciar direto no autoatendimento:>> "dist\SIGBEF\COMO_USAR.txt"
-echo    SIGBEF.exe --autoatendimento>> "dist\SIGBEF\COMO_USAR.txt"
-echo.>> "dist\SIGBEF\COMO_USAR.txt"
-echo Credenciais de demonstracao iniciais:>> "dist\SIGBEF\COMO_USAR.txt"
-echo    admin / admin123       (Administrador)>> "dist\SIGBEF\COMO_USAR.txt"
-echo    bibliotecaria / biblio123  (Bibliotecario)>> "dist\SIGBEF\COMO_USAR.txt"
-echo    aluna / aluna123      (Aluno)>> "dist\SIGBEF\COMO_USAR.txt"
-echo.>> "dist\SIGBEF\COMO_USAR.txt"
-echo O banco de dados sera criado em:>> "dist\SIGBEF\COMO_USAR.txt"
-echo    %%APPDATA%%\SIGBEF\sigbef.db>> "dist\SIGBEF\COMO_USAR.txt"
+REM 6. Copiar resultado para a pasta do projeto
+echo.
+echo Copiando executavel para dist\SIGBEF\ no projeto...
+
+REM Tentar criar dist/ no projeto (pode falhar por permissao no F:)
+mkdir "%~dp0dist" 2>nul
+if not exist "%~dp0dist" (
+    echo.
+    echo [AVISO] Nao foi possivel criar a pasta dist\ aqui.
+    echo O executavel ficou em:
+    echo    %DIST_DIR%\SIGBEF\
+    echo.
+    echo Para copiar para outro lugar, use o Explorer ou rode:
+    echo    xcopy /E /I "%DIST_DIR%\SIGBEF" "C:\caminho\desejado\SIGBEF"
+    echo.
+    explorer "%DIST_DIR%"
+    pause
+    exit /b 0
+)
+
+xcopy /E /I /Y "%DIST_DIR%\SIGBEF" "%~dp0dist\SIGBEF" >nul
+if errorlevel 1 (
+    echo [AVISO] Falha ao copiar para o projeto. Use o caminho direto:
+    echo    %DIST_DIR%\SIGBEF\
+    explorer "%DIST_DIR%"
+    pause
+    exit /b 0
+)
+
+REM 7. Documentacao na pasta de distribuicao
+copy README.md "%~dp0dist\SIGBEF\" >nul 2>&1
+copy LICENSE "%~dp0dist\SIGBEF\" >nul 2>&1
+(
+echo SIGBEF - Sistema Integrado de Gestao da Biblioteca do CEFE
+echo ============================================================
+echo.
+echo Para iniciar o sistema, de duplo-clique em SIGBEF.exe
+echo.
+echo Para iniciar direto no autoatendimento:
+echo    SIGBEF.exe --autoatendimento
+echo.
+echo Na primeira execucao o sistema abre o assistente de configuracao
+echo para voce criar a conta de administrador.
+echo.
+echo Credenciais dos usuarios de demonstracao (apos carregar os dados
+echo de demo em Configuracoes ou rodar com --demo):
+echo    laiane / laiane123        (Bibliotecario)
+echo    jaqueline / jaqueline123  (Bibliotecario)
+echo    macilene / macilene123    (Professor)
+echo    2024001 / lucas123        (Aluno)
+echo    2024002 / beatriz123      (Aluno)
+echo.
+echo O banco de dados sera criado em:
+echo    %%APPDATA%%\SIGBEF\sigbef.db
+) > "%~dp0dist\SIGBEF\COMO_USAR.txt"
 
 echo.
 echo ======================================================
@@ -97,13 +147,15 @@ echo  BUILD CONCLUIDO COM SUCESSO!
 echo ======================================================
 echo.
 echo Executavel gerado em:
-echo    %CD%\dist\SIGBEF\SIGBEF.exe
+echo    %~dp0dist\SIGBEF\SIGBEF.exe
 echo.
 echo Para distribuir, copie a pasta inteira:
-echo    %CD%\dist\SIGBEF\
+echo    %~dp0dist\SIGBEF\
 echo.
-echo Para criar um instalador profissional, use Inno Setup
-echo (https://jrsoftware.org/isinfo.php) com o arquivo:
-echo    tools\sigbef_installer.iss
-echo.
+
+REM Limpar workspace temporario (build/ pesado, nao precisa mais)
+rmdir /s /q "%BUILD_DIR%" 2>nul
+
+REM Abrir a pasta resultado
+start "" "%~dp0dist\SIGBEF"
 pause

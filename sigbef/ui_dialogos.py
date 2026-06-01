@@ -17,6 +17,77 @@ from .servicos import RegraNegocioError
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: Sobre o sistema
+# ---------------------------------------------------------------------------
+class DialogoSobre(tk.Toplevel):
+    """Janela 'Sobre o sistema' com versão, licença e autor."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Sobre o SIGBEF")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 540, 480)
+        self.resizable(False, False)
+
+        # Topo institucional
+        topo = tk.Frame(self, bg=tema.COR_PRIMARIA, height=110)
+        topo.pack(fill="x")
+        topo.pack_propagate(False)
+        tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
+                 text="SIGBEF", font=("Segoe UI Semibold", 36)
+                 ).pack(pady=(18, 0))
+        from . import __version__
+        tk.Label(topo, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+                 text=f"Versão {__version__}",
+                 font=("Segoe UI", 11)).pack()
+
+        # Corpo
+        corpo = ttk.Frame(self, padding=24)
+        corpo.pack(fill="both", expand=True)
+
+        ttk.Label(corpo,
+                  text="Sistema Integrado de Gestão da Biblioteca Escolar",
+                  style="Subtitulo.TLabel", wraplength=480, justify="center"
+                  ).pack(pady=(0, 12))
+        ttk.Label(corpo,
+                  text=("Software para automatizar o atendimento da "
+                        "biblioteca: cadastro de acervo, empréstimos, "
+                        "devoluções, autoatendimento e relatórios."),
+                  style="Hint.TLabel", wraplength=480, justify="center"
+                  ).pack(pady=(0, 16))
+
+        # Detalhes
+        info = ttk.Frame(corpo)
+        info.pack()
+        linhas = [
+            ("Autor", "Marcello Melo de Medeiros Costa"),
+            ("Licença", "MIT"),
+            ("Tecnologia", "Python 3.10+ • Tkinter • SQLite"),
+            ("Repositório", "https://github.com/marcelin1555/SIGBEF"),
+        ]
+        for k, v in linhas:
+            row = ttk.Frame(info)
+            row.pack(anchor="w", pady=2)
+            ttk.Label(row, text=f"{k}:",
+                      font=("Segoe UI Semibold", 10), width=12,
+                      anchor="w").pack(side="left")
+            ttk.Label(row, text=v,
+                      font=("Segoe UI", 10)).pack(side="left")
+
+        ttk.Label(corpo,
+                  text="Copyright © 2026 Marcello Melo de Medeiros Costa",
+                  style="Hint.TLabel"
+                  ).pack(pady=(20, 0))
+
+        ttk.Button(corpo, text="Fechar",
+                    style="Primario.TButton",
+                    command=self.destroy
+                    ).pack(pady=(20, 0))
+
+
+# ---------------------------------------------------------------------------
 # Diálogo: selecionar exemplar disponível para empréstimo
 # ---------------------------------------------------------------------------
 class DialogoSelecionarExemplar(tk.Toplevel):
@@ -151,6 +222,11 @@ class DialogoLivro(tk.Toplevel):
             form.columnconfigure(1, weight=1)
             self._campos[chave] = ent
 
+        if servicos.isbn_lookup_ativo():
+            ttk.Button(form, text="Buscar online",
+                       command=self._buscar_isbn).grid(
+                           row=2, column=2, padx=(6, 0), pady=(8, 2))
+
         ttk.Label(form, text="Quantidade de exemplares *").grid(
             row=8, column=0, sticky="w", pady=(8, 2))
         self.spin_qtd = tk.Spinbox(form, from_=1, to=50, width=6,
@@ -172,6 +248,44 @@ class DialogoLivro(tk.Toplevel):
         ttk.Button(botoes, text="Salvar livro",
                    style="Primario.TButton",
                    command=self._salvar).pack(side="right")
+
+    def _set_campo(self, chave, valor):
+        ent = self._campos.get(chave)
+        if ent is None:
+            return
+        ent.delete(0, "end")
+        ent.insert(0, valor)
+
+    def _buscar_isbn(self):
+        isbn = self._campos["isbn"].get().strip()
+        if not isbn:
+            messagebox.showinfo("Buscar por ISBN",
+                                 "Digite o ISBN primeiro.", parent=self)
+            return
+        try:
+            dados = servicos.buscar_metadados_isbn(isbn)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Buscar por ISBN", str(e), parent=self)
+            return
+        if not dados:
+            messagebox.showinfo(
+                "Buscar por ISBN",
+                "Nenhum dado encontrado para esse ISBN nas bases online "
+                "(comum em livros brasileiros). Preencha os campos manualmente.",
+                parent=self)
+            return
+        if dados.get("titulo"):
+            self._set_campo("titulo", dados["titulo"])
+        if dados.get("autores"):
+            self._set_campo("autores", "; ".join(dados["autores"]))
+        if dados.get("editora"):
+            self._set_campo("editora", dados["editora"])
+        if dados.get("ano"):
+            self._set_campo("ano", str(dados["ano"]))
+        messagebox.showinfo(
+            "Buscar por ISBN",
+            f"Dados preenchidos a partir de {dados.get('fonte', 'online')}. "
+            "Confira e ajuste se precisar.", parent=self)
 
     def _salvar(self):
         try:
@@ -227,7 +341,7 @@ class DialogoUsuario(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 520, 520)
+        tema.centralizar_janela(self, 520, 600)
         self._construir()
 
     def _construir(self):
@@ -246,6 +360,7 @@ class DialogoUsuario(tk.Toplevel):
             ("matricula", "Matrícula *"),
             ("email", "E-mail"),
             ("telefone", "Telefone"),
+            ("turma", "Série / Turma"),
         ]):
             ttk.Label(form, text=rotulo).grid(row=i, column=0, sticky="w",
                                                pady=(6, 2))
@@ -253,25 +368,29 @@ class DialogoUsuario(tk.Toplevel):
             ent.grid(row=i, column=1, sticky="ew", pady=(6, 2))
             self._campos[chave] = ent
 
-        ttk.Label(form, text="Perfil *").grid(row=4, column=0, sticky="w",
+        ttk.Label(form, text="Ex.: 3º Ano Técnico em Informática",
+                  style="Hint.TLabel").grid(row=5, column=1, sticky="w",
+                                            pady=(0, 6))
+
+        ttk.Label(form, text="Perfil *").grid(row=6, column=0, sticky="w",
                                               pady=(6, 2))
         self.combo_perfil = ttk.Combobox(form, state="readonly",
                                           values=["ALUNO", "PROFESSOR",
                                                    "BIBLIOTECARIO",
                                                    "ADMINISTRADOR"])
         self.combo_perfil.set("ALUNO")
-        self.combo_perfil.grid(row=4, column=1, sticky="ew", pady=(6, 2))
+        self.combo_perfil.grid(row=6, column=1, sticky="ew", pady=(6, 2))
 
-        ttk.Label(form, text="Senha *").grid(row=5, column=0, sticky="w",
+        ttk.Label(form, text="Senha *").grid(row=7, column=0, sticky="w",
                                              pady=(6, 2))
         self.ent_senha = ttk.Entry(form, show="•", font=("Segoe UI", 10))
-        self.ent_senha.grid(row=5, column=1, sticky="ew", pady=(6, 2))
+        self.ent_senha.grid(row=7, column=1, sticky="ew", pady=(6, 2))
 
         self.var_cartao = tk.BooleanVar(value=True)
         ttk.Checkbutton(form,
                         text="Gerar código de barras para o cartão de acesso",
                         variable=self.var_cartao).grid(
-                            row=6, column=0, columnspan=2, sticky="w",
+                            row=8, column=0, columnspan=2, sticky="w",
                             pady=(12, 0))
 
         botoes = ttk.Frame(wrap)
@@ -289,6 +408,7 @@ class DialogoUsuario(tk.Toplevel):
                 matricula=self._campos["matricula"].get(),
                 email=self._campos["email"].get(),
                 telefone=self._campos["telefone"].get(),
+                turma=self._campos["turma"].get(),
                 perfil=self.combo_perfil.get(),
                 senha=self.ent_senha.get(),
                 gerar_cartao=self.var_cartao.get(),

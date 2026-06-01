@@ -12,7 +12,7 @@ from typing import Optional
 
 from .auth import gerar_hash
 from .barcode_util import gerar_codigo_exemplar, gerar_codigo_usuario
-from .database import db_cursor, get_config, registrar_auditoria
+from .database import db_cursor, get_config, set_config, registrar_auditoria
 
 
 class RegraNegocioError(Exception):
@@ -301,11 +301,13 @@ def cadastrar_usuario(
     senha: str,
     email: str = "",
     telefone: str = "",
+    turma: str = "",
     gerar_cartao: bool = True,
     usuario_id_executor: Optional[int] = None,
 ) -> dict:
     nome = (nome or "").strip()
     matricula = (matricula or "").strip()
+    turma = (turma or "").strip()
     if not nome or not matricula:
         raise RegraNegocioError("Nome e matrícula são obrigatórios.")
     if perfil not in ("ALUNO", "PROFESSOR", "BIBLIOTECARIO", "ADMINISTRADOR"):
@@ -320,11 +322,11 @@ def cadastrar_usuario(
         if cur.fetchone():
             raise RegraNegocioError("Já existe um usuário com esta matrícula.")
         cur.execute(
-            """INSERT INTO usuario(nome, matricula, email, telefone,
+            """INSERT INTO usuario(nome, matricula, email, telefone, turma,
                                    perfil, senha_hash, codigo_barras)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (nome, matricula, email or None, telefone or None,
-             perfil, senha_hash, cartao),
+             turma or None, perfil, senha_hash, cartao),
         )
         novo_id = cur.lastrowid
     registrar_auditoria(usuario_id_executor, "CADASTRO_USUARIO",
@@ -336,11 +338,13 @@ def listar_usuarios(termo: str = "") -> list[dict]:
     termo_like = f"%{termo.strip()}%" if termo else "%"
     with db_cursor() as cur:
         cur.execute(
-            """SELECT id, nome, matricula, email, perfil, codigo_barras, ativo
+            """SELECT id, nome, matricula, email, turma, perfil,
+                      codigo_barras, ativo
                FROM usuario
                WHERE nome LIKE ? OR matricula LIKE ? OR IFNULL(email,'') LIKE ?
+                  OR IFNULL(turma,'') LIKE ?
                ORDER BY nome""",
-            (termo_like, termo_like, termo_like),
+            (termo_like, termo_like, termo_like, termo_like),
         )
         return [dict(r) for r in cur.fetchall()]
 
@@ -422,7 +426,7 @@ def status_usuario(usuario_id: int) -> StatusUsuario:
         em_aberto = cur.fetchone()["qt"]
         cur.execute(
             "SELECT IFNULL(SUM(multa),0) AS m FROM emprestimo "
-            "WHERE usuario_id = ? AND multa > 0 AND data_devolucao IS NULL",
+            "WHERE usuario_id = ? AND multa > 0",
             (usuario_id,),
         )
         multa_aberta = float(cur.fetchone()["m"] or 0)
@@ -645,8 +649,9 @@ def listar_emprestimos_usuario(usuario_id: int,
 def listar_emprestimos_em_aberto() -> list[dict]:
     with db_cursor() as cur:
         cur.execute(
-            """SELECT e.id, u.nome AS usuario, u.matricula, l.titulo,
-                       ex.codigo_barras, e.data_emprestimo, e.data_prevista,
+            """SELECT e.id, u.nome AS usuario, u.matricula, u.turma,
+                       l.titulo, ex.codigo_barras, e.data_emprestimo,
+                       e.data_prevista,
                        (date(e.data_prevista) < date('now','localtime')) AS atrasado
                 FROM emprestimo e
                 JOIN exemplar ex ON ex.id = e.exemplar_id
@@ -706,3 +711,33 @@ def relatorio_circulacao(top: int = 10) -> list[dict]:
                 ORDER BY emprestimos DESC
                 LIMIT ?""", (top,))
         return [dict(r) for r in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Integração opcional: busca de metadados por ISBN (online, opt-in)
+# ---------------------------------------------------------------------------
+def isbn_lookup_ativo() -> bool:
+    """True se a busca por ISBN estiver ligada nas configurações."""
+    return (get_config("ISBN_LOOKUP", "0") or "0").strip() == "1"
+
+
+def definir_isbn_lookup(ativo: bool) -> None:
+    set_config("ISBN_LOOKUP", "1" if ativo else "0")
+
+
+def buscar_metadados_isbn(isbn: str) -> Optional[dict]:
+    """Busca título/autores/editora/ano por ISBN (Open Library + Google Books).
+
+    Só funciona com a integração ligada (Configurações → Integrações). Retorna
+    um dict com os campos ou None se nada for encontrado. Lança
+    RegraNegocioError se a busca estiver desligada ou falhar (ex.: offline).
+    """
+    if not isbn_lookup_ativo():
+        raise RegraNegocioError(
+            "A busca por ISBN está desligada. "
+            "Ative em Configurações → Integrações.")
+    from . import isbn_lookup
+    try:
+        return isbn_lookup.buscar(isbn)
+    except isbn_lookup.ISBNLookupError as e:
+        raise RegraNegocioError(str(e))
