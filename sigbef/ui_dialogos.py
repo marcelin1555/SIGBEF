@@ -539,5 +539,21 @@ class VisualizadorBarcodes(tk.Toplevel):
 
         canvas.configure(scrollregion=(0, 0, 600, y))
 
-        ttk.Button(wrap, text="Fechar",
-                   command=self.destroy).pack(side="bottom", pady=(12, 0))
+        botoes = ttk.Frame(wrap)
+        botoes.pack(side="bottom", fill="x", pady=(12, 0))
+        ttk.Button(botoes, text="Fechar",
+                   command=self.destroy).pack(side="right")
+        ttk.Button(botoes, text="Imprimir / Salvar PDF (abre no navegador)",
+                   style="Primario.TButton",
+                   command=lambda: self._imprimir(livro)
+                   ).pack(side="right", padx=(0, 8))
+
+    def _imprimir(self, livro: dict):
+        """Gera o HTML de etiquetas e abre no navegador para Ctrl+P."""
+        import tempfile
+        import webbrowser
+        from pathlib import Path
+        doc = barcode_util.etiquetas_html(livro["titulo"], livro["exemplares"])
+        destino = Path(tempfile.gettempdir()) / "sigbef_etiquetas.html"
+        destino.write_text(doc, encoding="utf-8")
+        webbrowser.open(destino.as_uri())

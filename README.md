@@ -19,6 +19,7 @@
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
 [![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat-square)](docs/SIGBEF_Documento_Requisitos.docx)
+[![Site](https://img.shields.io/badge/site-GitHub%20Pages-1F4E79?style=flat-square)](https://marcelin1555.github.io/SIGBEF/)
 
 </div>
 
