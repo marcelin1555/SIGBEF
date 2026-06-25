@@ -1,4 +1,4 @@
-# Manual do Usuário — SIGBEF v1.0
+# Manual do Usuário — SIGBEF v1.2.0
 
 Sistema Integrado de Gestão da Biblioteca do CEFE.
 

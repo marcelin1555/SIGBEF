@@ -6,14 +6,14 @@
 
 ### Sistema Integrado de Gestão da Biblioteca do CEFE
 
-*Protótipo desktop completo para gestão bibliotecária — cadastro, empréstimo, devolução, autoatendimento e relatórios.*
+*Sistema desktop completo para gestão bibliotecária, gratuito e offline, desenvolvido por estudantes do CEFE para escolas públicas brasileiras.*
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-1F4E79?style=for-the-badge)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2E75B6?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
-[![Status](https://img.shields.io/badge/status-prot%C3%B3tipo%20funcional-2E7D32?style=flat-square)](#)
+[![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat-square)](#)
 [![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue?style=flat-square)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-lightgrey?style=flat-square)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
@@ -69,6 +69,7 @@
 - [Sobre o projeto](#sobre-o-projeto)
 - [Principais funcionalidades](#principais-funcionalidades)
 - [Stack tecnológica](#stack-tecnológica)
+- [Site oficial](#site-oficial)
 - [Download e instalação](#download-e-instalação)
 - [Início rápido (modo desenvolvedor)](#início-rápido-modo-desenvolvedor)
 - [Credenciais de demonstração](#credenciais-de-demonstração)
@@ -102,6 +103,9 @@ O sistema foi projetado seguindo o padrão arquitetural em camadas, com
 separação clara entre interface (Tkinter), regras de negócio (módulo
 `servicos`) e persistência (SQLite + módulo `database`), facilitando
 manutenção e testes.
+
+O projeto inclui também um **site de apresentação** em React + Vite,
+hospedado no GitHub Pages: https://marcelin1555.github.io/SIGBEF/
 
 ---
 
@@ -159,6 +163,19 @@ manutenção e testes.
 > biblioteca padrão do Python. Para impressão em massa de PNGs reais de
 > código de barras, são opcionais `python-barcode` e `Pillow`
 > (ver `requirements.txt`).
+
+---
+
+## Site oficial
+
+O site de apresentação do SIGBEF está disponível em:
+
+**https://marcelin1555.github.io/SIGBEF/**
+
+Construído com React + Vite + Tailwind CSS + React Router, com 5 páginas:
+`/` (landing), `/#/funcionalidades`, `/#/download`, `/#/planos`, `/#/equipe`.
+
+Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 
 ---
 
@@ -253,8 +270,8 @@ o script `tools/sigbef_installer.iss` que já está no repositório.
 
 ```bash
 # 1. Clone o repositório
-git clone https://github.com/<seu-usuario>/sigbef.git
-cd sigbef
+git clone https://github.com/marcelin1555/SIGBEF.git
+cd SIGBEF
 
 # 2. Execute o sistema
 #    Primeira vez: abre o assistente de configuração inicial
@@ -571,16 +588,33 @@ profissional com Inno Setup.
 
 Funcionalidades planejadas para versões futuras:
 
-- [ ] Aplicativo móvel (Android/iOS) para consulta do acervo
-- [ ] API REST para integração com outros sistemas
-- [ ] Importação de acervo a partir de planilha CSV/Excel
-- [ ] Importação de metadados via ISBN (Google Books, OpenLibrary)
-- [ ] Notificações por e-mail quando o prazo se aproxima
-- [ ] Reservas online (com fila de espera)
-- [ ] Painel de BI / dashboards interativos
-- [ ] Suporte a múltiplas unidades / bibliotecas
-- [ ] Migração para PostgreSQL para ambientes em rede
-- [ ] Internacionalização (i18n) para outros idiomas
+### Próxima versão — v1.4.0 (prioridade alta)
+
+- [ ] Importação de acervo a partir de planilha CSV/Excel — elimina o cadastro manual em bibliotecas com acervo já mapeado
+- [ ] Integração com APIs de ISBN (Google Books, OpenLibrary) para auto-preenchimento no cadastro por código
+- [ ] Notificações por e-mail automáticas quando o prazo de devolução se aproxima
+- [ ] Reservas online com fila de espera
+
+### Médio prazo — v2.0.0
+
+- [ ] API REST — permite integração com outros sistemas escolares (diários, portais do aluno)
+- [ ] Aplicativo móvel (Android/iOS) para consulta do acervo e renovação remota
+- [ ] Camada de engajamento de leitura: estatísticas pessoais, recomendações por categoria, conquistas opcionais para alunos
+- [ ] Painel de BI com dashboards interativos e gráficos de uso
+
+### Longo prazo
+
+- [ ] Suporte a múltiplas unidades/bibliotecas na mesma instalação
+- [ ] Migração opcional para PostgreSQL para ambientes em rede com múltiplos postos
+- [ ] Internacionalização (i18n) — espanhol e inglês como primeiros idiomas adicionais
+- [ ] Versão web hospedada (SaaS) para escolas sem servidor local
+
+### Concluído recentemente
+
+- [x] Site de apresentação React multi-página hospedado no GitHub Pages (v1.3.0)
+- [x] Terminal de autoatendimento (kiosk) com logout automático (v1.0.0)
+- [x] Personalização de cores por paleta (v1.1.0)
+- [x] Campo de série/turma no cadastro de aluno (v1.2.0)
 
 ---
 
@@ -616,8 +650,14 @@ O software é fornecido "como está", sem garantias.
 
 ## Autoria
 
-Desenvolvido por **Marcello** como protótipo do Sistema Integrado de
-Gestão da Biblioteca do CEFE.
+Desenvolvido por estudantes do **CEFE** (Centro de Ensino e Formação), escola pública do Rio Grande do Norte.
+
+| Nome | Papel |
+|---|---|
+| **Marcello Melo de Medeiros Costa** | Desenvolvimento, arquitetura e liderança |
+| **Júlia Kelly Araújo de Barros** | Comunicação, pitch e pesquisa de usuário |
+| **Maria Laura Aparecida Silva de Medeiros** | Modelo de negócio e análise financeira |
+| **Pedro Jonath Silva de Oliveira** | Orientação técnica (Professor de BD e POO) |
 
 Documento de requisitos completo: [`docs/SIGBEF_Documento_Requisitos.docx`](docs/SIGBEF_Documento_Requisitos.docx)
 

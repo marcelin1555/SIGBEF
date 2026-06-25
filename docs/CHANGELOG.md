@@ -4,6 +4,44 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
+## [1.3.0] — 2026-06-25
+
+### Site oficial (React + Vite)
+
+**Multi-página com React Router**
+- Migração de landing page única para 5 páginas com HashRouter (compatível com GitHub Pages sem configuração de servidor)
+- Rotas: `/` (home), `/#/funcionalidades`, `/#/download`, `/#/planos`, `/#/equipe`
+- `ScrollToTop` automático em cada mudança de rota
+- `NavLink` com destaque de rota ativa
+
+**Hero aprimorado**
+- Layout de 2 colunas no desktop (texto + mockup CSS)
+- Mockup CSS puro do painel do SIGBEF: janela escura com stats e tabela de empréstimos simulada
+- Nenhuma imagem externa
+
+**Ícones Font Awesome**
+- Substituição de todos os emojis por ícones SVG do Font Awesome 6 via `@fortawesome/react-fontawesome`
+- Componentes atualizados: `Problema`, `Funcionalidades`, `Equipe`, `ODS`, `Home`
+- Tree-shaking automático pelo Vite — apenas os ícones usados entram no bundle
+
+**Novas páginas**
+- `FuncionalidadesPage` — funcionalidades completas por perfil + tabela comparativa + CTA
+- `DownloadPage` — requisitos de sistema, 4 passos detalhados, FAQ de instalação (6 perguntas)
+- `PlanosPage` — pricing completo + FAQ de preços (5 perguntas) + contato
+- `EquipePage` — equipe + linha do tempo do projeto + blockquote da missão
+
+**Footer aprimorado**
+- 4 colunas: marca, produto, projeto, CTA de download
+- Links internos via `react-router-dom Link`
+
+**Infra e repositório**
+- `site/README.md` reescrito (era template padrão Vite)
+- Badge do site GitHub Pages adicionado ao `README.md` principal
+- Repositório Bitbucket configurado: `bitbucket.org/workspacemarcellomelo/sigbef-sistema-de-biblioteca`
+- Push inicial para Bitbucket com 40 arquivos
+
+---
+
 ## [1.2.0] — 2026-05-24
 
 Pedido vindo da própria biblioteca do CEFE durante a apresentação do
@@ -225,4 +263,7 @@ Itens previstos para versões posteriores — ver
   pra auto-preenchimento de cadastro por ISBN, com opt-in em
   Configurações pra manter o pitch "funciona offline"
 
-[1.0.0]: https://github.com/SEU-USUARIO/sigbef/releases/tag/v1.0.0
+[1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0
+[1.2.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.2.0
+[1.1.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.1.0
+[1.0.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.0.0
