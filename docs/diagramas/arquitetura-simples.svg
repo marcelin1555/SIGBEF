@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 660" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Fundo -->
+  <rect width="1280" height="660" rx="12" fill="#F5F7FA"/>
+
+  <!-- Título -->
+  <text x="640" y="58" text-anchor="middle" fill="#1A1A1A" font-size="32" font-weight="700">Como o SIGBEF é organizado por dentro</text>
+  <text x="640" y="90" text-anchor="middle" fill="#6B7280" font-size="18">Os mesmos três setores de uma biblioteca de verdade</text>
+  <rect x="580" y="104" width="120" height="4" fill="#F2A900"/>
+
+  <!-- ===== Cartão 1: TELAS ===== -->
+  <rect x="60" y="140" width="330" height="290" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="60" y="140" width="330" height="56" rx="14" fill="#1F4E79"/>
+  <rect x="60" y="182" width="330" height="14" fill="#1F4E79"/>
+  <text x="225" y="176" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="700">TELAS</text>
+  <!-- Ícone: monitor -->
+  <g stroke="#1F4E79" stroke-width="5" fill="none" stroke-linejoin="round">
+    <rect x="165" y="222" width="120" height="76" rx="8"/>
+    <line x1="225" y1="298" x2="225" y2="318"/>
+    <line x1="193" y1="318" x2="257" y2="318"/>
+  </g>
+  <circle cx="225" cy="260" r="14" fill="#F2A900"/>
+  <text x="225" y="356" text-anchor="middle" fill="#1F4E79" font-size="19" font-weight="700">É o balcão de atendimento</text>
+  <text x="225" y="384" text-anchor="middle" fill="#6B7280" font-size="16">Tudo o que você vê e clica:</text>
+  <text x="225" y="406" text-anchor="middle" fill="#6B7280" font-size="16">login, painel, autoatendimento</text>
+
+  <!-- Seta 1 -->
+  <g stroke="#F2A900" stroke-width="5" fill="none">
+    <line x1="398" y1="285" x2="460" y2="285"/>
+  </g>
+  <polygon points="460,272 484,285 460,298" fill="#F2A900"/>
+  <text x="441" y="258" text-anchor="middle" fill="#6B7280" font-size="14" font-weight="600">envia o</text>
+  <text x="441" y="330" text-anchor="middle" fill="#6B7280" font-size="14" font-weight="600">pedido</text>
+
+  <!-- ===== Cartão 2: REGRAS ===== -->
+  <rect x="492" y="140" width="330" height="290" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="492" y="140" width="330" height="56" rx="14" fill="#1F4E79"/>
+  <rect x="492" y="182" width="330" height="14" fill="#1F4E79"/>
+  <text x="657" y="176" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="700">REGRAS</text>
+  <!-- Ícone: bibliotecário (pessoa) -->
+  <g fill="none" stroke="#1F4E79" stroke-width="5" stroke-linecap="round">
+    <circle cx="657" cy="244" r="22" fill="none"/>
+    <path d="M 615 318 Q 615 282 657 282 Q 699 282 699 318"/>
+  </g>
+  <circle cx="700" cy="238" r="11" fill="#F2A900"/>
+  <text x="700" y="243" text-anchor="middle" fill="#1A1A1A" font-size="13" font-weight="700">✓</text>
+  <text x="657" y="356" text-anchor="middle" fill="#1F4E79" font-size="19" font-weight="700">É o bibliotecário experiente</text>
+  <text x="657" y="384" text-anchor="middle" fill="#6B7280" font-size="16">Sabe as regras da casa: prazo,</text>
+  <text x="657" y="406" text-anchor="middle" fill="#6B7280" font-size="16">multa, quem pode pegar o quê</text>
+
+  <!-- Seta 2 -->
+  <g stroke="#F2A900" stroke-width="5" fill="none">
+    <line x1="830" y1="285" x2="892" y2="285"/>
+  </g>
+  <polygon points="892,272 916,285 892,298" fill="#F2A900"/>
+  <text x="873" y="258" text-anchor="middle" fill="#6B7280" font-size="14" font-weight="600">anota o</text>
+  <text x="873" y="330" text-anchor="middle" fill="#6B7280" font-size="14" font-weight="600">registro</text>
+
+  <!-- ===== Cartão 3: ARQUIVO ===== -->
+  <rect x="924" y="140" width="330" height="290" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="924" y="140" width="330" height="56" rx="14" fill="#1F4E79"/>
+  <rect x="924" y="182" width="330" height="14" fill="#1F4E79"/>
+  <text x="1089" y="176" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="700">ARQUIVO</text>
+  <!-- Ícone: fichário de gavetas -->
+  <g stroke="#1F4E79" stroke-width="5" fill="none" stroke-linejoin="round">
+    <rect x="1039" y="216" width="100" height="104" rx="8"/>
+    <line x1="1039" y1="251" x2="1139" y2="251"/>
+    <line x1="1039" y1="286" x2="1139" y2="286"/>
+  </g>
+  <rect x="1074" y="230" width="30" height="7" rx="3.5" fill="#F2A900"/>
+  <rect x="1074" y="265" width="30" height="7" rx="3.5" fill="#F2A900"/>
+  <rect x="1074" y="300" width="30" height="7" rx="3.5" fill="#F2A900"/>
+  <text x="1089" y="356" text-anchor="middle" fill="#1F4E79" font-size="19" font-weight="700">É o fichário de registros</text>
+  <text x="1089" y="384" text-anchor="middle" fill="#6B7280" font-size="16">Livros, leitores e empréstimos</text>
+  <text x="1089" y="406" text-anchor="middle" fill="#6B7280" font-size="16">guardados de forma permanente</text>
+
+  <!-- ===== Faixa de exemplo ===== -->
+  <rect x="60" y="466" width="1194" height="70" rx="12" fill="#1F4E79"/>
+  <text x="88" y="496" fill="#F2A900" font-size="17" font-weight="700">Exemplo:</text>
+  <text x="180" y="496" fill="#FFFFFF" font-size="17">Ana pede um livro no terminal  →  a tela recebe o pedido  →  as regras conferem se ela pode  →  o fichário anota.</text>
+  <text x="88" y="522" fill="#9CB7D6" font-size="15" font-style="italic">Nenhuma etapa é pulada — por isso dá pra trocar um setor (ex.: criar um app de celular) sem bagunçar os outros.</text>
+
+  <!-- ===== Nota de backup ===== -->
+  <rect x="60" y="556" width="1194" height="66" rx="12" fill="#FFF7E0" stroke="#F2A900" stroke-width="2"/>
+  <!-- Ícone: pendrive -->
+  <g stroke="#B47D00" stroke-width="4" fill="none" stroke-linejoin="round">
+    <rect x="92" y="574" width="46" height="30" rx="6"/>
+    <rect x="138" y="581" width="16" height="16"/>
+  </g>
+  <text x="180" y="586" fill="#1A1A1A" font-size="17" font-weight="700">Funciona sem internet — e o backup é simples</text>
+  <text x="180" y="610" fill="#6B7280" font-size="15">Todo o fichário mora em um único arquivo no computador da biblioteca (data/sigbef.db). Fazer backup = copiar esse arquivo para um pendrive.</text>
+</svg>

@@ -37,7 +37,7 @@ confortável para você.
 Abra o **PowerShell** ou **Git Bash** na pasta do projeto e rode:
 
 ```bash
-cd "C:\Users\uemas\OneDrive\Documentos\Claude\Projects\SIGBIB"
+cd "F:\programas-projetos\SIGBIB"
 
 git init -b main
 git config user.name  "Marcello"
@@ -46,9 +46,8 @@ git config user.email "juninho876677@gmail.com"
 git add .
 git commit -m "Initial commit: SIGBEF v1.0"
 
-# Crie um repositório vazio em https://github.com/new e troque
-# <USUARIO> e <REPO> abaixo:
-git remote add origin https://github.com/<USUARIO>/<REPO>.git
+# O repositório oficial já existe:
+git remote add origin https://github.com/marcelin1555/SIGBEF.git
 git push -u origin main
 ```
 

@@ -9,13 +9,13 @@ const planos = [
     nome: 'Implantação Assistida', preco: 'R$ 800–1.500', periodo: 'pagamento único', destaque: true,
     descricao: 'Para escolas que querem ajuda para configurar e treinar a equipe.',
     itens: ['Tudo do plano gratuito','Instalação presencial ou remota','Cadastro inicial do acervo','Treinamento da equipe (4h)','Suporte por 30 dias'],
-    cta: 'Fale conosco', href: 'https://github.com/marcelin1555/SIGBEF/issues',
+    cta: 'Fale conosco', href: 'https://w.app/sigbef',
   },
   {
     nome: 'Suporte Mensal', preco: 'R$ 99', periodo: 'por mês', destaque: false,
     descricao: 'Para escolas que querem suporte contínuo e atualizações.',
     itens: ['Tudo do plano gratuito','Suporte por WhatsApp e e-mail','Atualizações de versão','Backup configurado'],
-    cta: 'Fale conosco', href: 'https://github.com/marcelin1555/SIGBEF/issues',
+    cta: 'Fale conosco', href: 'https://w.app/sigbef',
   },
 ]
 
@@ -56,7 +56,12 @@ export default function Planos() {
         </div>
 
         <p className="text-center mt-8 text-gray-400 text-sm">
-          Redes municipais e secretarias de educação: entre em contato para o plano B2G a partir de R$ 8.000/ano.
+          Redes municipais e secretarias de educação:{' '}
+          <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+            className="text-[#2E75B6] font-semibold underline underline-offset-2 hover:text-[#1F4E79] transition-colors">
+            entre em contato
+          </a>{' '}
+          para o plano B2G a partir de R$ 8.000/ano.
         </p>
       </div>
     </section>

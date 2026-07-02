@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat-square)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.2.0-blue?style=flat-square)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.3.0-blue?style=flat-square)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-lightgrey?style=flat-square)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
@@ -56,16 +56,13 @@
 </tr>
 </table>
 
-> *As imagens acima são mockups SVG fiéis às telas do sistema. Para
-> capturas de tela reais do executável em uso, veja a seção
-> [Vídeo demo](#vídeo-demo).*
+> *As imagens acima são mockups SVG fiéis às telas do sistema.*
 
 ---
 
 ## Sumário
 
 - [Capturas de tela](#capturas-de-tela)
-- [Vídeo demo](#vídeo-demo)
 - [Sobre o projeto](#sobre-o-projeto)
 - [Principais funcionalidades](#principais-funcionalidades)
 - [Stack tecnológica](#stack-tecnológica)
@@ -176,45 +173,6 @@ Construído com React + Vite + Tailwind CSS + React Router, com 5 páginas:
 `/` (landing), `/#/funcionalidades`, `/#/download`, `/#/planos`, `/#/equipe`.
 
 Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
-
----
-
-## Vídeo demo
-
-> *Em breve: vídeo demonstrando o fluxo completo de cadastro, empréstimo
-> e devolução no terminal de autoatendimento.*
-
-[![Assistir demo](https://img.shields.io/badge/▶-Assistir%20demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtube.com/SUBSTITUIR-PELO-LINK)
-
-<details>
-<summary><b>Como gravar seu próprio vídeo demo</b></summary>
-
-### Ferramentas recomendadas (gratuitas)
-
-| Ferramenta | Saída | Uso ideal |
-|---|---|---|
-| [OBS Studio](https://obsproject.com/) | MP4 / MKV | Vídeos longos com narração |
-| [ScreenToGif](https://www.screentogif.com/) | GIF / MP4 | Demos curtas para o README |
-| Xbox Game Bar | MP4 | `Win + Alt + R` no Windows |
-
-### Roteiro sugerido (3 minutos)
-
-1. **0:00 – Login** como `laiane` para mostrar o painel administrativo
-2. **0:20 – Cadastro de livro** com geração automática de exemplares
-3. **0:50 – Etiquetas de barras** dos exemplares
-4. **1:20 – Empréstimo de balcão** usando o seletor de exemplares
-5. **1:50 – Autoatendimento** logado como `2024001`
-6. **2:30 – Empréstimo autônomo** lendo o código de barras
-7. **2:50 – Comprovante e logout** automático
-
-### Onde hospedar
-
-- **YouTube** (recomendado): suba como "Não listado" se quiser link privado
-- **GIF no próprio repositório**: coloque em `docs/demo.gif` (limite de 10 MB)
-
-Depois é só substituir o link do badge acima.
-
-</details>
 
 ---
 
@@ -333,6 +291,14 @@ fluxos passo a passo por perfil de usuário.
 
 ## Arquitetura
 
+### Em palavras simples (para quem não é de TI)
+
+O SIGBEF é organizado por dentro como a própria biblioteca é organizada por fora — em três "setores" que não se misturam:
+
+<img src="docs/diagramas/arquitetura-simples.svg" alt="Arquitetura do SIGBEF explicada com a analogia dos setores de uma biblioteca: telas são o balcão, regras são o bibliotecário e o arquivo é o fichário" width="100%"/>
+
+### Visão técnica
+
 O SIGBEF segue o padrão de **arquitetura em camadas**:
 
 ```mermaid
@@ -397,6 +363,14 @@ sequenceDiagram
 ---
 
 ## Modelo de dados
+
+### Em palavras simples (para quem não é de TI)
+
+O banco de dados do SIGBEF funciona como aquele fichário de gavetas das bibliotecas antigas — só que preenchido e cruzado automaticamente:
+
+<img src="docs/diagramas/modelo-dados-simples.svg" alt="Modelo de dados do SIGBEF explicado com a analogia do fichário: a ficha do livro, as cópias físicas (exemplares), a ficha do leitor e o empréstimo que os conecta" width="100%"/>
+
+### Visão técnica
 
 ```mermaid
 erDiagram
@@ -591,7 +565,6 @@ Funcionalidades planejadas para versões futuras:
 ### Próxima versão — v1.4.0 (prioridade alta)
 
 - [ ] Importação de acervo a partir de planilha CSV/Excel — elimina o cadastro manual em bibliotecas com acervo já mapeado
-- [ ] Integração com APIs de ISBN (Google Books, OpenLibrary) para auto-preenchimento no cadastro por código
 - [ ] Notificações por e-mail automáticas quando o prazo de devolução se aproxima
 - [ ] Reservas online com fila de espera
 
@@ -611,6 +584,7 @@ Funcionalidades planejadas para versões futuras:
 
 ### Concluído recentemente
 
+- [x] Integração com APIs de ISBN (Google Books, OpenLibrary) para auto-preenchimento no cadastro, com opt-in em Configurações (v1.2.0)
 - [x] Site de apresentação React multi-página hospedado no GitHub Pages (v1.3.0)
 - [x] Terminal de autoatendimento (kiosk) com logout automático (v1.0.0)
 - [x] Personalização de cores por paleta (v1.1.0)
@@ -665,7 +639,7 @@ Documento de requisitos completo: [`docs/SIGBEF_Documento_Requisitos.docx`](docs
 
 <div align="center">
 
-**SIGBEF v1.2.0** — Maio/2026
+**SIGBEF v1.3.0** — Junho/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

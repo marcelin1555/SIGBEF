@@ -6,8 +6,13 @@ consultas) em funções puras, separadas da camada de UI.
 """
 from __future__ import annotations
 
+import csv
+import io
+import re
+import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 from .auth import gerar_hash
@@ -17,6 +22,24 @@ from .database import db_cursor, get_config, set_config, registrar_auditoria
 
 class RegraNegocioError(Exception):
     """Erro tratado de regra de negócio (mensagens amigáveis ao usuário)."""
+
+
+def _codigo_barras_unico(cur, tabela: str, gerador) -> str:
+    """Gera um código de barras garantidamente único na tabela.
+
+    Os geradores usam timestamp por segundo + sufixo aleatório de 4
+    dígitos; em cadastros em lote (muitos códigos no mesmo segundo)
+    colisões são possíveis — aqui a unicidade é conferida no banco
+    antes de usar, com novo sorteio em caso de choque.
+    """
+    for _ in range(1000):
+        codigo = gerador()
+        cur.execute(f"SELECT 1 FROM {tabela} WHERE codigo_barras = ?",
+                    (codigo,))
+        if not cur.fetchone():
+            return codigo
+    raise RegraNegocioError(
+        "Não foi possível gerar um código de barras único. Tente novamente.")
 
 
 # ---------------------------------------------------------------------------
@@ -92,45 +115,86 @@ def cadastrar_livro(
     Retorna um dict com `livro_id` e `exemplares` (lista de tuplas
     (id, codigo_barras)).
     """
+    with db_cursor() as cur:
+        res = _inserir_livro_cur(
+            cur, titulo=titulo, autores=autores, isbn=isbn, editora=editora,
+            categoria=categoria, ano=ano, edicao=edicao, sinopse=sinopse,
+            quantidade_exemplares=quantidade_exemplares,
+            localizacao=localizacao,
+        )
+    registrar_auditoria(usuario_id, "CADASTRO_LIVRO",
+                         f"livro_id={res['livro_id']}; "
+                         f"exemplares={len(res['exemplares'])}")
+    return res
+
+
+def _upsert_nome(cur, tabela: str, nome: str) -> int:
+    """INSERT OR IGNORE + SELECT id dentro da transação corrente (usado
+    pelo cadastro unitário e pela importação em massa)."""
+    cur.execute(f"INSERT OR IGNORE INTO {tabela}(nome) VALUES (?)", (nome,))
+    cur.execute(f"SELECT id FROM {tabela} WHERE nome = ?", (nome,))
+    return cur.fetchone()["id"]
+
+
+def _inserir_livro_cur(
+    cur,
+    *,
+    titulo: str,
+    autores: list[str],
+    isbn: str = "",
+    editora: str = "",
+    categoria: str = "",
+    ano: Optional[int] = None,
+    edicao: str = "",
+    sinopse: str = "",
+    quantidade_exemplares: int = 1,
+    localizacao: str = "",
+) -> dict:
+    """Núcleo do cadastro de livro dentro de uma transação já aberta.
+
+    Compartilhado entre o cadastro unitário e a importação CSV — na
+    importação, milhares de livros entram numa transação única (um
+    commit por livro limitava a ~35 livros/s no teste de estresse).
+    """
     titulo = (titulo or "").strip()
     if not titulo:
         raise RegraNegocioError("Título é obrigatório.")
-    if not autores:
+    autores_limpos = [a.strip() for a in (autores or []) if a and a.strip()]
+    if not autores_limpos:
         raise RegraNegocioError("Informe pelo menos um autor.")
     if quantidade_exemplares < 1:
         raise RegraNegocioError("Cadastre pelo menos um exemplar.")
 
-    editora_id = upsert_editora(editora) if editora else None
-    categoria_id = upsert_categoria(categoria) if categoria else None
-    autor_ids = [upsert_autor(a) for a in autores if a.strip()]
+    editora = (editora or "").strip()
+    categoria = (categoria or "").strip()
+    editora_id = _upsert_nome(cur, "editora", editora) if editora else None
+    categoria_id = _upsert_nome(cur, "categoria", categoria) if categoria else None
+    autor_ids = [_upsert_nome(cur, "autor", a) for a in autores_limpos]
 
-    with db_cursor() as cur:
+    cur.execute(
+        """INSERT INTO livro
+            (titulo, isbn, editora_id, categoria_id, ano_publicacao, edicao, sinopse)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (titulo, isbn or None, editora_id, categoria_id, ano, edicao or None, sinopse or None),
+    )
+    livro_id = cur.lastrowid
+    for autor_id in autor_ids:
         cur.execute(
-            """INSERT INTO livro
-                (titulo, isbn, editora_id, categoria_id, ano_publicacao, edicao, sinopse)
-                VALUES (?, ?, ?, ?, ?, ?, ?)""",
-            (titulo, isbn or None, editora_id, categoria_id, ano, edicao or None, sinopse or None),
+            "INSERT OR IGNORE INTO livro_autor(livro_id, autor_id) VALUES (?, ?)",
+            (livro_id, autor_id),
         )
-        livro_id = cur.lastrowid
-        for autor_id in autor_ids:
-            cur.execute(
-                "INSERT OR IGNORE INTO livro_autor(livro_id, autor_id) VALUES (?, ?)",
-                (livro_id, autor_id),
-            )
 
-        exemplares: list[tuple[int, str]] = []
-        for i in range(1, quantidade_exemplares + 1):
-            codigo = gerar_codigo_exemplar()
-            tombo = f"{livro_id:05d}-{i:03d}"
-            cur.execute(
-                """INSERT INTO exemplar(livro_id, codigo_barras, numero_tombo, localizacao)
-                       VALUES (?, ?, ?, ?)""",
-                (livro_id, codigo, tombo, localizacao or None),
-            )
-            exemplares.append((cur.lastrowid, codigo))
+    exemplares: list[tuple[int, str]] = []
+    for i in range(1, quantidade_exemplares + 1):
+        codigo = _codigo_barras_unico(cur, "exemplar", gerar_codigo_exemplar)
+        tombo = f"{livro_id:05d}-{i:03d}"
+        cur.execute(
+            """INSERT INTO exemplar(livro_id, codigo_barras, numero_tombo, localizacao)
+                   VALUES (?, ?, ?, ?)""",
+            (livro_id, codigo, tombo, localizacao or None),
+        )
+        exemplares.append((cur.lastrowid, codigo))
 
-    registrar_auditoria(usuario_id, "CADASTRO_LIVRO",
-                         f"livro_id={livro_id}; exemplares={len(exemplares)}")
     return {"livro_id": livro_id, "exemplares": exemplares}
 
 
@@ -146,7 +210,7 @@ def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
         cur.execute("SELECT COUNT(*) AS qtd FROM exemplar WHERE livro_id = ?", (livro_id,))
         existente = cur.fetchone()["qtd"]
         for i in range(1, quantidade + 1):
-            codigo = gerar_codigo_exemplar()
+            codigo = _codigo_barras_unico(cur, "exemplar", gerar_codigo_exemplar)
             tombo = f"{livro_id:05d}-{(existente + i):03d}"
             cur.execute(
                 """INSERT INTO exemplar(livro_id, codigo_barras, numero_tombo, localizacao)
@@ -268,6 +332,175 @@ def listar_exemplares_disponiveis(termo: str = "") -> list[dict]:
         return [dict(r) for r in cur.fetchall()]
 
 
+# ---------------------------------------------------------------------------
+# Importação de acervo via CSV
+# ---------------------------------------------------------------------------
+_ALIASES_CSV = {
+    "titulo": "titulo",
+    "autores": "autores", "autor": "autores",
+    "isbn": "isbn",
+    "editora": "editora",
+    "categoria": "categoria",
+    "ano": "ano", "ano_publicacao": "ano",
+    "edicao": "edicao",
+    "sinopse": "sinopse",
+    "quantidade": "quantidade", "quantidade_exemplares": "quantidade",
+    "exemplares": "quantidade", "qtd": "quantidade",
+    "localizacao": "localizacao", "estante": "localizacao",
+}
+
+MODELO_CSV = (
+    "titulo;autores;isbn;editora;categoria;ano;edicao;quantidade;localizacao\n"
+    "Dom Casmurro;Machado de Assis;9788535910663;Editora Exemplo;Romance;1899;1ª;3;Estante B2\n"
+    'Contos Novos;"Mário de Andrade; Antonio Candido";;Outra Editora;Contos;1947;;2;Estante C1\n'
+)
+
+
+def gerar_modelo_csv(destino: str) -> None:
+    """Grava a planilha modelo de importação (UTF-8 com BOM, que o
+    Excel abre com acentos corretos)."""
+    Path(destino).write_text(MODELO_CSV, encoding="utf-8-sig")
+
+
+def _normalizar_cabecalho(nome: str) -> str:
+    s = unicodedata.normalize("NFKD", (nome or "").strip().lower())
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return s.replace(" ", "_")
+
+
+def importar_acervo_csv(caminho: str,
+                        usuario_id: Optional[int] = None) -> dict:
+    """Importa acervo em massa de um arquivo CSV, em transação única.
+
+    Formato: primeira linha é o cabeçalho; `titulo` é obrigatório e as
+    demais colunas (autores, isbn, editora, categoria, ano, edicao,
+    sinopse, quantidade, localizacao) são opcionais. Aceita separador
+    `;` ou `,` (Excel BR e internacional) e codificação UTF-8 ou
+    Windows-1252, detectados automaticamente. Vários autores na mesma
+    célula separados por `;` ou `/`. Linhas com ISBN já cadastrado (ou
+    repetido no arquivo) são puladas para não duplicar o acervo.
+
+    Retorna {"livros", "exemplares", "pulados": [(linha, motivo)],
+    "erros": [(linha, motivo)]}.
+    """
+    bruto = Path(caminho).read_bytes()
+    try:
+        texto = bruto.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        texto = bruto.decode("cp1252")
+
+    linhas_texto = texto.splitlines()
+    if not linhas_texto:
+        raise RegraNegocioError("O arquivo CSV está vazio.")
+    cabecalho = linhas_texto[0]
+    delim = ";" if cabecalho.count(";") >= cabecalho.count(",") else ","
+
+    leitor = csv.DictReader(io.StringIO(texto), delimiter=delim)
+    mapa = {}
+    for original in (leitor.fieldnames or []):
+        chave = _ALIASES_CSV.get(_normalizar_cabecalho(original))
+        if chave and chave not in mapa.values():
+            mapa[original] = chave
+    if "titulo" not in mapa.values():
+        raise RegraNegocioError(
+            "O CSV precisa de uma coluna 'titulo'. Colunas aceitas: "
+            "titulo, autores, isbn, editora, categoria, ano, edicao, "
+            "sinopse, quantidade, localizacao.")
+
+    with db_cursor() as cur:
+        cur.execute("SELECT isbn FROM livro WHERE ativo = 1 AND isbn IS NOT NULL")
+        isbns_existentes = {r["isbn"] for r in cur.fetchall()}
+
+    # Fase 1 — validar todas as linhas (nada é gravado ainda)
+    validas, erros, pulados = [], [], []
+    for num, linha in enumerate(leitor, start=2):
+        dados = {mapa[k]: (v or "").strip()
+                 for k, v in linha.items() if k in mapa}
+        if not any(dados.values()):
+            continue  # linha totalmente em branco
+        titulo = dados.get("titulo", "")
+        if not titulo:
+            erros.append((num, "título em branco"))
+            continue
+        autores = [a for a in re.split(r"[;/]", dados.get("autores", ""))
+                   if a.strip()]
+        if not autores:
+            erros.append((num, "autores em branco"))
+            continue
+        ano = None
+        if dados.get("ano"):
+            try:
+                ano = int(dados["ano"])
+                if not 1000 <= ano <= 2100:
+                    raise ValueError
+            except ValueError:
+                erros.append((num, f"ano inválido: {dados['ano']!r}"))
+                continue
+        quantidade = 1
+        if dados.get("quantidade"):
+            try:
+                quantidade = int(dados["quantidade"])
+                if not 1 <= quantidade <= 999:
+                    raise ValueError
+            except ValueError:
+                erros.append((num,
+                              f"quantidade inválida: {dados['quantidade']!r}"))
+                continue
+        isbn = dados.get("isbn", "")
+        if isbn:
+            if isbn in isbns_existentes:
+                pulados.append((num, f"ISBN {isbn} já cadastrado"))
+                continue
+            isbns_existentes.add(isbn)  # também deduplica dentro do arquivo
+        validas.append(dict(
+            titulo=titulo, autores=autores, isbn=isbn,
+            editora=dados.get("editora", ""),
+            categoria=dados.get("categoria", ""), ano=ano,
+            edicao=dados.get("edicao", ""), sinopse=dados.get("sinopse", ""),
+            quantidade_exemplares=quantidade,
+            localizacao=dados.get("localizacao", ""),
+        ))
+
+    # Fase 2 — inserir tudo em UMA transação (rápido e tudo-ou-nada)
+    livros = exemplares = 0
+    if validas:
+        with db_cursor() as cur:
+            for item in validas:
+                res = _inserir_livro_cur(cur, **item)
+                livros += 1
+                exemplares += len(res["exemplares"])
+    registrar_auditoria(usuario_id, "IMPORTACAO_CSV",
+                         f"livros={livros}; exemplares={exemplares}; "
+                         f"pulados={len(pulados)}; erros={len(erros)}")
+    return {"livros": livros, "exemplares": exemplares,
+            "pulados": pulados, "erros": erros}
+
+
+def listar_exemplares_para_etiquetas(termo: str = "") -> list[dict]:
+    """Exemplares ativos (não baixados) com o título do livro, para a
+    impressão de etiquetas em massa. O filtro segue a mesma semântica
+    da busca do acervo (título, ISBN ou autor); termo vazio = tudo."""
+    termo_like = f"%{termo.strip()}%" if termo else "%"
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT l.titulo, ex.codigo_barras, ex.numero_tombo
+               FROM exemplar ex
+               JOIN livro l ON l.id = ex.livro_id
+               WHERE l.ativo = 1 AND ex.status != 'BAIXADO'
+                 AND (
+                       l.titulo LIKE ?
+                       OR IFNULL(l.isbn, '') LIKE ?
+                       OR EXISTS (
+                            SELECT 1 FROM livro_autor la
+                            JOIN autor a ON a.id = la.autor_id
+                            WHERE la.livro_id = l.id AND a.nome LIKE ?)
+                     )
+               ORDER BY l.titulo, ex.numero_tombo""",
+            (termo_like, termo_like, termo_like),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
 def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
     """Exclusão lógica do livro (e de seus exemplares)."""
     with db_cursor() as cur:
@@ -315,12 +548,13 @@ def cadastrar_usuario(
     if not senha or len(senha) < 4:
         raise RegraNegocioError("Senha deve ter pelo menos 4 caracteres.")
 
-    cartao = gerar_codigo_usuario() if gerar_cartao else None
     senha_hash = gerar_hash(senha)
     with db_cursor() as cur:
         cur.execute("SELECT 1 FROM usuario WHERE matricula = ?", (matricula,))
         if cur.fetchone():
             raise RegraNegocioError("Já existe um usuário com esta matrícula.")
+        cartao = (_codigo_barras_unico(cur, "usuario", gerar_codigo_usuario)
+                  if gerar_cartao else None)
         cur.execute(
             """INSERT INTO usuario(nome, matricula, email, telefone, turma,
                                    perfil, senha_hash, codigo_barras)
@@ -366,6 +600,108 @@ def alternar_status_usuario(usuario_id: int, ativo: bool) -> None:
                     (1 if ativo else 0, usuario_id))
     registrar_auditoria(usuario_id, "STATUS_USUARIO",
                          f"ativo={'sim' if ativo else 'nao'}")
+
+
+def obter_usuario(usuario_id: int) -> dict:
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT id, nome, matricula, email, telefone, turma, perfil,
+                      codigo_barras, ativo
+               FROM usuario WHERE id = ?""",
+            (usuario_id,),
+        )
+        row = cur.fetchone()
+    if not row:
+        raise RegraNegocioError("Usuário não encontrado.")
+    return dict(row)
+
+
+def atualizar_usuario(
+    usuario_id: int,
+    *,
+    nome: str,
+    perfil: str,
+    email: str = "",
+    telefone: str = "",
+    turma: str = "",
+    executor_id: Optional[int] = None,
+) -> None:
+    """Atualiza os dados cadastrais de um usuário (nome, contato, turma
+    e perfil). A matrícula é fixa; senha tem fluxo próprio."""
+    nome = (nome or "").strip()
+    if not nome:
+        raise RegraNegocioError("Nome é obrigatório.")
+    if perfil not in ("ALUNO", "PROFESSOR", "BIBLIOTECARIO", "ADMINISTRADOR"):
+        raise RegraNegocioError("Perfil inválido.")
+    with db_cursor() as cur:
+        cur.execute("SELECT perfil FROM usuario WHERE id = ?", (usuario_id,))
+        row = cur.fetchone()
+        if not row:
+            raise RegraNegocioError("Usuário não encontrado.")
+        if (executor_id is not None and usuario_id == executor_id
+                and row["perfil"] != perfil):
+            raise RegraNegocioError(
+                "Você não pode alterar o próprio perfil de acesso.")
+        cur.execute(
+            """UPDATE usuario SET nome = ?, email = ?, telefone = ?,
+                                  turma = ?, perfil = ?
+               WHERE id = ?""",
+            (nome, (email or "").strip() or None,
+             (telefone or "").strip() or None,
+             (turma or "").strip() or None, perfil, usuario_id),
+        )
+    registrar_auditoria(executor_id, "EDICAO_USUARIO",
+                         f"id={usuario_id}; perfil={perfil}")
+
+
+def excluir_usuario(usuario_id: int, executor_id: Optional[int] = None) -> None:
+    """Exclui definitivamente um usuário sem histórico de empréstimos.
+
+    Quem já emprestou algum dia não pode ser excluído (o histórico seria
+    perdido) — nesse caso use `alternar_status_usuario` para bloquear o
+    acesso preservando os registros.
+    """
+    if executor_id is not None and usuario_id == executor_id:
+        raise RegraNegocioError("Você não pode excluir o próprio usuário logado.")
+    with db_cursor() as cur:
+        cur.execute("SELECT matricula FROM usuario WHERE id = ?", (usuario_id,))
+        row = cur.fetchone()
+        if not row:
+            raise RegraNegocioError("Usuário não encontrado.")
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM emprestimo WHERE usuario_id = ?",
+            (usuario_id,),
+        )
+        if cur.fetchone()["n"]:
+            raise RegraNegocioError(
+                "Este usuário possui histórico de empréstimos e não pode ser "
+                "excluído. Use 'Ativar/Desativar' para bloquear o acesso "
+                "preservando o histórico."
+            )
+        # Desvincula as entradas de auditoria (o log em si é preservado)
+        cur.execute("UPDATE auditoria SET usuario_id = NULL WHERE usuario_id = ?",
+                    (usuario_id,))
+        cur.execute("DELETE FROM usuario WHERE id = ?", (usuario_id,))
+    registrar_auditoria(executor_id, "EXCLUSAO_USUARIO",
+                         f"id={usuario_id}; matricula={row['matricula']}")
+
+
+def gerar_cartao_usuario(usuario_id: int,
+                          executor_id: Optional[int] = None) -> str:
+    """Garante que o usuário tenha código de barras de cartão e o retorna."""
+    with db_cursor() as cur:
+        cur.execute("SELECT codigo_barras FROM usuario WHERE id = ?",
+                    (usuario_id,))
+        row = cur.fetchone()
+        if not row:
+            raise RegraNegocioError("Usuário não encontrado.")
+        if row["codigo_barras"]:
+            return row["codigo_barras"]
+        codigo = _codigo_barras_unico(cur, "usuario", gerar_codigo_usuario)
+        cur.execute("UPDATE usuario SET codigo_barras = ? WHERE id = ?",
+                    (codigo, usuario_id))
+    registrar_auditoria(executor_id, "CARTAO_GERADO", f"usuario_id={usuario_id}")
+    return codigo
 
 
 # ---------------------------------------------------------------------------
@@ -527,14 +863,25 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
     data_prevista = (date.today() + timedelta(days=prazo)).isoformat()
 
     with db_cursor() as cur:
+        # Trava atômica contra corrida (balcão e kiosk simultâneos): só a
+        # primeira transação consegue mudar DISPONIVEL -> EMPRESTADO; as
+        # demais não afetam linha nenhuma e são rejeitadas aqui.
+        cur.execute(
+            "UPDATE exemplar SET status = 'EMPRESTADO' "
+            "WHERE id = ? AND status = 'DISPONIVEL'",
+            (ex["id"],),
+        )
+        if cur.rowcount != 1:
+            raise RegraNegocioError(
+                f"Exemplar '{ex['titulo']}' não está disponível "
+                "(pode ter acabado de ser emprestado em outro terminal)."
+            )
         cur.execute(
             """INSERT INTO emprestimo(exemplar_id, usuario_id, data_prevista, origem)
                VALUES (?, ?, ?, ?)""",
             (ex["id"], u["id"], data_prevista, origem),
         )
         emp_id = cur.lastrowid
-        cur.execute("UPDATE exemplar SET status = 'EMPRESTADO' WHERE id = ?",
-                    (ex["id"],))
 
     registrar_auditoria(operador_id or u["id"], "EMPRESTIMO",
                          f"emp_id={emp_id}; exemplar={ex['codigo_barras']}; usuario={u['matricula']}")
@@ -588,9 +935,14 @@ def realizar_devolucao(*, codigo_exemplar: str,
         multa = round(min(multa_dia * dias_atraso, multa_teto), 2) if dias_atraso else 0.0
 
         cur.execute(
-            "UPDATE emprestimo SET data_devolucao = datetime('now','localtime'), multa = ? WHERE id = ?",
+            "UPDATE emprestimo SET data_devolucao = datetime('now','localtime'), multa = ? "
+            "WHERE id = ? AND data_devolucao IS NULL",
             (multa, emp["id"]),
         )
+        if cur.rowcount != 1:
+            raise RegraNegocioError(
+                "Este exemplar acabou de ser devolvido em outro terminal."
+            )
         cur.execute("UPDATE exemplar SET status = 'DISPONIVEL' WHERE id = ?",
                     (emp["exemplar_id"],))
 

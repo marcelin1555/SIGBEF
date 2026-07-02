@@ -10,6 +10,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional
 
+from . import __version__
+from . import __version__
 from .auth import autenticar, Sessao
 from . import ui_tema as tema
 
@@ -58,7 +60,7 @@ class JanelaLogin(tk.Tk):
 
         rodape_lat = tk.Label(
             lateral, bg=tema.COR_PRIMARIA, fg="#9CB7D6",
-            text="Versão 1.2.0 — produto em produção",
+            text=f"Versão {__version__} — produto em produção",
             font=("Segoe UI", 9))
         rodape_lat.pack(side="bottom", pady=20)
 

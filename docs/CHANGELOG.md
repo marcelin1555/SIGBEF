@@ -259,9 +259,6 @@ Itens previstos para versões posteriores — ver
 - Reservas online com fila de espera
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
-- Integração opcional com APIs externas (Google Books, Open Library)
-  pra auto-preenchimento de cadastro por ISBN, com opt-in em
-  Configurações pra manter o pitch "funciona offline"
 
 [1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0
 [1.2.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.2.0

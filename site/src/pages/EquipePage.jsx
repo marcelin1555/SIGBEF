@@ -1,11 +1,12 @@
 import Equipe from '../components/Equipe'
 
 const linha_do_tempo = [
-  { ano: '2024', evento: 'Marcello identifica o problema: a biblioteca do CEFE usava planilhas para controlar empréstimos.' },
-  { ano: 'jan/25', evento: 'Início do desenvolvimento do SIGBEF como projeto pessoal durante as aulas de Banco de Dados.' },
-  { ano: 'mar/25', evento: 'Primeira versão funcional testada na biblioteca do CEFE com a bibliotecária Jaqueline Oliveira.' },
-  { ano: 'abr/25', evento: 'A equipe DLJ4 se forma: Júlia e Maria Laura entram no projeto para o desafio do Sebrae.' },
-  { ano: 'jun/25', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
+  { ano: '2025', evento: 'Marcello identifica o problema: a biblioteca do CEFE usava planilhas para controlar empréstimos.' },
+  { ano: 'jan/26', evento: 'Início do desenvolvimento do SIGBEF como projeto pessoal durante as aulas de Banco de Dados.' },
+  { ano: 'mar/26', evento: 'Primeira versão funcional testada na biblioteca do CEFE com a bibliotecária Jaqueline Oliveira.' },
+  { ano: 'abr/26', evento: 'A equipe DLJ4 se forma: Júlia e Maria Laura entram no projeto para o desafio do Sebrae.' },
+  { ano: 'jun/26', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
+  { ano: 'jun/26', evento: 'v1.3.0: site oficial multi-página no ar, com ícones e novo hero.' },
 ]
 
 export default function EquipePage() {

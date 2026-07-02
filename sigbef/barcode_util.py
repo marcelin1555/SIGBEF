@@ -145,21 +145,37 @@ def barcode_svg(codigo: str, altura_mm: float = 13.0, modulo_mm: float = 0.33,
             f'{"".join(rects)}{texto}</svg>')
 
 
-def etiquetas_html(titulo: str, exemplares: list[dict]) -> str:
-    """Monta uma página HTML pronta para impressão com uma etiqueta por
-    exemplar (título, código de barras Code 128, tombo e código)."""
-    titulo_e = html.escape(titulo or "")
-    cels = []
-    for ex in exemplares:
-        cod = ex.get("codigo_barras", "")
-        tombo = html.escape(str(ex.get("numero_tombo") or ""))
-        svg = barcode_svg(cod)
-        cels.append(
-            '<div class="etiqueta">'
+def _celula_etiqueta(titulo_e: str, ex: dict) -> str:
+    """Uma etiqueta (título já escapado + código de barras + tombo)."""
+    cod = ex.get("codigo_barras", "")
+    tombo = html.escape(str(ex.get("numero_tombo") or ""))
+    svg = barcode_svg(cod)
+    return ('<div class="etiqueta">'
             f'<div class="et-titulo">{titulo_e}</div>'
             f'<div class="et-barra">{svg}</div>'
             f'<div class="et-tombo">Tombo: {tombo}</div>'
             '</div>')
+
+
+def etiquetas_html(titulo: str, exemplares: list[dict]) -> str:
+    """Monta uma página HTML pronta para impressão com uma etiqueta por
+    exemplar (título, código de barras Code 128, tombo e código)."""
+    titulo_e = html.escape(titulo or "")
+    cels = [_celula_etiqueta(titulo_e, ex) for ex in exemplares]
+    return _pagina_etiquetas(titulo_e, cels)
+
+
+def etiquetas_lote_html(exemplares: list[dict],
+                        titulo_pagina: str = "acervo") -> str:
+    """Etiquetas de vários livros de uma vez — cada exemplar traz o
+    próprio `titulo` no dict (impressão em massa do acervo)."""
+    cels = [_celula_etiqueta(html.escape(str(ex.get("titulo") or "")), ex)
+            for ex in exemplares]
+    return _pagina_etiquetas(html.escape(titulo_pagina), cels)
+
+
+def _pagina_etiquetas(titulo_e: str, cels: list[str]) -> str:
+    """Página HTML completa de etiquetas, pronta para Ctrl+P."""
     return f"""<!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
 <title>Etiquetas — {titulo_e}</title>
@@ -186,7 +202,67 @@ def etiquetas_html(titulo: str, exemplares: list[dict]) -> str:
 <body>
   <div class="topo">
     <h1>Etiquetas — {titulo_e}</h1>
-    <p class="dica">{len(exemplares)} etiqueta(s). Use o botão abaixo (ou Ctrl+P)
+    <p class="dica">{len(cels)} etiqueta(s). Use o botão abaixo (ou Ctrl+P)
+    para imprimir, ou escolha "Salvar como PDF" na impressora.</p>
+    <button onclick="window.print()">Imprimir / Salvar PDF</button>
+  </div>
+  <div class="folha">{"".join(cels)}</div>
+</body></html>"""
+
+
+def cartoes_html(usuarios: list[dict]) -> str:
+    """Monta uma página HTML pronta para impressão com um cartão de
+    biblioteca por usuário (nome, matrícula, perfil e código de barras),
+    no tamanho padrão de crachá/cartão (85,6 × 54 mm)."""
+    cels = []
+    for u in usuarios:
+        nome = html.escape(u.get("nome") or "")
+        matricula = html.escape(str(u.get("matricula") or ""))
+        perfil = html.escape((u.get("perfil") or "").title())
+        turma = html.escape(u.get("turma") or "")
+        detalhe = f"{perfil} · {turma}" if turma else perfil
+        svg = barcode_svg(u.get("codigo_barras") or "", altura_mm=10.0,
+                          modulo_mm=0.25)
+        cels.append(
+            '<div class="cartao">'
+            '<div class="c-topo"><span class="c-marca">SIGBEF</span>'
+            '<span class="c-sub">Biblioteca do CEFE</span></div>'
+            f'<div class="c-nome">{nome}</div>'
+            f'<div class="c-info">Matrícula {matricula} &nbsp;·&nbsp; {detalhe}</div>'
+            f'<div class="c-barra">{svg}</div>'
+            '</div>')
+    return f"""<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8">
+<title>Cartões de usuário — SIGBEF</title>
+<style>
+  body {{ font-family: Segoe UI, Arial, sans-serif; margin: 12mm; color: #111; }}
+  .topo {{ margin-bottom: 8mm; }}
+  .topo h1 {{ font-size: 16px; margin: 0 0 4px; }}
+  .dica {{ color: #555; font-size: 13px; }}
+  button {{ font-size: 14px; padding: 8px 16px; cursor: pointer;
+           background: #1F4E79; color: #fff; border: 0; border-radius: 6px; }}
+  .folha {{ display: flex; flex-wrap: wrap; gap: 6mm; }}
+  .cartao {{ width: 85.6mm; height: 54mm; border: 1px solid #bbb;
+            border-radius: 3mm; overflow: hidden; page-break-inside: avoid;
+            display: flex; flex-direction: column; }}
+  .c-topo {{ background: #1F4E79; color: #fff; padding: 2.5mm 4mm;
+            border-bottom: 1mm solid #F2A900; display: flex;
+            justify-content: space-between; align-items: baseline; }}
+  .c-marca {{ font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }}
+  .c-sub {{ font-size: 9px; opacity: 0.85; }}
+  .c-nome {{ font-size: 13px; font-weight: 600; padding: 2.5mm 4mm 0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
+  .c-info {{ font-size: 10px; color: #444; padding: 0.5mm 4mm 0; }}
+  .c-barra {{ margin-top: auto; padding: 0 4mm 2.5mm; text-align: center; }}
+  @media print {{
+    body {{ margin: 8mm; }}
+    .topo {{ display: none; }}
+  }}
+</style></head>
+<body>
+  <div class="topo">
+    <h1>Cartões de usuário — SIGBEF</h1>
+    <p class="dica">{len(usuarios)} cartão(ões). Use o botão abaixo (ou Ctrl+P)
     para imprimir, ou escolha "Salvar como PDF" na impressora.</p>
     <button onclick="window.print()">Imprimir / Salvar PDF</button>
   </div>

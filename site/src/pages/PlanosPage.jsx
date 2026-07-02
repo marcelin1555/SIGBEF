@@ -15,7 +15,7 @@ const faq = [
   },
   {
     q: 'Tem desconto para redes municipais?',
-    r: 'Sim. Redes com múltiplas escolas têm condições especiais no plano B2G, a partir de R$ 8.000 por ano com suporte dedicado. Entre em contato pelo GitHub Issues para montar uma proposta.',
+    r: 'Sim. Redes com múltiplas escolas têm condições especiais no plano B2G, a partir de R$ 8.000 por ano com suporte dedicado. Chame a equipe no WhatsApp para montar uma proposta.',
   },
   {
     q: 'Posso migrar do plano gratuito para o suporte mensal depois?',
@@ -57,10 +57,10 @@ export default function PlanosPage() {
       {/* contact cta */}
       <section className="py-14 px-4 bg-white text-center">
         <h2 className="text-2xl font-bold text-[#1F4E79] mb-2">Ficou alguma dúvida?</h2>
-        <p className="text-gray-500 mb-6">Abra uma issue no GitHub ou entre em contato direto.</p>
-        <a href="https://github.com/marcelin1555/SIGBEF/issues" target="_blank" rel="noopener noreferrer"
-          className="inline-block border-2 border-[#2E75B6] text-[#2E75B6] font-bold px-8 py-3.5 rounded-xl hover:bg-blue-50 transition-colors">
-          Falar com a equipe
+        <p className="text-gray-500 mb-6">Chame a equipe no WhatsApp — respondemos rápido.</p>
+        <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+          className="inline-block bg-[#25D366] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#1EBE5D] transition-colors shadow-lg">
+          Falar com a equipe no WhatsApp
         </a>
       </section>
     </>

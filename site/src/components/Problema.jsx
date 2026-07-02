@@ -27,7 +27,7 @@ export default function Problema() {
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1F4E79] mb-4">
             130 mil escolas públicas.<br />A maioria ainda usa Excel ou caderno.
           </h2>
-          <p className="text-gray-500 text-lg">Por que isso ainda acontece em 2025?</p>
+          <p className="text-gray-500 text-lg">Por que isso ainda acontece em 2026?</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">

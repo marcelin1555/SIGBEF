@@ -1,7 +1,8 @@
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Nav from './components/Nav'
 import Footer from './components/Footer'
+import BotaoWhatsApp from './components/BotaoWhatsApp'
 import Home from './pages/Home'
 import FuncionalidadesPage from './pages/FuncionalidadesPage'
 import DownloadPage from './pages/DownloadPage'
@@ -26,9 +27,11 @@ export default function App() {
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/planos" element={<PlanosPage />} />
           <Route path="/equipe" element={<EquipePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Footer />
+      <BotaoWhatsApp />
     </div>
   )
 }

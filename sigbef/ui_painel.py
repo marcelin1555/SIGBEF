@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from tkinter import ttk, messagebox, filedialog
 
+from . import barcode_util
 from . import servicos
 from . import ui_tema as tema
 from .auth import Sessao
@@ -19,6 +20,8 @@ from .formato import data_br, data_hora_br, reais
 from .servicos import RegraNegocioError
 from .ui_dialogos import (
     DialogoDetalhesLivro,
+    DialogoEditarUsuario,
+    DialogoImportarCSV,
     DialogoLivro,
     DialogoSelecionarExemplar,
     DialogoUsuario,
@@ -213,6 +216,7 @@ class SecaoPainel(SecaoBase):
         for r in servicos.relatorio_circulacao(10):
             self.tree_top.insert("", "end",
                                   values=(r["titulo"], r["emprestimos"]))
+        tema.aplicar_zebra(self.tree_top)
 
 
 # ---------------------------------------------------------------------------
@@ -232,6 +236,15 @@ class SecaoLivros(SecaoBase):
                     ).pack(side="right")
         ttk.Button(topo, text="Ver detalhes / código de barras",
                     command=self._detalhes
+                    ).pack(side="right", padx=(0, 8))
+        ttk.Button(topo, text="Excluir do acervo",
+                    command=self._excluir
+                    ).pack(side="right", padx=(0, 8))
+        ttk.Button(topo, text="Etiquetas em massa",
+                    command=self._etiquetas_massa
+                    ).pack(side="right", padx=(0, 8))
+        ttk.Button(topo, text="Importar CSV",
+                    command=self._importar_csv
                     ).pack(side="right", padx=(0, 8))
 
         # Filtros
@@ -272,6 +285,9 @@ class SecaoLivros(SecaoBase):
     def _novo_livro(self):
         DialogoLivro(self.painel, self.sessao, ao_salvar=self.atualizar)
 
+    def _importar_csv(self):
+        DialogoImportarCSV(self.painel, self.sessao, ao_salvar=self.atualizar)
+
     def _detalhes(self):
         sel = self.tree.selection()
         if not sel:
@@ -281,6 +297,58 @@ class SecaoLivros(SecaoBase):
             return
         livro_id = int(self.tree.item(sel[0])["values"][0])
         DialogoDetalhesLivro(self.painel, livro_id)
+
+    def _excluir(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um livro",
+                                  "Escolha um livro na lista.",
+                                  parent=self.painel)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        livro_id, titulo = int(valores[0]), valores[1]
+        if not messagebox.askyesno(
+                "Excluir do acervo",
+                f'Excluir "{titulo}" do acervo?\n\n'
+                "Os exemplares disponíveis serão baixados e o livro deixa "
+                "de aparecer nas buscas. O histórico de empréstimos é "
+                "preservado.",
+                parent=self.painel):
+            return
+        try:
+            servicos.excluir_livro(livro_id, self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+        self.atualizar()
+
+    def _etiquetas_massa(self):
+        """Gera etiquetas de todos os exemplares da busca atual (ou do
+        acervo inteiro) e abre no navegador para Ctrl+P / Salvar PDF."""
+        termo = self.ent_busca.get()
+        exemplares = servicos.listar_exemplares_para_etiquetas(termo)
+        if not exemplares:
+            messagebox.showinfo("Nada a imprimir",
+                                  "Nenhum exemplar encontrado para a busca "
+                                  "atual.",
+                                  parent=self.painel)
+            return
+        titulos = len({ex["titulo"] for ex in exemplares})
+        escopo = ("da busca atual" if termo.strip()
+                  else "do acervo inteiro")
+        if not messagebox.askyesno(
+                "Etiquetas em massa",
+                f"Gerar etiquetas de {len(exemplares)} exemplar(es) de "
+                f"{titulos} livro(s) {escopo}?\n\n"
+                "A página abre no navegador para imprimir ou salvar em PDF.",
+                parent=self.painel):
+            return
+        import tempfile
+        import webbrowser
+        doc = barcode_util.etiquetas_lote_html(
+            exemplares, "acervo" if not termo.strip() else f'busca "{termo}"')
+        destino = Path(tempfile.gettempdir()) / "sigbef_etiquetas_lote.html"
+        destino.write_text(doc, encoding="utf-8")
+        webbrowser.open(destino.as_uri())
 
     def atualizar(self):
         for it in self.tree.get_children():
@@ -292,6 +360,7 @@ class SecaoLivros(SecaoBase):
                 liv["categoria"] or "—", liv["ano_publicacao"] or "—",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
+        tema.aplicar_zebra(self.tree)
 
 
 # ---------------------------------------------------------------------------
@@ -311,6 +380,15 @@ class SecaoUsuarios(SecaoBase):
         ttk.Button(topo, text="Ativar/Desativar",
                     command=self._toggle_status
                     ).pack(side="right", padx=8)
+        ttk.Button(topo, text="Excluir",
+                    command=self._excluir
+                    ).pack(side="right")
+        ttk.Button(topo, text="Imprimir cartão",
+                    command=self._imprimir_cartao
+                    ).pack(side="right", padx=8)
+        ttk.Button(topo, text="Editar",
+                    command=self._editar
+                    ).pack(side="right")
 
         filtros = ttk.Frame(self, padding=(0, 12))
         filtros.pack(fill="x")
@@ -335,9 +413,21 @@ class SecaoUsuarios(SecaoBase):
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        self.tree.bind("<Double-1>", lambda e: self._editar())
 
     def _novo_usuario(self):
         DialogoUsuario(self.painel, self.sessao, ao_salvar=self.atualizar)
+
+    def _editar(self):
+        selecao = self._selecionado()
+        if not selecao:
+            return
+        usuario_id, _ = selecao
+        try:
+            DialogoEditarUsuario(self.painel, self.sessao, usuario_id,
+                                 ao_salvar=self.atualizar)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
 
     def _toggle_status(self):
         sel = self.tree.selection()
@@ -352,6 +442,64 @@ class SecaoUsuarios(SecaoBase):
             messagebox.showerror("Erro", str(e), parent=self.painel)
         self.atualizar()
 
+    def _selecionado(self) -> tuple[int, str] | None:
+        """Retorna (id, nome) do usuário selecionado, ou None."""
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um usuário",
+                                  "Escolha um usuário na lista.",
+                                  parent=self.painel)
+            return None
+        valores = self.tree.item(sel[0])["values"]
+        return int(valores[0]), str(valores[1])
+
+    def _excluir(self):
+        selecao = self._selecionado()
+        if not selecao:
+            return
+        usuario_id, nome = selecao
+        if not messagebox.askyesno(
+                "Excluir usuário",
+                f'Excluir definitivamente "{nome}"?\n\n'
+                "Só é possível excluir usuários sem histórico de "
+                "empréstimos. Para bloquear o acesso preservando o "
+                "histórico, use 'Ativar/Desativar'.",
+                parent=self.painel):
+            return
+        try:
+            servicos.excluir_usuario(usuario_id, self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+        self.atualizar()
+
+    def _imprimir_cartao(self):
+        """Gera o HTML do cartão do usuário e abre no navegador para Ctrl+P."""
+        selecao = self._selecionado()
+        if not selecao:
+            return
+        usuario_id, _ = selecao
+        try:
+            usuario = servicos.obter_usuario(usuario_id)
+            if not usuario["codigo_barras"]:
+                if not messagebox.askyesno(
+                        "Usuário sem cartão",
+                        f"{usuario['nome']} ainda não tem código de barras "
+                        "de cartão.\nGerar um agora?",
+                        parent=self.painel):
+                    return
+                usuario["codigo_barras"] = servicos.gerar_cartao_usuario(
+                    usuario_id, self.sessao.id)
+                self.atualizar()
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+            return
+        import tempfile
+        import webbrowser
+        doc = barcode_util.cartoes_html([usuario])
+        destino = Path(tempfile.gettempdir()) / "sigbef_cartao.html"
+        destino.write_text(doc, encoding="utf-8")
+        webbrowser.open(destino.as_uri())
+
     def atualizar(self):
         for it in self.tree.get_children():
             self.tree.delete(it)
@@ -364,6 +512,7 @@ class SecaoUsuarios(SecaoBase):
                 u.get("codigo_barras") or "—",
                 "Sim" if u["ativo"] else "Não",
             ))
+        tema.aplicar_zebra(self.tree)
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +710,7 @@ class SecaoEmprestimos(SecaoBase):
                 e["codigo_barras"], data_hora_br(e["data_emprestimo"]),
                 data_br(e["data_prevista"]), "SIM" if atrasado else "—",
             ))
+        tema.aplicar_zebra(self.tree)
 
 
 # ---------------------------------------------------------------------------
@@ -625,6 +775,7 @@ class _DialogoSelecionarUsuario(tk.Toplevel):
                 u["nome"], u["matricula"], u["perfil"],
                 u.get("email") or "—",
             ))
+        tema.aplicar_zebra(self.tree)
 
     def _confirmar(self):
         sel = self.tree.selection()
@@ -1212,6 +1363,7 @@ class SecaoPesquisaAluno(SecaoBase):
                 liv["ano_publicacao"] or "—",
                 f"{liv['disponiveis']}/{liv['total_exemplares']}",
             ))
+        tema.aplicar_zebra(self.tree)
 
 
 # ---------------------------------------------------------------------------
@@ -1272,3 +1424,4 @@ class SecaoMeusEmprestimos(SecaoBase):
                 reais(e["multa"]),
                 e["origem"].title(),
             ))
+        tema.aplicar_zebra(self.tree)

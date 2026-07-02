@@ -12,7 +12,7 @@ export default function Footer() {
               <img src="/SIGBEF/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
               <div>
                 <div className="text-white font-bold text-lg leading-none">SIGBEF</div>
-                <div className="text-xs text-gray-500">v1.2.0 · Licença MIT</div>
+                <div className="text-xs text-gray-500">v1.3.0 · Licença MIT</div>
               </div>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">
@@ -47,6 +47,10 @@ export default function Footer() {
                 <a href="https://github.com/marcelin1555/SIGBEF/issues" target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Reportar problema</a>
               </li>
+              <li>
+                <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+                  className="hover:text-white transition-colors">Fale conosco (WhatsApp)</a>
+              </li>
             </ul>
           </div>
 
@@ -63,7 +67,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-gray-600">
           <p>Feito no CEFE, escola pública do Rio Grande do Norte.</p>
-          <p>© 2025 SIGBEF. Código aberto sob licença MIT.</p>
+          <p>© 2026 SIGBEF. Código aberto sob licença MIT.</p>
         </div>
       </div>
     </footer>

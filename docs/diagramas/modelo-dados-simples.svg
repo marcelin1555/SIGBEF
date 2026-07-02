@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 740" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Fundo -->
+  <rect width="1280" height="740" rx="12" fill="#F5F7FA"/>
+
+  <!-- Título -->
+  <text x="640" y="58" text-anchor="middle" fill="#1A1A1A" font-size="32" font-weight="700">Como o fichário digital funciona</text>
+  <text x="640" y="90" text-anchor="middle" fill="#6B7280" font-size="18">Quatro gavetas que se cruzam sozinhas</text>
+  <rect x="580" y="104" width="120" height="4" fill="#F2A900"/>
+
+  <!-- ===== Gaveta 1: LIVRO ===== -->
+  <rect x="60" y="150" width="300" height="240" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="60" y="150" width="300" height="48" rx="14" fill="#1F4E79"/>
+  <rect x="60" y="186" width="300" height="12" fill="#1F4E79"/>
+  <text x="210" y="182" text-anchor="middle" fill="#FFFFFF" font-size="20" font-weight="700">LIVRO — a ficha da obra</text>
+  <!-- Ícone: livro -->
+  <g stroke="#1F4E79" stroke-width="5" fill="none" stroke-linejoin="round">
+    <path d="M 168 222 L 168 296 Q 189 284 210 296 Q 231 284 252 296 L 252 222 Q 231 210 210 222 Q 189 210 168 222 Z"/>
+    <line x1="210" y1="222" x2="210" y2="292"/>
+  </g>
+  <text x="210" y="330" text-anchor="middle" fill="#1A1A1A" font-size="19" font-weight="700">“Dom Casmurro”</text>
+  <text x="210" y="354" text-anchor="middle" fill="#6B7280" font-size="15">Machado de Assis • Romance</text>
+  <text x="210" y="376" text-anchor="middle" fill="#6B7280" font-size="15">Uma ficha só, mesmo com 5 cópias</text>
+
+  <!-- Chave "tem" ligando LIVRO aos EXEMPLARES -->
+  <g stroke="#F2A900" stroke-width="5" fill="none">
+    <line x1="368" y1="270" x2="420" y2="270"/>
+  </g>
+  <polygon points="420,257 444,270 420,283" fill="#F2A900"/>
+  <text x="404" y="248" text-anchor="middle" fill="#6B7280" font-size="14" font-weight="600">tem</text>
+
+  <!-- ===== Gaveta 2: EXEMPLARES ===== -->
+  <rect x="452" y="150" width="360" height="426" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="452" y="150" width="360" height="48" rx="14" fill="#1F4E79"/>
+  <rect x="452" y="186" width="360" height="12" fill="#1F4E79"/>
+  <text x="632" y="182" text-anchor="middle" fill="#FFFFFF" font-size="20" font-weight="700">EXEMPLARES — as cópias físicas</text>
+
+  <!-- Exemplar 1: disponível -->
+  <rect x="478" y="216" width="308" height="56" rx="10" fill="#F5F7FA" stroke="#D5DDE8" stroke-width="1.5"/>
+  <g fill="#1A1A1A"><rect x="494" y="230" width="3" height="28"/><rect x="500" y="230" width="2" height="28"/><rect x="505" y="230" width="4" height="28"/><rect x="512" y="230" width="2" height="28"/><rect x="517" y="230" width="3" height="28"/><rect x="523" y="230" width="2" height="28"/></g>
+  <text x="540" y="240" fill="#1A1A1A" font-size="15" font-weight="700">EX-0001</text>
+  <text x="540" y="261" fill="#6B7280" font-size="13">Estante B2</text>
+  <circle cx="660" cy="244" r="7" fill="#2E7D32"/>
+  <text x="676" y="249" fill="#2E7D32" font-size="14" font-weight="600">na estante</text>
+
+  <!-- Exemplar 2: disponível -->
+  <rect x="478" y="282" width="308" height="56" rx="10" fill="#F5F7FA" stroke="#D5DDE8" stroke-width="1.5"/>
+  <g fill="#1A1A1A"><rect x="494" y="296" width="3" height="28"/><rect x="500" y="296" width="2" height="28"/><rect x="505" y="296" width="4" height="28"/><rect x="512" y="296" width="2" height="28"/><rect x="517" y="296" width="3" height="28"/><rect x="523" y="296" width="2" height="28"/></g>
+  <text x="540" y="306" fill="#1A1A1A" font-size="15" font-weight="700">EX-0002</text>
+  <text x="540" y="327" fill="#6B7280" font-size="13">Estante B2</text>
+  <circle cx="660" cy="310" r="7" fill="#2E7D32"/>
+  <text x="676" y="315" fill="#2E7D32" font-size="14" font-weight="600">na estante</text>
+
+  <!-- Exemplar 3: disponível -->
+  <rect x="478" y="348" width="308" height="56" rx="10" fill="#F5F7FA" stroke="#D5DDE8" stroke-width="1.5"/>
+  <g fill="#1A1A1A"><rect x="494" y="362" width="3" height="28"/><rect x="500" y="362" width="2" height="28"/><rect x="505" y="362" width="4" height="28"/><rect x="512" y="362" width="2" height="28"/><rect x="517" y="362" width="3" height="28"/><rect x="523" y="362" width="2" height="28"/></g>
+  <text x="540" y="372" fill="#1A1A1A" font-size="15" font-weight="700">EX-0003</text>
+  <text x="540" y="393" fill="#6B7280" font-size="13">Estante B2</text>
+  <circle cx="660" cy="376" r="7" fill="#2E7D32"/>
+  <text x="676" y="381" fill="#2E7D32" font-size="14" font-weight="600">na estante</text>
+
+  <!-- Exemplar 4: EMPRESTADO (destaque) -->
+  <rect x="478" y="414" width="308" height="56" rx="10" fill="#FFF7E0" stroke="#F2A900" stroke-width="2.5"/>
+  <g fill="#1A1A1A"><rect x="494" y="428" width="3" height="28"/><rect x="500" y="428" width="2" height="28"/><rect x="505" y="428" width="4" height="28"/><rect x="512" y="428" width="2" height="28"/><rect x="517" y="428" width="3" height="28"/><rect x="523" y="428" width="2" height="28"/></g>
+  <text x="540" y="438" fill="#1A1A1A" font-size="15" font-weight="700">EX-0004</text>
+  <text x="540" y="459" fill="#6B7280" font-size="13">Fora da estante</text>
+  <circle cx="660" cy="442" r="7" fill="#B47D00"/>
+  <text x="676" y="447" fill="#B47D00" font-size="14" font-weight="700">emprestado</text>
+
+  <!-- Exemplar 5: manutenção -->
+  <rect x="478" y="480" width="308" height="56" rx="10" fill="#F5F7FA" stroke="#D5DDE8" stroke-width="1.5"/>
+  <g fill="#1A1A1A"><rect x="494" y="494" width="3" height="28"/><rect x="500" y="494" width="2" height="28"/><rect x="505" y="494" width="4" height="28"/><rect x="512" y="494" width="2" height="28"/><rect x="517" y="494" width="3" height="28"/><rect x="523" y="494" width="2" height="28"/></g>
+  <text x="540" y="504" fill="#1A1A1A" font-size="15" font-weight="700">EX-0005</text>
+  <text x="540" y="525" fill="#6B7280" font-size="13">Reparo da capa</text>
+  <circle cx="660" cy="508" r="7" fill="#6B7280"/>
+  <text x="676" y="513" fill="#6B7280" font-size="14" font-weight="600">manutenção</text>
+
+  <text x="632" y="562" text-anchor="middle" fill="#6B7280" font-size="14" font-style="italic">Cada cópia tem seu código de barras e seu próprio estado</text>
+
+  <!-- ===== EMPRÉSTIMO ligando EX-0004 ao USUÁRIO ===== -->
+  <g stroke="#F2A900" stroke-width="5" fill="none">
+    <path d="M 786 442 C 850 442 850 300 908 300"/>
+  </g>
+  <polygon points="908,287 932,300 908,313" fill="#F2A900"/>
+  <rect x="890" y="428" width="260" height="58" rx="10" fill="#1F4E79"/>
+  <text x="1020" y="452" text-anchor="middle" fill="#F2A900" font-size="15" font-weight="700">EMPRÉSTIMO</text>
+  <text x="1020" y="474" text-anchor="middle" fill="#FFFFFF" font-size="13">saiu 01/07 • devolve até 08/07</text>
+
+  <!-- ===== Gaveta 3: USUÁRIO ===== -->
+  <rect x="940" y="150" width="300" height="240" rx="14" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <rect x="940" y="150" width="300" height="48" rx="14" fill="#1F4E79"/>
+  <rect x="940" y="186" width="300" height="12" fill="#1F4E79"/>
+  <text x="1090" y="182" text-anchor="middle" fill="#FFFFFF" font-size="20" font-weight="700">USUÁRIO — a ficha do leitor</text>
+  <!-- Ícone: pessoa -->
+  <g fill="none" stroke="#1F4E79" stroke-width="5" stroke-linecap="round">
+    <circle cx="1090" cy="238" r="20"/>
+    <path d="M 1052 302 Q 1052 270 1090 270 Q 1128 270 1128 302"/>
+  </g>
+  <text x="1090" y="330" text-anchor="middle" fill="#1A1A1A" font-size="19" font-weight="700">Ana Souza</text>
+  <text x="1090" y="354" text-anchor="middle" fill="#6B7280" font-size="15">Aluna • Matrícula 2024001</text>
+  <text x="1090" y="376" text-anchor="middle" fill="#6B7280" font-size="15">Está com o exemplar EX-0004</text>
+
+  <!-- ===== Callout: pulo do gato ===== -->
+  <rect x="60" y="602" width="1180" height="58" rx="12" fill="#1F4E79"/>
+  <text x="88" y="626" fill="#F2A900" font-size="17" font-weight="700">O pulo do gato: 1 livro, 5 exemplares.</text>
+  <text x="88" y="649" fill="#FFFFFF" font-size="15">É essa separação que permite dizer “Dom Casmurro tem 3 cópias na estante” e, ao mesmo tempo, cobrar o atraso da cópia exata que está com a Ana.</text>
+
+  <!-- ===== Nota: gavetas de apoio ===== -->
+  <rect x="60" y="672" width="1180" height="46" rx="12" fill="#FFFFFF" stroke="#D5DDE8" stroke-width="2"/>
+  <text x="88" y="700" fill="#6B7280" font-size="15">Gavetas de apoio: editoras, categorias e autores. E um livro de ocorrências (auditoria) registra quem fez o quê no sistema — útil para conferências.</text>
+</svg>

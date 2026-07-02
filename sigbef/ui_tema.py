@@ -91,6 +91,22 @@ def restaurar_padrao():
     aplicar_preset("padrao")
 
 
+def _ajustar_cor(cor_hex: str, fator: float) -> str:
+    """Clareia (fator > 1) ou escurece (fator < 1) uma cor #RRGGBB.
+
+    Usado para derivar estados hover/pressionado de qualquer paleta,
+    inclusive as personalizadas — sem cores fixas que só combinam
+    com o azul padrão.
+    """
+    cor_hex = cor_hex.lstrip("#")
+    try:
+        r, g, b = (int(cor_hex[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return f"#{cor_hex}"
+    r, g, b = (max(0, min(255, round(c * fator))) for c in (r, g, b))
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
 def aplicar_tema(root):
     carregar_personalizacao()
     style = ttk.Style(root)
@@ -101,9 +117,16 @@ def aplicar_tema(root):
 
     root.configure(bg=COR_FUNDO)
 
+    # Estados derivados da paleta ativa (funciona com qualquer preset)
+    hover_prim = _ajustar_cor(COR_PRIMARIA, 0.80)
+    press_prim = _ajustar_cor(COR_PRIMARIA, 0.65)
+    hover_sec = _ajustar_cor(COR_SECUNDARIA, 0.85)
+    press_sec = _ajustar_cor(COR_SECUNDARIA, 0.70)
+
     style.configure(".", font=FONTE_BASE, background=COR_FUNDO, foreground=COR_TEXTO)
     style.configure("TFrame", background=COR_FUNDO)
-    style.configure("Card.TFrame", background=COR_CARD, relief="flat")
+    style.configure("Card.TFrame", background=COR_CARD, relief="solid",
+                    borderwidth=1, bordercolor=COR_BORDA)
     style.configure("Sidebar.TFrame", background=COR_PRIMARIA)
     style.configure("Header.TFrame", background=COR_PRIMARIA)
 
@@ -120,17 +143,29 @@ def aplicar_tema(root):
     style.configure("Erro.TLabel", foreground=COR_ERRO, background=COR_FUNDO)
     style.configure("Aviso.TLabel", foreground=COR_AVISO, background=COR_FUNDO)
 
-    style.configure("TEntry", fieldbackground="white", padding=6)
-    style.configure("TCombobox", fieldbackground="white", padding=4)
-    style.configure("TSpinbox", fieldbackground="white", padding=4)
+    # Campos: borda sutil que ganha a cor do tema ao receber foco
+    style.configure("TEntry", fieldbackground="white", padding=6,
+                    bordercolor=COR_BORDA, lightcolor="white", darkcolor="white")
+    style.map("TEntry",
+              bordercolor=[("focus", COR_SECUNDARIA)],
+              lightcolor=[("focus", COR_SECUNDARIA)],
+              darkcolor=[("focus", COR_SECUNDARIA)])
+    style.configure("TCombobox", fieldbackground="white", padding=4,
+                    bordercolor=COR_BORDA, arrowcolor=COR_PRIMARIA)
+    style.map("TCombobox", bordercolor=[("focus", COR_SECUNDARIA)])
+    style.configure("TSpinbox", fieldbackground="white", padding=4,
+                    bordercolor=COR_BORDA, arrowcolor=COR_PRIMARIA)
+    style.map("TSpinbox", bordercolor=[("focus", COR_SECUNDARIA)])
 
     style.configure("TButton", font=FONTE_BOTAO, padding=(14, 8),
                     background=COR_SECUNDARIA, foreground=COR_TEXTO_CLARO, borderwidth=0)
-    style.map("TButton", background=[("active", COR_PRIMARIA), ("disabled", "#9DB1C8")])
+    style.map("TButton", background=[("pressed", press_sec), ("active", hover_sec),
+                                      ("disabled", "#9DB1C8")])
 
     style.configure("Primario.TButton", font=FONTE_BOTAO_GRANDE,
                     background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO, padding=(18, 10))
-    style.map("Primario.TButton", background=[("active", "#13365B"), ("disabled", "#9DB1C8")])
+    style.map("Primario.TButton", background=[("pressed", press_prim), ("active", hover_prim),
+                                               ("disabled", "#9DB1C8")])
 
     style.configure("Sucesso.TButton", background=COR_SUCESSO, foreground=COR_TEXTO_CLARO)
     style.map("Sucesso.TButton", background=[("active", "#1B5E20"), ("disabled", "#9DB1C8")])
@@ -147,13 +182,25 @@ def aplicar_tema(root):
     style.map("Sidebar.TButton",
               background=[("active", COR_SECUNDARIA), ("selected", COR_SECUNDARIA)])
 
+    # Checkbuttons/radios sem "flash" cinza no hover
+    style.configure("TCheckbutton", background=COR_FUNDO)
+    style.map("TCheckbutton", background=[("active", COR_FUNDO)])
+    style.configure("TRadiobutton", background=COR_FUNDO)
+    style.map("TRadiobutton", background=[("active", COR_FUNDO)])
+
     style.configure("Treeview", background="white", fieldbackground="white",
-                    foreground=COR_TEXTO, rowheight=28, borderwidth=0, font=("Segoe UI", 10))
+                    foreground=COR_TEXTO, rowheight=30, borderwidth=0, font=("Segoe UI", 10))
     style.configure("Treeview.Heading", background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO,
-                    font=("Segoe UI Semibold", 10), padding=8)
-    style.map("Treeview.Heading", background=[("active", COR_SECUNDARIA)])
+                    font=("Segoe UI Semibold", 10), padding=(8, 7), relief="flat")
+    style.map("Treeview.Heading",
+              background=[("pressed", press_prim), ("active", COR_SECUNDARIA)])
     style.map("Treeview", background=[("selected", COR_SECUNDARIA)],
               foreground=[("selected", COR_TEXTO_CLARO)])
+
+    # Scrollbars discretas, na paleta do tema
+    style.configure("TScrollbar", background=COR_FUNDO_ESCURO, troughcolor=COR_FUNDO,
+                    bordercolor=COR_FUNDO, arrowcolor=COR_PRIMARIA, borderwidth=0)
+    style.map("TScrollbar", background=[("active", COR_BORDA)])
 
     style.configure("TNotebook", background=COR_FUNDO, borderwidth=0)
     style.configure("TNotebook.Tab", padding=(18, 10),
@@ -161,7 +208,34 @@ def aplicar_tema(root):
     style.map("TNotebook.Tab", background=[("selected", COR_CARD)],
               foreground=[("selected", COR_PRIMARIA)])
 
+    style.configure("TLabelframe", background=COR_FUNDO, bordercolor=COR_BORDA)
+    style.configure("TLabelframe.Label", background=COR_FUNDO,
+                    foreground=COR_PRIMARIA, font=("Segoe UI Semibold", 10))
+
+    # Cursor de mão nos botões (ttk e tk)
+    for classe in ("TButton", "Button"):
+        root.bind_class(classe, "<Enter>",
+                        lambda e: e.widget.configure(cursor="hand2"), add="+")
+
     return style
+
+
+def aplicar_zebra(tree, cor: str | None = None) -> None:
+    """Aplica fundo alternado (zebra) nas linhas de uma Treeview populada.
+
+    Chame ao final de cada recarga da tabela. Linhas que já têm tags
+    semânticas (ex.: 'atrasado') são preservadas sem zebra, para não
+    disputar a cor de fundo.
+    """
+    tree.tag_configure("zebra", background=cor or COR_FUNDO)
+    for i, item in enumerate(tree.get_children()):
+        atuais = tree.item(item, "tags")
+        if isinstance(atuais, str):
+            atuais = (atuais,) if atuais else ()
+        atuais = [t for t in atuais if t != "zebra"]
+        if i % 2 and not atuais:
+            atuais.append("zebra")
+        tree.item(item, tags=atuais)
 
 
 def caixa_card(parent, padx=20, pady=20):

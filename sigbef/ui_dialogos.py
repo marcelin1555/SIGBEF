@@ -5,7 +5,7 @@ visualização de exemplares e código de barras).
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from typing import Callable, Optional
 
 from . import barcode_util
@@ -160,6 +160,7 @@ class DialogoSelecionarExemplar(tk.Toplevel):
                 ex["numero_tombo"], ex["codigo_barras"],
                 ex.get("localizacao") or "—",
             ))
+        tema.aplicar_zebra(self.tree)
 
     def _confirmar(self):
         sel = self.tree.selection()
@@ -422,6 +423,212 @@ class DialogoUsuario(tk.Toplevel):
                              f"Usuário #{res['id']} cadastrado.\n"
                              f"Cartão (código de barras): {cartao}",
                              parent=self)
+        if self.ao_salvar:
+            self.ao_salvar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: importar acervo via CSV
+# ---------------------------------------------------------------------------
+class DialogoImportarCSV(tk.Toplevel):
+    """Importação de acervo em massa a partir de planilha CSV."""
+
+    def __init__(self, parent, sessao: Sessao,
+                 ao_salvar: Optional[Callable] = None):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.ao_salvar = ao_salvar
+        self.title("Importar acervo (CSV)")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 660, 560)
+        self._construir()
+
+    def _construir(self):
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Importar acervo (CSV)",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap,
+                  text=("Importa vários livros de uma vez a partir de uma "
+                         "planilha salva como CSV\n(no Excel: Salvar como → "
+                         "CSV)."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 10))
+
+        card = tema.caixa_card(wrap, padx=16, pady=12)
+        card.pack(fill="x")
+        for txt in (
+            "• Coluna obrigatória: titulo — as demais são opcionais",
+            "• Colunas aceitas: autores, isbn, editora, categoria, ano,",
+            "   edicao, sinopse, quantidade, localizacao",
+            "• Vários autores na mesma célula: separe com ; ou /",
+            "• Separador (; ou ,) e acentuação detectados automaticamente",
+            "• Linhas com ISBN já cadastrado são puladas (não duplica)",
+        ):
+            ttk.Label(card, text=txt, style="Card.TLabel").pack(anchor="w")
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(fill="x", pady=(14, 0))
+        ttk.Button(botoes, text="Salvar planilha modelo...",
+                   command=self._salvar_modelo).pack(side="left")
+        ttk.Button(botoes, text="Escolher CSV e importar...",
+                   style="Primario.TButton",
+                   command=self._importar).pack(side="right")
+
+        ttk.Label(wrap, text="Resultado",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(16, 4))
+        self.txt = tk.Text(wrap, height=9, state="disabled",
+                           font=("Consolas", 9), bg="white",
+                           relief="solid", borderwidth=1)
+        self.txt.pack(fill="both", expand=True)
+
+    def _log(self, linhas: list[str]):
+        self.txt.configure(state="normal")
+        self.txt.delete("1.0", "end")
+        self.txt.insert("1.0", "\n".join(linhas))
+        self.txt.configure(state="disabled")
+
+    def _salvar_modelo(self):
+        destino = filedialog.asksaveasfilename(
+            parent=self, defaultextension=".csv",
+            initialfile="modelo_acervo.csv",
+            filetypes=[("Planilha CSV", "*.csv")])
+        if not destino:
+            return
+        servicos.gerar_modelo_csv(destino)
+        messagebox.showinfo("Modelo salvo",
+                             "Planilha modelo salva. Preencha no Excel e "
+                             "salve como CSV para importar.",
+                             parent=self)
+
+    def _importar(self):
+        caminho = filedialog.askopenfilename(
+            parent=self,
+            filetypes=[("Planilha CSV", "*.csv"), ("Todos", "*.*")])
+        if not caminho:
+            return
+        try:
+            res = servicos.importar_acervo_csv(caminho,
+                                                usuario_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self)
+            return
+        except OSError as e:
+            messagebox.showerror("Erro ao ler o arquivo", str(e), parent=self)
+            return
+        linhas = [f"Importados: {res['livros']} livro(s), "
+                  f"{res['exemplares']} exemplar(es)."]
+        if res["pulados"]:
+            linhas.append(f"\nPulados ({len(res['pulados'])}):")
+            linhas += [f"  linha {n}: {m}" for n, m in res["pulados"][:10]]
+            if len(res["pulados"]) > 10:
+                linhas.append(f"  ... e mais {len(res['pulados']) - 10}")
+        if res["erros"]:
+            linhas.append(f"\nErros ({len(res['erros'])}):")
+            linhas += [f"  linha {n}: {m}" for n, m in res["erros"][:10]]
+            if len(res["erros"]) > 10:
+                linhas.append(f"  ... e mais {len(res['erros']) - 10}")
+        if not res["livros"] and not res["erros"] and not res["pulados"]:
+            linhas.append("Nenhuma linha de dados encontrada no arquivo.")
+        self._log(linhas)
+        if res["livros"] and self.ao_salvar:
+            self.ao_salvar()
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: editar usuário (nome, contato, turma e perfil)
+# ---------------------------------------------------------------------------
+class DialogoEditarUsuario(tk.Toplevel):
+    """Edição dos dados cadastrais de um usuário existente.
+
+    A matrícula é fixa (identidade de login) e a senha tem fluxo próprio —
+    aqui editam-se nome, e-mail, telefone, série/turma e perfil.
+    """
+
+    def __init__(self, parent, sessao: Sessao, usuario_id: int,
+                 ao_salvar: Optional[Callable] = None):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.usuario_id = usuario_id
+        self.ao_salvar = ao_salvar
+        self.usuario = servicos.obter_usuario(usuario_id)
+        self.title("Editar usuário")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 520, 520)
+        self._construir()
+
+    def _construir(self):
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Editar usuário",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap,
+                  text=f"Matrícula: {self.usuario['matricula']} (não editável)",
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 0))
+
+        form = ttk.Frame(wrap)
+        form.pack(fill="x", pady=(16, 0))
+        form.columnconfigure(1, weight=1)
+
+        self._campos = {}
+        valores = {
+            "nome": self.usuario["nome"] or "",
+            "email": self.usuario.get("email") or "",
+            "telefone": self.usuario.get("telefone") or "",
+            "turma": self.usuario.get("turma") or "",
+        }
+        for i, (chave, rotulo) in enumerate([
+            ("nome", "Nome completo *"),
+            ("email", "E-mail"),
+            ("telefone", "Telefone"),
+            ("turma", "Série / Turma"),
+        ]):
+            ttk.Label(form, text=rotulo).grid(row=i, column=0, sticky="w",
+                                               pady=(6, 2))
+            ent = ttk.Entry(form, font=("Segoe UI", 10))
+            ent.insert(0, valores[chave])
+            ent.grid(row=i, column=1, sticky="ew", pady=(6, 2))
+            self._campos[chave] = ent
+
+        ttk.Label(form, text="Ex.: 3º Ano Técnico em Informática",
+                  style="Hint.TLabel").grid(row=4, column=1, sticky="w",
+                                            pady=(0, 6))
+
+        ttk.Label(form, text="Perfil *").grid(row=5, column=0, sticky="w",
+                                              pady=(6, 2))
+        self.combo_perfil = ttk.Combobox(form, state="readonly",
+                                          values=["ALUNO", "PROFESSOR",
+                                                   "BIBLIOTECARIO",
+                                                   "ADMINISTRADOR"])
+        self.combo_perfil.set(self.usuario["perfil"])
+        self.combo_perfil.grid(row=5, column=1, sticky="ew", pady=(6, 2))
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(fill="x", pady=(20, 0))
+        ttk.Button(botoes, text="Cancelar",
+                   command=self.destroy).pack(side="right", padx=(8, 0))
+        ttk.Button(botoes, text="Salvar alterações",
+                   style="Primario.TButton",
+                   command=self._salvar).pack(side="right")
+
+    def _salvar(self):
+        try:
+            servicos.atualizar_usuario(
+                self.usuario_id,
+                nome=self._campos["nome"].get(),
+                email=self._campos["email"].get(),
+                telefone=self._campos["telefone"].get(),
+                turma=self._campos["turma"].get(),
+                perfil=self.combo_perfil.get(),
+                executor_id=self.sessao.id,
+            )
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self)
+            return
         if self.ao_salvar:
             self.ao_salvar()
         self.destroy()

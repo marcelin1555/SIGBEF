@@ -9,7 +9,7 @@ const requisitos = [
 const passos = [
   {
     n: '1', titulo: 'Baixe o instalador',
-    texto: 'Acesse a página de releases no GitHub e baixe o arquivo SIGBEF_Setup_v1.2.0.exe. É gratuito, sem cadastro, sem condições.',
+    texto: 'Acesse a página de releases no GitHub e baixe o instalador mais recente (SIGBEF_Setup.exe). É gratuito, sem cadastro, sem condições.',
     link: 'https://github.com/marcelin1555/SIGBEF/releases',
     linkLabel: 'Ir para releases',
   },
@@ -67,7 +67,7 @@ export default function DownloadPage() {
           </p>
           <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
             className="inline-block bg-yellow-400 text-[#1F4E79] font-bold px-8 py-3.5 rounded-xl text-lg hover:bg-yellow-300 transition-colors shadow-lg">
-            Baixar SIGBEF v1.2.0
+            Baixar SIGBEF (última versão)
           </a>
         </div>
       </div>

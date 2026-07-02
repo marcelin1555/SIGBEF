@@ -77,14 +77,15 @@ echo Agora vamos publicar no GitHub.
 echo.
 echo PASSO IMPORTANTE: antes de continuar, va ate
 echo   https://github.com/new
-echo e crie um repositorio chamado, por exemplo: sigbef
+echo e crie um repositorio chamado, por exemplo: SIGBEF
 echo NAO marque "Initialize this repository with a README"
 echo.
 pause
 
-set /p GH_USER="Seu usuario do GitHub: "
-set /p GH_REPO="Nome do repositorio criado (ex: sigbef): "
-if "%GH_REPO%"=="" set GH_REPO=sigbef
+set /p GH_USER="Seu usuario do GitHub [marcelin1555]: "
+if "%GH_USER%"=="" set GH_USER=marcelin1555
+set /p GH_REPO="Nome do repositorio criado [SIGBEF]: "
+if "%GH_REPO%"=="" set GH_REPO=SIGBEF
 
 set REMOTE_URL=https://github.com/%GH_USER%/%GH_REPO%.git
 echo.

@@ -169,7 +169,10 @@ CREATE TABLE IF NOT EXISTS auditoria (
 CREATE INDEX IF NOT EXISTS idx_livro_titulo ON livro(titulo);
 CREATE INDEX IF NOT EXISTS idx_livro_isbn ON livro(isbn);
 CREATE INDEX IF NOT EXISTS idx_exemplar_codigo ON exemplar(codigo_barras);
+CREATE INDEX IF NOT EXISTS idx_exemplar_livro ON exemplar(livro_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_status ON emprestimo(data_devolucao);
+CREATE INDEX IF NOT EXISTS idx_emprestimo_exemplar ON emprestimo(exemplar_id);
+CREATE INDEX IF NOT EXISTS idx_emprestimo_usuario ON emprestimo(usuario_id);
 """
 
 
