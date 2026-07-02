@@ -27,6 +27,7 @@ export default function Footer() {
               <li><Link to="/funcionalidades" className="hover:text-white transition-colors">Funcionalidades</Link></li>
               <li><Link to="/download" className="hover:text-white transition-colors">Como instalar</Link></li>
               <li><Link to="/planos" className="hover:text-white transition-colors">Planos e preços</Link></li>
+              <li><Link to="/novidades" className="hover:text-white transition-colors">Novidades</Link></li>
               <li>
                 <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Releases</a>

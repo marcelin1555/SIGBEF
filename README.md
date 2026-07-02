@@ -169,8 +169,8 @@ O site de apresentação do SIGBEF está disponível em:
 
 **https://sigbef.vercel.app/**
 
-Construído com React + Vite + Tailwind CSS + React Router, com 5 páginas:
-`/` (landing), `/funcionalidades`, `/download`, `/planos`, `/equipe`.
+Construído com React + Vite + Tailwind CSS + React Router, com 6 páginas:
+`/` (landing), `/funcionalidades`, `/download`, `/planos`, `/equipe`, `/novidades`.
 
 Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 

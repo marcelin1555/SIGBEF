@@ -27,6 +27,7 @@ Site de apresentação do SIGBEF, sistema gratuito de gestão de biblioteca esco
 | `/download` | Requisitos de sistema, passo a passo, FAQ de instalação |
 | `/planos` | Pricing Open Core + FAQ de preços |
 | `/equipe` | Equipe + linha do tempo do projeto |
+| `/novidades` | Changelog público, versão por versão (curado a partir de `docs/CHANGELOG.md`) |
 
 BrowserRouter é usado para URLs limpas (sem `#`). O rewrite de SPA que faz
 qualquer rota carregar `index.html` (necessário para refresh/link direto
@@ -89,7 +90,8 @@ site/
 │   │   ├── FuncionalidadesPage.jsx
 │   │   ├── DownloadPage.jsx
 │   │   ├── PlanosPage.jsx
-│   │   └── EquipePage.jsx
+│   │   ├── EquipePage.jsx
+│   │   └── NovidadesPage.jsx  # Changelog público
 │   ├── App.jsx                # Rotas + ScrollToTop + BotaoWhatsApp
 │   ├── main.jsx                # Entrada (BrowserRouter)
 │   └── index.css              # Tailwind directives

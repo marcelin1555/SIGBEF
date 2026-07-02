@@ -6,6 +6,7 @@ const links = [
   { to: '/download', label: 'Como instalar' },
   { to: '/planos', label: 'Planos' },
   { to: '/equipe', label: 'Equipe' },
+  { to: '/novidades', label: 'Novidades' },
 ]
 
 export default function Nav() {

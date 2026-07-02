@@ -8,6 +8,7 @@ import FuncionalidadesPage from './pages/FuncionalidadesPage'
 import DownloadPage from './pages/DownloadPage'
 import PlanosPage from './pages/PlanosPage'
 import EquipePage from './pages/EquipePage'
+import NovidadesPage from './pages/NovidadesPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/planos" element={<PlanosPage />} />
           <Route path="/equipe" element={<EquipePage />} />
+          <Route path="/novidades" element={<NovidadesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
