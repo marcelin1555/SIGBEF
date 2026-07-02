@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat-square)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.3.0-blue?style=flat-square)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue?style=flat-square)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-lightgrey?style=flat-square)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
@@ -639,7 +639,7 @@ Documento de requisitos completo: [`docs/SIGBEF_Documento_Requisitos.docx`](docs
 
 <div align="center">
 
-**SIGBEF v1.3.0** — Junho/2026
+**SIGBEF v1.4.0** — Julho/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

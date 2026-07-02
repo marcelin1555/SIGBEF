@@ -7,6 +7,7 @@ const linha_do_tempo = [
   { ano: 'abr/26', evento: 'A equipe DLJ4 se forma: Júlia e Maria Laura entram no projeto para o desafio do Sebrae.' },
   { ano: 'jun/26', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
   { ano: 'jun/26', evento: 'v1.3.0: site oficial multi-página no ar, com ícones e novo hero.' },
+  { ano: 'jul/26', evento: 'v1.4.0: importação de acervo por CSV, cartão do aluno, etiquetas em massa e edição de usuários.' },
 ]
 
 export default function EquipePage() {

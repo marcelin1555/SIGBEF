@@ -4,6 +4,42 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
+## [1.4.0] — 2026-07-02
+
+### Acervo
+- **Importação em massa via CSV**: cadastro de milhares de livros a partir
+  de planilha, com modelo pronto, detecção automática de separador (`;`/`,`)
+  e codificação (UTF-8/Windows-1252), e proteção contra ISBN duplicado.
+  Inserção em transação única (~12 mil livros/s)
+- **Etiquetas em massa**: impressão dos códigos de barras de todo o acervo
+  (ou de uma busca) numa página só
+- **Exclusão de livros** do acervo, preservando o histórico de empréstimos
+
+### Usuários
+- **Edição de usuários**: nome, contato, perfil e série/turma (útil na
+  virada de ano letivo), com matrícula fixa
+- **Exclusão de usuários** sem histórico, com bloqueio contra auto-exclusão
+  e auto-rebaixamento de perfil
+- **Impressão de cartão** de biblioteca com código de barras, no tamanho
+  padrão de crachá (85,6 × 54 mm)
+
+### Interface
+- Tema refinado: tabelas com linhas zebradas, destaque de foco nos campos
+  e efeitos de hover — derivados da paleta ativa, adaptando-se a qualquer
+  personalização de cores
+
+### Robustez
+- Correção de condição de corrida em empréstimos/devoluções simultâneos
+  (trava atômica no exemplar)
+- Índices de banco adicionais: busca no acervo até ~260× mais rápida em
+  acervos grandes
+- Geração de código de barras à prova de colisão em cadastros em lote
+
+### Site
+- Contato direto por **WhatsApp** (botão flutuante, planos e rodapé)
+
+---
+
 ## [1.3.0] — 2026-06-25
 
 ### Site oficial (React + Vite)
@@ -260,6 +296,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.4.0
 [1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0
 [1.2.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.2.0
 [1.1.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.1.0

@@ -11,7 +11,7 @@
 ; ====================================================================
 
 #define MyAppName "SIGBEF"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "Marcello"
 #define MyAppExeName "SIGBEF.exe"
 

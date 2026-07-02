@@ -40,7 +40,7 @@ Iniciar e na área de trabalho, com opção de desinstalação.
 2. Baixe o **Inno Setup**: <https://jrsoftware.org/isinfo.php>
 3. Abra o arquivo `tools\sigbef_installer.iss` no Inno Setup Compiler.
 4. Pressione **F9** (Compile).
-5. O instalador é gerado em `Output\SIGBEF_Setup_v1.2.0.exe`.
+5. O instalador é gerado em `Output\SIGBEF_Setup_v1.4.0.exe`.
 
 ### O que o instalador faz
 

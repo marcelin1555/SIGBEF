@@ -13,7 +13,7 @@ function AppMockup() {
         <span className="w-3 h-3 rounded-full bg-red-500 opacity-80" />
         <span className="w-3 h-3 rounded-full bg-yellow-400 opacity-80" />
         <span className="w-3 h-3 rounded-full bg-green-500 opacity-80" />
-        <span className="ml-3 text-gray-400 text-[11px]">SIGBEF v1.3.0 — Painel da Biblioteca</span>
+        <span className="ml-3 text-gray-400 text-[11px]">SIGBEF v1.4.0 — Painel da Biblioteca</span>
       </div>
 
       {/* search */}
@@ -72,7 +72,7 @@ export default function Hero() {
           {/* left: copy */}
           <div>
             <div className="flex flex-wrap gap-2 mb-6">
-              {['MIT', 'Offline', 'Windows', 'v1.3.0'].map(b => (
+              {['MIT', 'Offline', 'Windows', 'v1.4.0'].map(b => (
                 <span key={b} className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">{b}</span>
               ))}
             </div>
