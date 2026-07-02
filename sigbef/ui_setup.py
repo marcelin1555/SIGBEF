@@ -130,12 +130,12 @@ class JanelaPrimeiraExecucao(tk.Tk):
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 11)).pack(anchor="w")
         ttk.Label(card,
-                  text="Ex.: CEFE — Centro de Ensino e Formação",
+                  text="Ex.: CEFE — Centro Educacional Felinto Elísio",
                   style="CardHint.TLabel").pack(anchor="w", pady=(0, 8))
         self.ent_inst = ttk.Entry(card, font=("Segoe UI", 12), width=60)
         self.ent_inst.pack(fill="x", ipady=4)
         self.ent_inst.insert(0, self._dados["instituicao"] or
-                              "CEFE — Centro de Ensino e Formação")
+                              "CEFE — Centro Educacional Felinto Elísio")
         self.ent_inst.focus_set()
         self.ent_inst.bind("<Return>", lambda e: self._avancar_instituicao())
 

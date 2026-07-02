@@ -9,7 +9,7 @@ export default function Footer() {
           {/* brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-3">
-              <img src="/SIGBEF/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
+              <img src="/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
               <div>
                 <div className="text-white font-bold text-lg leading-none">SIGBEF</div>
                 <div className="text-xs text-gray-500">v1.4.0 · Licença MIT</div>

@@ -19,7 +19,7 @@
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
 [![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat-square)](docs/SIGBEF_Documento_Requisitos.docx)
-[![Site](https://img.shields.io/badge/site-GitHub%20Pages-1F4E79?style=flat-square)](https://marcelin1555.github.io/SIGBEF/)
+[![Site](https://img.shields.io/badge/site-Vercel-1F4E79?style=flat-square)](https://sigbef.vercel.app/)
 
 </div>
 
@@ -102,7 +102,7 @@ separação clara entre interface (Tkinter), regras de negócio (módulo
 manutenção e testes.
 
 O projeto inclui também um **site de apresentação** em React + Vite,
-hospedado no GitHub Pages: https://marcelin1555.github.io/SIGBEF/
+hospedado na Vercel: https://sigbef.vercel.app/
 
 ---
 
@@ -167,10 +167,10 @@ hospedado no GitHub Pages: https://marcelin1555.github.io/SIGBEF/
 
 O site de apresentação do SIGBEF está disponível em:
 
-**https://marcelin1555.github.io/SIGBEF/**
+**https://sigbef.vercel.app/**
 
 Construído com React + Vite + Tailwind CSS + React Router, com 5 páginas:
-`/` (landing), `/#/funcionalidades`, `/#/download`, `/#/planos`, `/#/equipe`.
+`/` (landing), `/funcionalidades`, `/download`, `/planos`, `/equipe`.
 
 Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 
@@ -585,7 +585,7 @@ Funcionalidades planejadas para versões futuras:
 ### Concluído recentemente
 
 - [x] Integração com APIs de ISBN (Google Books, OpenLibrary) para auto-preenchimento no cadastro, com opt-in em Configurações (v1.2.0)
-- [x] Site de apresentação React multi-página hospedado no GitHub Pages (v1.3.0)
+- [x] Site de apresentação React multi-página, hospedado na Vercel (v1.3.0)
 - [x] Terminal de autoatendimento (kiosk) com logout automático (v1.0.0)
 - [x] Personalização de cores por paleta (v1.1.0)
 - [x] Campo de série/turma no cadastro de aluno (v1.2.0)
@@ -624,7 +624,7 @@ O software é fornecido "como está", sem garantias.
 
 ## Autoria
 
-Desenvolvido por estudantes do **CEFE** (Centro de Ensino e Formação), escola pública do Rio Grande do Norte.
+Desenvolvido por estudantes do **CEFE** (Centro Educacional Felinto Elísio), escola pública do Rio Grande do Norte.
 
 | Nome | Papel |
 |---|---|

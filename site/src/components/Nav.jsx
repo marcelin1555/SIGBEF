@@ -15,7 +15,7 @@ export default function Nav() {
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <img src="/SIGBEF/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
+          <img src="/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
           <span className="font-bold text-xl text-[#1F4E79]">SIGBEF</span>
         </Link>
 
