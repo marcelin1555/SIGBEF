@@ -68,3 +68,8 @@ skills-lock.json
 *.corrupted.*
 *.broken
 *.bak.*
+
+# --- Scripts de commit locais e artefatos de build (não versionar) ---
+/commit.bat
+/commit_github.bat
+/site.zip
