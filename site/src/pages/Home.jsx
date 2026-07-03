@@ -6,6 +6,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import Hero from '../components/Hero'
 import Problema from '../components/Problema'
+import Screenshots from '../components/Screenshots'
 import Prova from '../components/Prova'
 import ODS from '../components/ODS'
 
@@ -83,6 +84,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Screenshots />
 
       <Prova />
 
