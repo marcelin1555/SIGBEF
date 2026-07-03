@@ -562,9 +562,8 @@ profissional com Inno Setup.
 
 Funcionalidades planejadas para versões futuras:
 
-### Próxima versão — v1.4.0 (prioridade alta)
+### Próxima versão — v1.5.0 (prioridade alta)
 
-- [ ] Importação de acervo a partir de planilha CSV/Excel — elimina o cadastro manual em bibliotecas com acervo já mapeado
 - [ ] Notificações por e-mail automáticas quando o prazo de devolução se aproxima
 - [ ] Reservas online com fila de espera
 
@@ -584,6 +583,10 @@ Funcionalidades planejadas para versões futuras:
 
 ### Concluído recentemente
 
+- [x] Importação de acervo em massa via planilha CSV, com modelo pronto e proteção contra ISBN duplicado (v1.4.0)
+- [x] Impressão de etiquetas em massa e de cartão de biblioteca com código de barras (v1.4.0)
+- [x] Exclusão e edição de livros/usuários, com proteções contra perda de histórico (v1.4.0)
+- [x] Tema visual refinado: tabelas zebradas, foco nos campos e hover adaptados à paleta (v1.4.0)
 - [x] Integração com APIs de ISBN (Google Books, OpenLibrary) para auto-preenchimento no cadastro, com opt-in em Configurações (v1.2.0)
 - [x] Site de apresentação React multi-página, hospedado na Vercel (v1.3.0)
 - [x] Terminal de autoatendimento (kiosk) com logout automático (v1.0.0)
