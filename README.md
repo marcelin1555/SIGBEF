@@ -13,13 +13,13 @@
 [![SQLite](https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
-[![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat-square)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-blue?style=flat-square)](#)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-lightgrey?style=flat-square)](#)
-[![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-success?style=flat-square)](#)
-[![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat-square)](#)
-[![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat-square)](docs/SIGBEF_Documento_Requisitos.docx)
-[![Site](https://img.shields.io/badge/site-Vercel-1F4E79?style=flat-square)](https://sigbef.vercel.app/)
+[![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-6B7280?style=flat)](#)
+[![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
+[![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
+[![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat&logo=readthedocs&logoColor=white)](docs/SIGBEF_Documento_Requisitos.docx)
+[![Site](https://img.shields.io/badge/site-Vercel-1F4E79?style=flat&logo=vercel&logoColor=white)](https://sigbef.vercel.app/)
 
 </div>
 
