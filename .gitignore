@@ -24,6 +24,7 @@ ENV/
 # --- Distribuição / empacotamento ---
 build/
 dist/
+tools/Output/
 *.egg-info/
 *.egg
 *.spec
