@@ -5,60 +5,75 @@ const emprestimos = [
   { titulo: 'Macunaíma', aluno: 'Pedro J.', venc: '02/07', atrasado: false },
 ]
 
+const menuLateral = ['Painel inicial', 'Livros e exemplares', 'Usuários', 'Empréstimos abertos']
+
 function AppMockup() {
   return (
-    <div className="rounded-xl overflow-hidden shadow-2xl border border-white/20 text-xs font-mono select-none">
-      {/* titlebar */}
-      <div className="bg-gray-800 px-4 py-2.5 flex items-center gap-2">
-        <span className="w-3 h-3 rounded-full bg-red-500 opacity-80" />
-        <span className="w-3 h-3 rounded-full bg-yellow-400 opacity-80" />
-        <span className="w-3 h-3 rounded-full bg-green-500 opacity-80" />
-        <span className="ml-3 text-gray-400 text-[11px]">SIGBEF v1.4.0 — Painel da Biblioteca</span>
+    <div className="rounded-xl overflow-hidden shadow-2xl select-none bg-white flex text-[13px]">
+      {/* sidebar */}
+      <div className="w-[132px] shrink-0 bg-[#1F4E79] py-4 hidden sm:block">
+        <div className="px-4 pb-3 mb-2 border-b border-white/15">
+          <span className="text-white font-bold text-sm tracking-wide">SIGBEF</span>
+        </div>
+        {menuLateral.map((item, i) => (
+          <div key={item}
+            className={`px-4 py-2 text-[11px] leading-snug ${i === 0 ? 'bg-[#2E75B6] text-white font-semibold' : 'text-blue-100'}`}>
+            {item}
+          </div>
+        ))}
       </div>
 
-      {/* search */}
-      <div className="bg-gray-900 px-4 py-2.5 border-b border-gray-700">
-        <div className="bg-gray-800 rounded px-3 py-1.5 text-gray-500 flex items-center gap-2">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <span>Pesquisar por título ou autor...</span>
+      {/* conteúdo */}
+      <div className="flex-1 min-w-0">
+        {/* titlebar */}
+        <div className="bg-[#F5F7FA] px-4 py-2.5 flex items-center gap-2 border-b border-gray-200">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
+          <span className="ml-2 text-gray-400 text-[11px]">SIGBEF v1.4.0 — Painel da Biblioteca</span>
         </div>
-      </div>
 
-      {/* stats */}
-      <div className="bg-gray-900 grid grid-cols-3 border-b border-gray-700">
-        <div className="px-4 py-3 border-r border-gray-700">
-          <div className="text-yellow-400 font-bold text-base">1.247</div>
-          <div className="text-gray-500">livros</div>
-        </div>
-        <div className="px-4 py-3 border-r border-gray-700">
-          <div className="text-blue-400 font-bold text-base">43</div>
-          <div className="text-gray-500">empréstimos</div>
-        </div>
-        <div className="px-4 py-3">
-          <div className="text-red-400 font-bold text-base">3</div>
-          <div className="text-gray-500">atrasados</div>
-        </div>
-      </div>
+        <div className="bg-white px-4 pt-3 pb-1">
+          {/* search */}
+          <div className="bg-[#F5F7FA] border border-gray-200 rounded-lg px-3 py-1.5 text-gray-400 flex items-center gap-2 mb-3">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="truncate">Pesquisar por título ou autor...</span>
+          </div>
 
-      {/* table header */}
-      <div className="bg-gray-800 grid grid-cols-4 px-4 py-2 text-gray-500 text-[10px] uppercase tracking-wider">
-        <span>Título</span><span>Aluno</span><span>Vencimento</span><span>Status</span>
-      </div>
-
-      {/* rows */}
-      {emprestimos.map(({ titulo, aluno, venc, atrasado }, i) => (
-        <div key={i} className={`grid grid-cols-4 px-4 py-2.5 border-t border-gray-800 ${i % 2 === 0 ? 'bg-gray-900' : 'bg-gray-850'}`}
-          style={{ background: i % 2 === 0 ? '#111827' : '#0f172a' }}>
-          <span className="text-blue-300 truncate pr-1">{titulo}</span>
-          <span className="text-gray-300">{aluno}</span>
-          <span className="text-gray-400">{venc}</span>
-          <span className={atrasado ? 'text-red-400 font-semibold' : 'text-green-400'}>
-            {atrasado ? '⚠ atrasado' : '✓ ok'}
-          </span>
+          {/* stats */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {[
+              ['1.247', 'livros', 'text-[#1F4E79]'],
+              ['43', 'empréstimos', 'text-[#2E75B6]'],
+              ['3', 'atrasados', 'text-red-500'],
+            ].map(([num, lab, cor]) => (
+              <div key={lab} className="bg-[#F5F7FA] border border-gray-200 rounded-lg px-3 py-2">
+                <div className={`font-bold text-base ${cor}`}>{num}</div>
+                <div className="text-gray-400 text-[10px]">{lab}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+
+        {/* tabela */}
+        <div className="bg-[#1F4E79] grid grid-cols-[2.1fr_1.4fr_0.9fr_1fr] gap-1 px-4 py-2 text-blue-100 text-[10px] uppercase tracking-wider font-semibold">
+          <span>Título</span><span>Aluno</span><span>Venc.</span><span className="text-right">Status</span>
+        </div>
+        {emprestimos.map(({ titulo, aluno, venc, atrasado }, i) => (
+          <div key={titulo} className={`grid grid-cols-[2.1fr_1.4fr_0.9fr_1fr] gap-1 px-4 py-2 items-center ${i % 2 === 1 ? 'bg-[#F8FAFC]' : 'bg-white'}`}>
+            <span className="text-[#2E75B6] font-medium truncate pr-1">{titulo}</span>
+            <span className="text-gray-600 truncate pr-1">{aluno}</span>
+            <span className="text-gray-500">{venc}</span>
+            <span className="text-right">
+              {atrasado
+                ? <span className="text-red-600 bg-red-50 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap">atrasado</span>
+                : <span className="text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap">✓ ok</span>}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -67,7 +82,7 @@ export default function Hero() {
   return (
     <section id="inicio" className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-20 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-[1fr_1.15fr] gap-12 items-center">
 
           {/* left: copy */}
           <div>
