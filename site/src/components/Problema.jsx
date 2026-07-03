@@ -5,7 +5,7 @@ const dores = [
   {
     icon: faMoneyBillWave, cor: 'text-red-500', bgCor: 'bg-red-50',
     titulo: 'Sistemas profissionais custam uma fortuna',
-    texto: 'Pergamum e Sophia cobram entre R$ 8 mil e R$ 30 mil por ano, fora do alcance de qualquer escola pública sem orçamento de TI.',
+    texto: 'Pergamum e Sophia cobram entre R$ 6 mil e R$ 30 mil por ano, fora do alcance de qualquer escola pública sem orçamento de TI.',
   },
   {
     icon: faGlobe, cor: 'text-orange-500', bgCor: 'bg-orange-50',
