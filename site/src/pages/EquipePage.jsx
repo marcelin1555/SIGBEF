@@ -32,7 +32,7 @@ export default function EquipePage() {
           <h2 className="text-2xl font-bold text-[#1F4E79] mb-10 text-center">História do projeto</h2>
           <div className="relative pl-8 border-l-2 border-gray-200 space-y-8">
             {linha_do_tempo.map(item => (
-              <div key={item.ano} className="relative">
+              <div key={item.evento} className="relative">
                 <span className="absolute -left-[2.25rem] top-0.5 w-5 h-5 rounded-full bg-[#2E75B6] border-2 border-white shadow" />
                 <div className="text-xs font-bold text-[#2E75B6] uppercase tracking-wide mb-1">{item.ano}</div>
                 <p className="text-gray-600 text-sm leading-relaxed">{item.evento}</p>

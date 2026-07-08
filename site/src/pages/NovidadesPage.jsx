@@ -7,6 +7,7 @@ const CATEGORIA_COR = {
   Robustez: 'bg-emerald-50 text-emerald-700',
   Site: 'bg-amber-50 text-amber-700',
   Segurança: 'bg-red-50 text-red-700',
+  Multiplataforma: 'bg-indigo-50 text-indigo-700',
 }
 
 function Badge({ texto }) {
@@ -19,9 +20,19 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.5.0',
+    data: '8 de julho de 2026',
+    destaque: true,
+    categorias: ['Multiplataforma', 'Site'],
+    itens: [
+      { cat: 'Multiplataforma', texto: 'O SIGBEF agora é oficialmente multiplataforma: além do instalador para Windows, cada versão traz pacote portátil para Windows, .tar.gz para Linux e aplicativo nativo para macOS' },
+      { cat: 'Multiplataforma', texto: 'Os pacotes das 3 plataformas passam a ser gerados e publicados automaticamente a cada nova versão, direto na página de releases' },
+      { cat: 'Site', texto: 'Guia de instalação e requisitos atualizados com os novos sistemas suportados' },
+    ],
+  },
+  {
     numero: '1.4.0',
     data: '2 de julho de 2026',
-    destaque: true,
     categorias: ['Acervo', 'Usuários', 'Interface', 'Robustez', 'Site'],
     itens: [
       { cat: 'Acervo', texto: 'Importação de acervo em massa via planilha CSV, com modelo pronto para baixar e proteção contra livro duplicado' },
