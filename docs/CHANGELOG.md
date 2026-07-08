@@ -4,7 +4,7 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
-## [Não lançado]
+## [1.5.0] — 2026-07-08
 
 ### Distribuição multiplataforma
 - **GitHub Actions** (`.github/workflows/build.yml`): cada tag `v*` gera
@@ -313,6 +313,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.5.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.0
 [1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.4.0
 [1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0
 [1.2.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.2.0
