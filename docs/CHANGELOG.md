@@ -4,6 +4,23 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
+## [Não lançado]
+
+### Distribuição multiplataforma
+- **GitHub Actions** (`.github/workflows/build.yml`): cada tag `v*` gera
+  automaticamente os pacotes para Windows (instalador + portátil),
+  Linux (`.tar.gz`) e macOS (`.app` em `.zip`), anexados na release
+- **`build.sh`**: build local em Linux/macOS, equivalente ao `build.bat`
+- **`sigbef.spec`**: no macOS o resultado agora é um bundle `SIGBEF.app`
+  clicável no Finder
+- **Instalador Inno**: versão parametrizável via `/DMyAppVersion` (CI)
+- **Site**: requisitos e FAQ atualizados (Linux e macOS suportados)
+
+O código do aplicativo não mudou: ele sempre foi Python + Tkinter +
+SQLite portáveis; o que faltava era o empacotamento por plataforma.
+
+---
+
 ## [1.4.0] — 2026-07-02
 
 ### Acervo

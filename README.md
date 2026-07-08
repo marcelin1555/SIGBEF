@@ -15,7 +15,7 @@
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
 [![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux-6B7280?style=flat)](#)
+[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
 [![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat&logo=readthedocs&logoColor=white)](docs/SIGBEF_Documento_Requisitos.docx)
@@ -193,12 +193,17 @@ Veja o guia completo: [`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAV
 **Resumo:**
 
 ```bash
-# Garanta o Python 3.10+ instalado e dê duplo-clique em build.bat
-# Ou manualmente:
+# Windows: garanta o Python 3.10+ instalado e dê duplo-clique em build.bat
+# Linux/macOS: rode ./build.sh
+# Ou manualmente em qualquer plataforma:
 pip install pyinstaller
 pyinstaller sigbef.spec
-# O executável fica em dist\SIGBEF\SIGBEF.exe
+# Windows/Linux: dist/SIGBEF/  ·  macOS: dist/SIGBEF.app
 ```
+
+Cada release também é compilada automaticamente para **Windows, Linux e
+macOS** pelo GitHub Actions (`.github/workflows/build.yml`), com os
+pacotes anexados na [aba Releases](../../releases).
 
 Para um instalador profissional `.exe` com atalhos no menu Iniciar e
 desinstalador, use o [Inno Setup](https://jrsoftware.org/isinfo.php) com

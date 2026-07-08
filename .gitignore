@@ -28,6 +28,8 @@ tools/Output/
 *.egg-info/
 *.egg
 *.spec
+# O spec do SIGBEF é mantido à mão e o CI multiplataforma depende dele
+!sigbef.spec
 
 # --- Editores / IDEs ---
 .vscode/

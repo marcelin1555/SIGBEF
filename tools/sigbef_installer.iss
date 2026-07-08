@@ -11,7 +11,11 @@
 ; ====================================================================
 
 #define MyAppName "SIGBEF"
-#define MyAppVersion "1.4.0"
+; A versao pode ser sobrescrita pela linha de comando do CI:
+;   ISCC.exe /DMyAppVersion=1.5.0 sigbef_installer.iss
+#ifndef MyAppVersion
+  #define MyAppVersion "1.4.0"
+#endif
 #define MyAppPublisher "Marcello"
 #define MyAppExeName "SIGBEF.exe"
 

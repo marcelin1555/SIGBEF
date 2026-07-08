@@ -1,0 +1,106 @@
+name: Build multiplataforma
+
+# Compila o SIGBEF para Windows, Linux e macOS.
+#
+# - Em push de tag v* (ex.: v1.5.0): gera os pacotes e anexa numa release.
+# - Manualmente (workflow_dispatch): gera os pacotes como artifacts.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.nome }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            nome: Windows
+          - os: ubuntu-latest
+            nome: Linux
+          - os: macos-latest
+            nome: macOS
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verificar Tkinter disponível
+        run: python -c "import tkinter; print('tkinter OK', tkinter.TkVersion)"
+
+      - name: Sanidade do código
+        run: python -m compileall -q sigbef sigbef.py
+
+      - name: Instalar PyInstaller
+        run: pip install pyinstaller
+
+      - name: Compilar executável
+        run: pyinstaller sigbef.spec --clean --noconfirm
+
+      - name: Definir versão
+        id: versao
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "versao=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "versao=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ---------- Empacotamento por plataforma ----------
+
+      - name: Gerar instalador (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DMyAppVersion=${{ steps.versao.outputs.versao }} `
+            tools\sigbef_installer.iss
+
+      - name: Pacote portátil (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist\SIGBEF -DestinationPath "SIGBEF-${{ steps.versao.outputs.versao }}-windows-portatil.zip"
+          Move-Item tools\Output\*.exe "SIGBEF_Setup_v${{ steps.versao.outputs.versao }}.exe"
+
+      - name: Pacote (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cp README.md LICENSE dist/SIGBEF/
+          tar -czf "SIGBEF-${{ steps.versao.outputs.versao }}-linux-x64.tar.gz" -C dist SIGBEF
+
+      - name: Pacote (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          ditto -c -k --keepParent dist/SIGBEF.app "SIGBEF-${{ steps.versao.outputs.versao }}-macos.zip"
+
+      # ---------- Publicação ----------
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIGBEF-${{ matrix.nome }}
+          path: |
+            SIGBEF-*.zip
+            SIGBEF-*.tar.gz
+            SIGBEF_Setup_*.exe
+          if-no-files-found: error
+
+      - name: Anexar na release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            SIGBEF-*.zip
+            SIGBEF-*.tar.gz
+            SIGBEF_Setup_*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

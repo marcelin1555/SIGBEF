@@ -1,5 +1,5 @@
 const requisitos = [
-  { label: 'Sistema operacional', valor: 'Windows 7, 8, 10 ou 11 (32 ou 64 bits)' },
+  { label: 'Sistema operacional', valor: 'Windows 7 a 11, Linux (x64) ou macOS' },
   { label: 'Espaço em disco', valor: 'Mínimo 100 MB livres' },
   { label: 'RAM', valor: 'Mínimo 512 MB (recomendado 1 GB)' },
   { label: 'Internet', valor: 'Não precisa — funciona 100% offline' },
@@ -9,7 +9,7 @@ const requisitos = [
 const passos = [
   {
     n: '1', titulo: 'Baixe o instalador',
-    texto: 'Acesse a página de releases no GitHub e baixe o instalador mais recente (SIGBEF_Setup.exe). É gratuito, sem cadastro, sem condições.',
+    texto: 'Acesse a página de releases no GitHub e baixe o pacote do seu sistema: instalador SIGBEF_Setup.exe (Windows), .tar.gz (Linux) ou .zip (macOS). É gratuito, sem cadastro, sem condições.',
     link: 'https://github.com/marcelin1555/SIGBEF/releases',
     linkLabel: 'Ir para releases',
   },
@@ -38,7 +38,7 @@ const faq = [
   },
   {
     q: 'Funciona em Mac ou Linux?',
-    r: 'Por enquanto apenas Windows. Uma versão multiplataforma está planejada para versões futuras.',
+    r: 'Sim. Além do instalador para Windows, cada release traz um pacote portátil para Linux (.tar.gz) e para macOS (.zip). Também é possível rodar direto do código-fonte com Python 3.10+.',
   },
   {
     q: 'Quantos usuários posso cadastrar?',
