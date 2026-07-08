@@ -13,7 +13,7 @@ const colunas = [
   { key: 'gratuito', label: 'Gratuito' },
   { key: 'offline',  label: 'Offline' },
   { key: 'kiosk',    label: 'Kiosk' },
-  { key: 'instalador', label: 'Instalador Windows' },
+  { key: 'instalador', label: 'Instalador pronto' },
   { key: 'suporte',  label: 'Suporte em português' },
   { key: 'opensource', label: 'Código aberto' },
 ]

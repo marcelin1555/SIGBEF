@@ -1,3 +1,5 @@
+import { VERSAO } from '../versao'
+
 const emprestimos = [
   { titulo: 'Dom Casmurro', aluno: 'Ana Silva', venc: '28/06', atrasado: false },
   { titulo: 'O Cortiço', aluno: 'João P.', venc: '22/06', atrasado: true },
@@ -30,7 +32,7 @@ function AppMockup() {
           <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
           <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
           <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-          <span className="ml-2 text-gray-400 text-[11px]">SIGBEF v1.4.0 — Painel da Biblioteca</span>
+          <span className="ml-2 text-gray-400 text-[11px]">{`SIGBEF v${VERSAO} · Painel da Biblioteca`}</span>
         </div>
 
         <div className="bg-white px-4 pt-3 pb-1">
@@ -87,7 +89,7 @@ export default function Hero() {
           {/* left: copy */}
           <div>
             <div className="flex flex-wrap gap-2 mb-6">
-              {['MIT', 'Offline', 'Windows', 'v1.4.0'].map(b => (
+              {['MIT', 'Offline', 'Multiplataforma', `v${VERSAO}`].map(b => (
                 <span key={b} className="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full">{b}</span>
               ))}
             </div>
@@ -99,16 +101,16 @@ export default function Hero() {
 
             <p className="text-lg text-blue-100 mb-8 leading-relaxed">
               Sistema completo de gestão de biblioteca escolar, gratuito, offline e
-              código aberto. Instala em 5 minutos em qualquer PC com Windows.
+              código aberto. Instala em 5 minutos em Windows, Linux ou macOS.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
-                className="bg-yellow-400 text-[#1F4E79] font-bold px-7 py-3.5 rounded-xl text-base hover:bg-yellow-300 transition-colors shadow-lg text-center">
+                className="bg-yellow-400 text-[#1F4E79] font-bold px-7 py-3.5 rounded-xl text-base hover:bg-yellow-300 active:scale-[0.98] transition shadow-lg text-center">
                 Baixar grátis
               </a>
               <a href="https://github.com/marcelin1555/SIGBEF" target="_blank" rel="noopener noreferrer"
-                className="border-2 border-white/60 text-white font-semibold px-7 py-3.5 rounded-xl text-base hover:bg-white/10 transition-colors text-center">
+                className="border-2 border-white/60 text-white font-semibold px-7 py-3.5 rounded-xl text-base hover:bg-white/10 active:scale-[0.98] transition text-center">
                 Ver no GitHub
               </a>
             </div>

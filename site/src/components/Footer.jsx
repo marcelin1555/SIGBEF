@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { VERSAO } from '../versao'
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
               <img src="/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
               <div>
                 <div className="text-white font-bold text-lg leading-none">SIGBEF</div>
-                <div className="text-xs text-gray-500">v1.4.0 · Licença MIT</div>
+                <div className="text-xs text-gray-500">{`v${VERSAO} · Licença MIT`}</div>
               </div>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">

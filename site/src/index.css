@@ -10,4 +10,12 @@
     font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
     @apply text-gray-800 bg-white;
   }
+  /* Foco visível para navegação por teclado */
+  :focus-visible {
+    @apply outline-none ring-2 ring-[#2E75B6] ring-offset-2;
+  }
+  /* Evita palavra órfã sozinha na última linha dos títulos */
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
 }
