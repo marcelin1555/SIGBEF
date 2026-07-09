@@ -4,39 +4,38 @@ from __future__ import annotations
 from datetime import date, datetime
 
 
-def data_br(valor) -> str:
-    """Converte string ISO ou date/datetime para 'dd/mm/yyyy'."""
-    if not valor:
-        return ""
+def _parse_data(valor) -> datetime | None:
+    """Interpreta date/datetime ou string ISO ('YYYY-MM-DD' ou
+    'YYYY-MM-DD HH:MM:SS'). Retorna None se não reconhecer o formato."""
     if isinstance(valor, datetime):
-        return valor.strftime("%d/%m/%Y")
+        return valor
     if isinstance(valor, date):
-        return valor.strftime("%d/%m/%Y")
+        return datetime(valor.year, valor.month, valor.day)
     s = str(valor)
-    # Aceita 'YYYY-MM-DD' ou 'YYYY-MM-DD HH:MM:SS'
     try:
         if " " in s:
-            dt = datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
-            return dt.strftime("%d/%m/%Y %H:%M")
-        dt = datetime.strptime(s[:10], "%Y-%m-%d")
-        return dt.strftime("%d/%m/%Y")
+            return datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
+        return datetime.strptime(s[:10], "%Y-%m-%d")
     except ValueError:
-        return s
+        return None
+
+
+def data_br(valor, com_hora: bool = False) -> str:
+    """Converte string ISO ou date/datetime para 'dd/mm/yyyy', opcionalmente
+    com hora ('dd/mm/yyyy HH:MM' se `com_hora=True` ou se o valor original
+    já tinha horário)."""
+    if not valor:
+        return ""
+    dt = _parse_data(valor)
+    if dt is None:
+        return str(valor)
+    mostrar_hora = com_hora or (isinstance(valor, str) and " " in valor)
+    return dt.strftime("%d/%m/%Y %H:%M" if mostrar_hora else "%d/%m/%Y")
 
 
 def data_hora_br(valor) -> str:
     """Converte para 'dd/mm/yyyy HH:MM'."""
-    if not valor:
-        return ""
-    s = str(valor)
-    try:
-        if " " in s:
-            dt = datetime.strptime(s[:19], "%Y-%m-%d %H:%M:%S")
-        else:
-            dt = datetime.strptime(s[:10], "%Y-%m-%d")
-        return dt.strftime("%d/%m/%Y %H:%M")
-    except ValueError:
-        return s
+    return data_br(valor, com_hora=True)
 
 
 def reais(valor) -> str:

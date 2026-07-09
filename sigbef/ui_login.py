@@ -11,7 +11,6 @@ from tkinter import ttk, messagebox
 from typing import Optional
 
 from . import __version__
-from . import __version__
 from .auth import autenticar, Sessao
 from . import ui_tema as tema
 

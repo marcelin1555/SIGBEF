@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
+## [1.5.1] — 2026-07-08
+
+### Manutenção interna (sem mudança de comportamento)
+- Limpeza de código guiada por auditoria de complexidade: remoção de seis
+  funções nunca utilizadas em `servicos.py` (upsert/listagem de editoras,
+  categorias e autores), unificação do parsing de datas em `formato.py` e
+  das telas de empréstimo/devolução do autoatendimento num único
+  construtor parametrizado, e correção de um import duplicado
+- Alinhamento da versão interna do pacote (`__version__`) com a linha de
+  release 1.5.x
+- Saldo: 105 linhas a menos, mesmo comportamento (validado com testes de
+  cadastro, detalhes de livro, empréstimo e devolução)
+
+---
+
 ## [1.5.0] — 2026-07-08
 
 ### Distribuição multiplataforma
@@ -313,6 +328,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.5.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.1
 [1.5.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.0
 [1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.4.0
 [1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0

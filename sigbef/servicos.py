@@ -43,57 +43,6 @@ def _codigo_barras_unico(cur, tabela: str, gerador) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Editoras / Categorias / Autores (cadastros auxiliares)
-# ---------------------------------------------------------------------------
-def upsert_editora(nome: str) -> int:
-    nome = (nome or "").strip()
-    if not nome:
-        raise RegraNegocioError("Nome da editora obrigatório.")
-    with db_cursor() as cur:
-        cur.execute("INSERT OR IGNORE INTO editora(nome) VALUES (?)", (nome,))
-        cur.execute("SELECT id FROM editora WHERE nome = ?", (nome,))
-        return cur.fetchone()["id"]
-
-
-def upsert_categoria(nome: str) -> int:
-    nome = (nome or "").strip()
-    if not nome:
-        raise RegraNegocioError("Nome da categoria obrigatório.")
-    with db_cursor() as cur:
-        cur.execute("INSERT OR IGNORE INTO categoria(nome) VALUES (?)", (nome,))
-        cur.execute("SELECT id FROM categoria WHERE nome = ?", (nome,))
-        return cur.fetchone()["id"]
-
-
-def upsert_autor(nome: str) -> int:
-    nome = (nome or "").strip()
-    if not nome:
-        raise RegraNegocioError("Nome do autor obrigatório.")
-    with db_cursor() as cur:
-        cur.execute("INSERT OR IGNORE INTO autor(nome) VALUES (?)", (nome,))
-        cur.execute("SELECT id FROM autor WHERE nome = ?", (nome,))
-        return cur.fetchone()["id"]
-
-
-def listar_editoras() -> list[dict]:
-    with db_cursor() as cur:
-        cur.execute("SELECT id, nome FROM editora ORDER BY nome")
-        return [dict(r) for r in cur.fetchall()]
-
-
-def listar_categorias() -> list[dict]:
-    with db_cursor() as cur:
-        cur.execute("SELECT id, nome FROM categoria ORDER BY nome")
-        return [dict(r) for r in cur.fetchall()]
-
-
-def listar_autores() -> list[dict]:
-    with db_cursor() as cur:
-        cur.execute("SELECT id, nome FROM autor ORDER BY nome")
-        return [dict(r) for r in cur.fetchall()]
-
-
-# ---------------------------------------------------------------------------
 # Livros e Exemplares
 # ---------------------------------------------------------------------------
 def cadastrar_livro(

@@ -208,20 +208,22 @@ class TerminalAutoatendimento(tk.Tk):
         return frame
 
     # ------------------------------------------------------------------
-    def _mostrar_emprestar(self):
-        self._trocar(self._construir_emprestar)
-
-    def _construir_emprestar(self) -> tk.Widget:
+    def _construir_acao(self, titulo_tela: str, instrucao: str,
+                         texto_botao: str, cor_botao: str,
+                         executar, montar_comprovante,
+                         refoca_apos_erro: bool = True) -> tk.Widget:
+        """Base compartilhada por 'Pegar emprestado' e 'Devolver': cartão
+        com campo de código, confirma via Enter ou botão, mostra erro
+        inline ou o comprovante de sucesso."""
         frame = tk.Frame(self, bg=tema.COR_FUNDO)
-        self._cabecalho_voltar(frame, "Pegar livro emprestado")
+        self._cabecalho_voltar(frame, titulo_tela)
 
         card = tk.Frame(frame, bg=tema.COR_CARD,
                          highlightbackground=tema.COR_BORDA,
                          highlightthickness=1)
         card.pack(padx=80, pady=40, fill="x")
 
-        tk.Label(card, bg=tema.COR_CARD,
-                 text="Aproxime o livro do leitor de código de barras",
+        tk.Label(card, bg=tema.COR_CARD, text=instrucao,
                  font=("Segoe UI", 18)).pack(pady=(40, 12))
         tk.Label(card, bg=tema.COR_CARD,
                  text="ou digite o código abaixo:",
@@ -238,26 +240,19 @@ class TerminalAutoatendimento(tk.Tk):
 
         def confirmar():
             try:
-                res = servicos.realizar_emprestimo(
-                    codigo_exemplar=ent.get(),
-                    matricula_usuario=self.sessao.matricula,
-                    origem="AUTOATENDIMENTO",
-                    operador_id=self.sessao.id,
-                )
+                res = executar(ent.get())
             except RegraNegocioError as e:
                 msg.configure(text=str(e), fg=tema.COR_ERRO)
                 ent.delete(0, "end")
-                ent.focus_set()
+                if refoca_apos_erro:
+                    ent.focus_set()
                 return
-            self._mostrar_comprovante("Empréstimo realizado", res["titulo"], [
-                ("Devolução prevista", res["data_prevista"]),
-                ("Prazo", f"{res['prazo_dias']} dias"),
-                ("Origem", "Autoatendimento"),
-            ])
+            titulo_comprovante, detalhes = montar_comprovante(res)
+            self._mostrar_comprovante(titulo_comprovante, res["titulo"], detalhes)
 
         ent.bind("<Return>", lambda e: confirmar())
-        tk.Button(card, text="Confirmar empréstimo",
-                   bg=tema.COR_SUCESSO, fg=tema.COR_TEXTO_CLARO,
+        tk.Button(card, text=texto_botao,
+                   bg=cor_botao, fg=tema.COR_TEXTO_CLARO,
                    font=("Segoe UI Semibold", 16), bd=0, padx=20, pady=10,
                    command=confirmar
                    ).pack(pady=(0, 30))
@@ -265,62 +260,59 @@ class TerminalAutoatendimento(tk.Tk):
         return frame
 
     # ------------------------------------------------------------------
+    def _mostrar_emprestar(self):
+        self._trocar(self._construir_emprestar)
+
+    def _construir_emprestar(self) -> tk.Widget:
+        def executar(codigo):
+            return servicos.realizar_emprestimo(
+                codigo_exemplar=codigo,
+                matricula_usuario=self.sessao.matricula,
+                origem="AUTOATENDIMENTO",
+                operador_id=self.sessao.id,
+            )
+
+        def montar_comprovante(res):
+            return "Empréstimo realizado", [
+                ("Devolução prevista", res["data_prevista"]),
+                ("Prazo", f"{res['prazo_dias']} dias"),
+                ("Origem", "Autoatendimento"),
+            ]
+
+        return self._construir_acao(
+            "Pegar livro emprestado",
+            "Aproxime o livro do leitor de código de barras",
+            "Confirmar empréstimo", tema.COR_SUCESSO,
+            executar, montar_comprovante, refoca_apos_erro=True,
+        )
+
+    # ------------------------------------------------------------------
     def _mostrar_devolver(self):
         self._trocar(self._construir_devolver)
 
     def _construir_devolver(self) -> tk.Widget:
-        frame = tk.Frame(self, bg=tema.COR_FUNDO)
-        self._cabecalho_voltar(frame, "Devolver livro")
+        def executar(codigo):
+            return servicos.realizar_devolucao(
+                codigo_exemplar=codigo,
+                operador_id=self.sessao.id,
+            )
 
-        card = tk.Frame(frame, bg=tema.COR_CARD,
-                         highlightbackground=tema.COR_BORDA,
-                         highlightthickness=1)
-        card.pack(padx=80, pady=40, fill="x")
-
-        tk.Label(card, bg=tema.COR_CARD,
-                 text="Aproxime o livro a ser devolvido do leitor",
-                 font=("Segoe UI", 18)).pack(pady=(40, 12))
-        tk.Label(card, bg=tema.COR_CARD,
-                 text="ou digite o código abaixo:",
-                 fg="#6B7280", font=("Segoe UI", 12)).pack()
-
-        ent = tk.Entry(card, font=("Consolas", 22), justify="center",
-                        bg=tema.COR_FUNDO_ESCURO, width=22)
-        ent.pack(pady=(20, 30), ipady=12)
-        ent.focus_set()
-
-        msg = tk.Label(card, bg=tema.COR_CARD, text="",
-                        font=("Segoe UI", 13))
-        msg.pack(pady=(0, 20))
-
-        def confirmar():
-            try:
-                res = servicos.realizar_devolucao(
-                    codigo_exemplar=ent.get(),
-                    operador_id=self.sessao.id,
-                )
-            except RegraNegocioError as e:
-                msg.configure(text=str(e), fg=tema.COR_ERRO)
-                ent.delete(0, "end")
-                return
+        def montar_comprovante(res):
             detalhes = [("Atraso", f"{res['dias_atraso']} dia(s)")]
             if res["multa"] > 0:
-                detalhes.append(("Multa gerada",
-                                  f"R$ {res['multa']:.2f}"))
+                detalhes.append(("Multa gerada", f"R$ {res['multa']:.2f}"))
                 detalhes.append(("Atenção",
                                   "Compareça ao balcão para quitar a multa."))
             else:
                 detalhes.append(("Multa", "Sem multa"))
-            self._mostrar_comprovante("Devolução realizada",
-                                        res["titulo"], detalhes)
+            return "Devolução realizada", detalhes
 
-        ent.bind("<Return>", lambda e: confirmar())
-        tk.Button(card, text="Confirmar devolução",
-                   bg=tema.COR_AVISO, fg=tema.COR_TEXTO_CLARO,
-                   font=("Segoe UI Semibold", 16), bd=0, padx=20, pady=10,
-                   command=confirmar).pack(pady=(0, 30))
-
-        return frame
+        return self._construir_acao(
+            "Devolver livro",
+            "Aproxime o livro a ser devolvido do leitor",
+            "Confirmar devolução", tema.COR_AVISO,
+            executar, montar_comprovante, refoca_apos_erro=False,
+        )
 
     # ------------------------------------------------------------------
     def _mostrar_meus(self):
