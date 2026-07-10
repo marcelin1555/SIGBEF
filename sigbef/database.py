@@ -158,6 +158,17 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO'))
 );
 
+CREATE TABLE IF NOT EXISTS reserva (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    livro_id INTEGER NOT NULL REFERENCES livro(id),
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id),
+    exemplar_id INTEGER REFERENCES exemplar(id),
+    status TEXT NOT NULL DEFAULT 'ATIVA'
+        CHECK (status IN ('ATIVA','ATENDIDA','CANCELADA','EXPIRADA')),
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    disponivel_ate TEXT
+);
+
 CREATE TABLE IF NOT EXISTS configuracao (
     chave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
@@ -178,6 +189,8 @@ CREATE INDEX IF NOT EXISTS idx_exemplar_livro ON exemplar(livro_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_status ON emprestimo(data_devolucao);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_exemplar ON emprestimo(exemplar_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_usuario ON emprestimo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_reserva_livro ON reserva(livro_id, status);
+CREATE INDEX IF NOT EXISTS idx_reserva_usuario ON reserva(usuario_id, status);
 """
 
 
@@ -190,6 +203,8 @@ CONFIG_PADRAO = {
     "MULTA_TETO": "60.00",
     "NOME_INSTITUICAO": "CEFE — Centro Educacional Felinto Elísio",
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
+    "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
+    "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
 }
 
 
