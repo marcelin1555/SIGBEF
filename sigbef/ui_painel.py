@@ -42,8 +42,14 @@ class PainelPrincipal(tk.Tk):
 
         self._secoes: dict[str, ttk.Frame] = {}
         self._botoes_lateral: dict[str, ttk.Button] = {}
+        self._secao_atual: str | None = None
         self._construir()
         self._mostrar_secao(self._secao_inicial())
+
+        # Atalhos globais: F5 recarrega a seção, Ctrl+F foca a busca
+        self.bind("<F5>", lambda e: self._atualizar_secao_atual())
+        self.bind("<Control-f>", lambda e: self._focar_busca())
+        self.bind("<Control-F>", lambda e: self._focar_busca())
 
     # ------------------------------------------------------------------
     def _construir(self):
@@ -136,8 +142,28 @@ class PainelPrincipal(tk.Tk):
             s.pack_forget()
         if chave not in self._secoes:
             return
+        self._secao_atual = chave
+        # Destaca na sidebar onde o usuário está
+        for k, btn in self._botoes_lateral.items():
+            btn.state(["selected"] if k == chave else ["!selected"])
         self._secoes[chave].pack(fill="both", expand=True)
         self._secoes[chave].atualizar()
+
+    def _atualizar_secao_atual(self):
+        if self._secao_atual in self._secoes:
+            self._secoes[self._secao_atual].atualizar()
+
+    def _focar_busca(self):
+        """Ctrl+F: foca o campo de busca (ou 1º campo) da seção visível."""
+        secao = self._secoes.get(self._secao_atual)
+        if secao is None:
+            return
+        for attr in ("ent_busca", "ent", "ent_emp_matr"):
+            campo = getattr(secao, attr, None)
+            if campo is not None:
+                campo.focus_set()
+                campo.select_range(0, "end")
+                return
 
     def _sair(self):
         if messagebox.askyesno("Encerrar sessão",
@@ -583,6 +609,10 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._devolver
                     ).grid(row=1, column=2, padx=(8, 0))
 
+        self.lbl_msg_dev = ttk.Label(dev_card, text="", style="Card.TLabel")
+        self.lbl_msg_dev.grid(row=2, column=0, columnspan=4,
+                               sticky="w", pady=(10, 0))
+
         self.ent_emp_cod.bind("<Return>", lambda e: self._emprestar())
         self.ent_emp_matr.bind("<Return>", lambda e: self.ent_emp_cod.focus_set())
         self.ent_dev_cod.bind("<Return>", lambda e: self._devolver())
@@ -650,6 +680,8 @@ class SecaoEmprestimos(SecaoBase):
             foreground=tema.COR_SUCESSO)
         self.ent_emp_cod.delete(0, "end")
         self.ent_emp_matr.delete(0, "end")
+        # Pronto pro próximo atendimento sem tocar no mouse
+        self.ent_emp_matr.focus_set()
         self.atualizar()
 
     def _devolver(self):
@@ -659,22 +691,41 @@ class SecaoEmprestimos(SecaoBase):
                 operador_id=self.sessao.id,
             )
         except RegraNegocioError as e:
-            messagebox.showwarning("Não foi possível devolver", str(e),
-                                    parent=self.painel)
+            self.lbl_msg_dev.configure(text=f"⚠ {e}",
+                                        foreground=tema.COR_ERRO)
+            self.ent_dev_cod.select_range(0, "end")
+            self.ent_dev_cod.focus_set()
             return
-        msg = f"Devolução registrada: {res['titulo']}"
         if res["multa"] > 0:
-            msg += (f"\n\nMulta gerada: {reais(res['multa'])} "
-                    f"(atraso de {res['dias_atraso']} dia(s))")
+            # Multa exige atenção do operador: mantém o aviso em destaque
+            messagebox.showwarning(
+                "Devolução com multa",
+                f"Devolução registrada: {res['titulo']}\n\n"
+                f"Multa gerada: {reais(res['multa'])} "
+                f"(atraso de {res['dias_atraso']} dia(s)).\n"
+                "Registre o recebimento ou use 'Quitar multa' na tabela.",
+                parent=self.painel)
+            self.lbl_msg_dev.configure(
+                text=(f"⚠ '{res['titulo']}' devolvido com multa de "
+                      f"{reais(res['multa'])}."),
+                foreground=tema.COR_AVISO)
         else:
-            msg += "\n\nSem multa — devolução em dia."
-        messagebox.showinfo("Devolução", msg, parent=self.painel)
+            # Sem multa: mensagem inline, sem modal — permite devolver
+            # uma pilha de livros só escaneando (scan, Enter, scan...)
+            self.lbl_msg_dev.configure(
+                text=f"✓ '{res['titulo']}' devolvido em dia, sem multa.",
+                foreground=tema.COR_SUCESSO)
         self.ent_dev_cod.delete(0, "end")
+        self.ent_dev_cod.focus_set()
         self.atualizar()
 
     def _renovar(self):
         sel = self.tree.selection()
         if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de renovar.",
+                parent=self.painel)
             return
         emp_id = int(self.tree.item(sel[0])["values"][0])
         try:
@@ -690,6 +741,10 @@ class SecaoEmprestimos(SecaoBase):
     def _quitar(self):
         sel = self.tree.selection()
         if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de quitar a multa.",
+                parent=self.painel)
             return
         emp_id = int(self.tree.item(sel[0])["values"][0])
         if messagebox.askyesno("Quitar multa",
