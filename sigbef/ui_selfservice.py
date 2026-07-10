@@ -17,6 +17,7 @@ from .servicos import RegraNegocioError
 
 
 TEMPO_SESSAO_MS = 90_000   # 90 segundos de inatividade até logout automático
+TEMPO_AVISO_MS = TEMPO_SESSAO_MS - 15_000   # aviso 15s antes do logout
 
 
 class TerminalAutoatendimento(tk.Tk):
@@ -24,6 +25,8 @@ class TerminalAutoatendimento(tk.Tk):
         super().__init__()
         self.sessao: Sessao | None = None
         self._timer = None
+        self._timer_aviso = None
+        self._aviso: tk.Label | None = None
 
         self.title("SIGBEF — Terminal de Autoatendimento")
         tema.aplicar_tema(self)
@@ -414,15 +417,37 @@ class TerminalAutoatendimento(tk.Tk):
         if self.sessao is None:
             return
         self._cancelar_timer()
+        self._timer_aviso = self.after(TEMPO_AVISO_MS, self._mostrar_aviso)
         self._timer = self.after(TEMPO_SESSAO_MS, self._mostrar_login)
 
+    def _mostrar_aviso(self):
+        """Faixa no topo avisando que a sessão vai encerrar; qualquer
+        toque ou tecla reseta o timer e a faixa some."""
+        if self.sessao is None or self._aviso is not None:
+            return
+        self._aviso = tk.Label(
+            self,
+            text="⏱  A sessão será encerrada em 15 segundos. "
+                 "Toque na tela para continuar.",
+            bg=tema.COR_AVISO, fg=tema.COR_TEXTO_CLARO,
+            font=("Segoe UI Semibold", 13), pady=10)
+        self._aviso.place(relx=0.5, rely=0, anchor="n", relwidth=1.0)
+
+    def _ocultar_aviso(self):
+        if self._aviso is not None:
+            self._aviso.destroy()
+            self._aviso = None
+
     def _cancelar_timer(self):
-        if self._timer:
-            try:
-                self.after_cancel(self._timer)
-            except tk.TclError:
-                pass
-            self._timer = None
+        self._ocultar_aviso()
+        for attr in ("_timer", "_timer_aviso"):
+            t = getattr(self, attr)
+            if t:
+                try:
+                    self.after_cancel(t)
+                except tk.TclError:
+                    pass
+                setattr(self, attr, None)
 
     # ------------------------------------------------------------------
     def executar(self):
