@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -42,7 +42,6 @@ def _diretorio_padrao() -> Path:
 
 
 # Permite sobrescrever via variável de ambiente
-import sys  # noqa: E402  (import condicional dentro do módulo)
 _env_db = os.environ.get("SIGBEF_DB_PATH")
 if _env_db:
     DB_PATH = Path(_env_db).expanduser().resolve()
@@ -58,10 +57,16 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # Conexão
 # ---------------------------------------------------------------------------
 def get_connection() -> sqlite3.Connection:
-    """Retorna uma conexão SQLite com row_factory configurado."""
-    conn = sqlite3.connect(DB_PATH)
+    """Retorna uma conexão SQLite com row_factory configurado.
+
+    `timeout=10` faz escritas concorrentes esperarem em vez de falhar
+    na hora com "database is locked" (balcão e kiosk simultâneos), e o
+    modo WAL permite leituras durante uma escrita.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
 
@@ -153,6 +158,24 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO'))
 );
 
+CREATE TABLE IF NOT EXISTS reserva (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    livro_id INTEGER NOT NULL REFERENCES livro(id),
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id),
+    exemplar_id INTEGER REFERENCES exemplar(id),
+    status TEXT NOT NULL DEFAULT 'ATIVA'
+        CHECK (status IN ('ATIVA','ATENDIDA','CANCELADA','EXPIRADA')),
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    disponivel_ate TEXT
+);
+
+CREATE TABLE IF NOT EXISTS notificacao (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    emprestimo_id INTEGER NOT NULL REFERENCES emprestimo(id),
+    tipo TEXT NOT NULL DEFAULT 'VENCIMENTO',
+    enviado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
 CREATE TABLE IF NOT EXISTS configuracao (
     chave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
@@ -173,6 +196,8 @@ CREATE INDEX IF NOT EXISTS idx_exemplar_livro ON exemplar(livro_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_status ON emprestimo(data_devolucao);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_exemplar ON emprestimo(exemplar_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_usuario ON emprestimo(usuario_id);
+CREATE INDEX IF NOT EXISTS idx_reserva_livro ON reserva(livro_id, status);
+CREATE INDEX IF NOT EXISTS idx_reserva_usuario ON reserva(usuario_id, status);
 """
 
 
@@ -183,8 +208,23 @@ CONFIG_PADRAO = {
     "LIMITE_PROFESSOR": "5",
     "MULTA_POR_DIA": "1.50",
     "MULTA_TETO": "60.00",
-    "NOME_INSTITUICAO": "CEFE — Centro Educacional Felinto Elísio",
+    "NOME_INSTITUICAO": "CEFE, Centro Educacional Felinto Elísio",
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
+    "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
+    "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
+    # E-mail de aviso de vencimento (opt-in; sistema segue 100% offline
+    # com isso desligado)
+    "EMAIL_AVISOS": "0",
+    "EMAIL_DIAS_ANTES": "2",
+    "SMTP_HOST": "",
+    "SMTP_PORTA": "587",
+    "SMTP_USUARIO": "",
+    "SMTP_SENHA": "",
+    "SMTP_REMETENTE": "",
+    # API REST somente leitura (opt-in; desligada = nenhuma porta aberta)
+    "API_ATIVA": "0",
+    "API_PORTA": "8765",
+    "API_TOKEN": "",
 }
 
 

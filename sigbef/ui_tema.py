@@ -178,9 +178,11 @@ def aplicar_tema(root):
 
     style.configure("Sidebar.TButton", font=FONTE_BOTAO_GRANDE,
                     background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO,
-                    padding=(20, 14), borderwidth=0, anchor="w")
+                    padding=(20, 14), borderwidth=0, anchor="w",
+                    focuscolor=COR_PRIMARIA)  # some com a borda pontilhada de foco
     style.map("Sidebar.TButton",
-              background=[("active", COR_SECUNDARIA), ("selected", COR_SECUNDARIA)])
+              background=[("active", COR_SECUNDARIA), ("selected", COR_SECUNDARIA)],
+              focuscolor=[("selected", COR_SECUNDARIA)])
 
     # Checkbuttons/radios sem "flash" cinza no hover
     style.configure("TCheckbutton", background=COR_FUNDO)

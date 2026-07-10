@@ -29,6 +29,23 @@ def main(argv: list[str] | None = None) -> int:
     # 1. Banco de dados
     init_database()
 
+    # 1.5 Modo servidor: `--api` roda só a API REST, sem interface
+    if "--api" in argv:
+        from . import api
+        if not api.api_ativa():
+            print("A API REST está desligada. Abra o SIGBEF, ative em "
+                  "Configurações > Integrações e rode este comando de novo.")
+            return 1
+        servidor = api.criar_servidor()
+        porta = servidor.server_address[1]
+        print(f"API do SIGBEF no ar: http://localhost:{porta}/api/v1/ping")
+        print("Somente leitura. Ctrl+C para encerrar.")
+        try:
+            servidor.serve_forever()
+        except KeyboardInterrupt:
+            servidor.server_close()
+        return 0
+
     # 2. Primeira execução: nenhum usuário cadastrado
     if seed.banco_vazio():
         # Modo desenvolvedor — popular dados de demo via flag

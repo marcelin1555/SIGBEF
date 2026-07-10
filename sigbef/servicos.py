@@ -152,6 +152,7 @@ def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
     if quantidade < 1:
         raise RegraNegocioError("Quantidade deve ser >= 1.")
     exemplares: list[tuple[int, str]] = []
+    from . import reservas
     with db_cursor() as cur:
         cur.execute("SELECT id FROM livro WHERE id = ? AND ativo = 1", (livro_id,))
         if not cur.fetchone():
@@ -167,6 +168,8 @@ def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
                 (livro_id, codigo, tombo, localizacao or None),
             )
             exemplares.append((cur.lastrowid, codigo))
+            # Exemplar novo de livro com fila já sai separado pra ela
+            reservas._promover_fila_cur(cur, livro_id, cur.lastrowid)
 
     registrar_auditoria(usuario_id, "ADD_EXEMPLARES",
                          f"livro_id={livro_id}; novos={len(exemplares)}")
@@ -543,12 +546,14 @@ def alterar_senha(usuario_id: int, nova_senha: str) -> None:
     registrar_auditoria(usuario_id, "TROCA_SENHA", "")
 
 
-def alternar_status_usuario(usuario_id: int, ativo: bool) -> None:
+def alternar_status_usuario(usuario_id: int, ativo: bool,
+                            executor_id: Optional[int] = None) -> None:
     with db_cursor() as cur:
         cur.execute("UPDATE usuario SET ativo = ? WHERE id = ?",
                     (1 if ativo else 0, usuario_id))
-    registrar_auditoria(usuario_id, "STATUS_USUARIO",
-                         f"ativo={'sim' if ativo else 'nao'}")
+    # Auditoria registra QUEM executou; o usuário afetado vai no detalhe
+    registrar_auditoria(executor_id, "STATUS_USUARIO",
+                         f"alvo={usuario_id}; ativo={'sim' if ativo else 'nao'}")
 
 
 def obter_usuario(usuario_id: int) -> dict:
@@ -734,7 +739,7 @@ def status_usuario(usuario_id: int) -> StatusUsuario:
         return StatusUsuario(em_aberto, multa_aberta, False,
                               f"Limite de {limite} empréstimos atingido.")
     return StatusUsuario(em_aberto, multa_aberta, True,
-                          f"OK — {em_aberto} de {limite} empréstimos em uso.")
+                          f"OK: {em_aberto} de {limite} empréstimos em uso.")
 
 
 def localizar_exemplar(termo: str) -> Optional[dict]:
@@ -798,7 +803,7 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
             "Exemplar não encontrado. Confira o código de barras ou o tombo "
             "(use o botão 'Selecionar...' para escolher na lista)."
         )
-    if ex["status"] != "DISPONIVEL":
+    if ex["status"] not in ("DISPONIVEL", "RESERVADO"):
         raise RegraNegocioError(
             f"Exemplar '{ex['titulo']}' não está disponível "
             f"(status: {ex['status']})."
@@ -811,13 +816,27 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
     prazo = _prazo_para_perfil(u["perfil"])
     data_prevista = (date.today() + timedelta(days=prazo)).isoformat()
 
+    from . import reservas
     with db_cursor() as cur:
+        reservas._expirar_vencidas_cur(cur)
+        # Exemplar separado por reserva só sai com o dono da vez
+        cur.execute(
+            "SELECT id, usuario_id FROM reserva "
+            "WHERE exemplar_id = ? AND status = 'ATIVA'",
+            (ex["id"],),
+        )
+        res_ativa = cur.fetchone()
+        if res_ativa and res_ativa["usuario_id"] != u["id"]:
+            raise RegraNegocioError(
+                f"Exemplar '{ex['titulo']}' está reservado para outro "
+                "usuário da fila de espera."
+            )
         # Trava atômica contra corrida (balcão e kiosk simultâneos): só a
-        # primeira transação consegue mudar DISPONIVEL -> EMPRESTADO; as
+        # primeira transação consegue mudar o status pra EMPRESTADO; as
         # demais não afetam linha nenhuma e são rejeitadas aqui.
         cur.execute(
             "UPDATE exemplar SET status = 'EMPRESTADO' "
-            "WHERE id = ? AND status = 'DISPONIVEL'",
+            "WHERE id = ? AND status IN ('DISPONIVEL', 'RESERVADO')",
             (ex["id"],),
         )
         if cur.rowcount != 1:
@@ -825,6 +844,9 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
                 f"Exemplar '{ex['titulo']}' não está disponível "
                 "(pode ter acabado de ser emprestado em outro terminal)."
             )
+        if res_ativa:
+            cur.execute("UPDATE reserva SET status = 'ATENDIDA' WHERE id = ?",
+                        (res_ativa["id"],))
         cur.execute(
             """INSERT INTO emprestimo(exemplar_id, usuario_id, data_prevista, origem)
                VALUES (?, ?, ?, ?)""",
@@ -862,9 +884,11 @@ def realizar_devolucao(*, codigo_exemplar: str,
     multa_dia = _config_float("MULTA_POR_DIA", 1.5)
     multa_teto = _config_float("MULTA_TETO", 60.0)
 
+    from . import reservas
     with db_cursor() as cur:
         cur.execute(
-            """SELECT e.id, e.usuario_id, e.data_prevista, ex.id AS exemplar_id, l.titulo
+            """SELECT e.id, e.usuario_id, e.data_prevista,
+                       ex.id AS exemplar_id, l.id AS livro_id, l.titulo
                FROM emprestimo e
                JOIN exemplar ex ON ex.id = e.exemplar_id
                JOIN livro l ON l.id = ex.livro_id
@@ -894,6 +918,11 @@ def realizar_devolucao(*, codigo_exemplar: str,
             )
         cur.execute("UPDATE exemplar SET status = 'DISPONIVEL' WHERE id = ?",
                     (emp["exemplar_id"],))
+        # Se o livro tem fila de espera, o exemplar já sai separado
+        # pro primeiro da fila em vez de voltar pra prateleira
+        reservas._expirar_vencidas_cur(cur)
+        promovida = reservas._promover_fila_cur(
+            cur, emp["livro_id"], emp["exemplar_id"])
 
     registrar_auditoria(operador_id or emp["usuario_id"], "DEVOLUCAO",
                          f"emp_id={emp['id']}; multa={multa:.2f}; atraso={dias_atraso}d")
@@ -901,6 +930,8 @@ def realizar_devolucao(*, codigo_exemplar: str,
         "titulo": emp["titulo"],
         "dias_atraso": dias_atraso,
         "multa": multa,
+        "reservado_para": promovida["usuario_nome"] if promovida else None,
+        "reserva_ate": promovida["disponivel_ate"] if promovida else None,
     }
 
 

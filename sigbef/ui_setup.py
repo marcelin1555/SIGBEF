@@ -25,7 +25,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
     def __init__(self):
         super().__init__()
         self.sucesso: bool = False
-        self.title("SIGBEF — Configuração inicial")
+        self.title("SIGBEF - Configuração inicial")
         tema.aplicar_tema(self)
         tema.centralizar_janela(self, 1000, 680)
         self.minsize(960, 640)
@@ -95,7 +95,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
             ("1.", "Identificar a instituição",
                   "Nome da escola/biblioteca que aparecerá no sistema."),
             ("2.", "Criar a conta de administrador",
-                  "Primeira conta com acesso total — você vai usar para configurar o resto."),
+                  "Primeira conta com acesso total, você vai usar para configurar o resto."),
             ("3.", "Pronto para começar",
                   "O sistema abre e você pode começar a cadastrar livros e usuários."),
         ]
@@ -117,7 +117,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
 
     # ------------------------------------------------------------------
     def _passo_instituicao(self):
-        ttk.Label(self._corpo, text="Passo 1 de 3 — Instituição",
+        ttk.Label(self._corpo, text="Passo 1 de 3: Instituição",
                   style="Titulo.TLabel").pack(anchor="w")
         ttk.Label(self._corpo,
                   text="Como sua biblioteca será identificada no sistema?",
@@ -130,12 +130,12 @@ class JanelaPrimeiraExecucao(tk.Tk):
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 11)).pack(anchor="w")
         ttk.Label(card,
-                  text="Ex.: CEFE — Centro Educacional Felinto Elísio",
+                  text="Ex.: CEFE, Centro Educacional Felinto Elísio",
                   style="CardHint.TLabel").pack(anchor="w", pady=(0, 8))
         self.ent_inst = ttk.Entry(card, font=("Segoe UI", 12), width=60)
         self.ent_inst.pack(fill="x", ipady=4)
         self.ent_inst.insert(0, self._dados["instituicao"] or
-                              "CEFE — Centro Educacional Felinto Elísio")
+                              "CEFE, Centro Educacional Felinto Elísio")
         self.ent_inst.focus_set()
         self.ent_inst.bind("<Return>", lambda e: self._avancar_instituicao())
 
@@ -155,7 +155,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
 
     # ------------------------------------------------------------------
     def _passo_admin(self):
-        ttk.Label(self._corpo, text="Passo 2 de 3 — Conta de administrador",
+        ttk.Label(self._corpo, text="Passo 2 de 3: Conta de administrador",
                   style="Titulo.TLabel").pack(anchor="w")
         ttk.Label(self._corpo,
                   text=("Crie a primeira conta de acesso. Ela terá controle "
@@ -168,7 +168,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
 
         campos = [
             ("nome", "Nome completo *",
-                "Ex.: Maria Silva — bibliotecária responsável"),
+                "Ex.: Maria Silva, bibliotecária responsável"),
             ("matricula", "Matrícula / usuário *",
                 "Apelido curto que você vai digitar no login (ex.: 'admin', 'maria')"),
             ("email", "E-mail (opcional)",

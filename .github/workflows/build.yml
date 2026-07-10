@@ -42,6 +42,9 @@ jobs:
       - name: Sanidade do código
         run: python -m compileall -q sigbef sigbef.py
 
+      - name: Testes das regras de negócio
+        run: python -m unittest discover -s tests -v
+
       - name: Instalar PyInstaller
         run: pip install pyinstaller
 

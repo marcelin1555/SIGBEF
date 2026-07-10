@@ -35,15 +35,29 @@ class PainelPrincipal(tk.Tk):
     def __init__(self, sessao: Sessao):
         super().__init__()
         self.sessao = sessao
-        self.title(f"SIGBEF — {sessao.nome} ({sessao.perfil.title()})")
+        self.title(f"SIGBEF - {sessao.nome} ({sessao.perfil.title()})")
         tema.aplicar_tema(self)
         tema.centralizar_janela(self, 1280, 780)
         self.minsize(1180, 700)
 
         self._secoes: dict[str, ttk.Frame] = {}
         self._botoes_lateral: dict[str, ttk.Button] = {}
+        self._secao_atual: str | None = None
         self._construir()
         self._mostrar_secao(self._secao_inicial())
+
+        # Atalhos globais: F5 recarrega a seção, Ctrl+F foca a busca
+        self.bind("<F5>", lambda e: self._atualizar_secao_atual())
+        self.bind("<Control-f>", lambda e: self._focar_busca())
+        self.bind("<Control-F>", lambda e: self._focar_busca())
+
+        # API REST opt-in: sobe junto com o painel quando está ativa
+        from . import api
+        if api.api_ativa():
+            try:
+                api.iniciar_em_thread()
+            except OSError:
+                pass  # porta ocupada: segue sem API; config mostra o estado
 
     # ------------------------------------------------------------------
     def _construir(self):
@@ -136,8 +150,28 @@ class PainelPrincipal(tk.Tk):
             s.pack_forget()
         if chave not in self._secoes:
             return
+        self._secao_atual = chave
+        # Destaca na sidebar onde o usuário está
+        for k, btn in self._botoes_lateral.items():
+            btn.state(["selected"] if k == chave else ["!selected"])
         self._secoes[chave].pack(fill="both", expand=True)
         self._secoes[chave].atualizar()
+
+    def _atualizar_secao_atual(self):
+        if self._secao_atual in self._secoes:
+            self._secoes[self._secao_atual].atualizar()
+
+    def _focar_busca(self):
+        """Ctrl+F: foca o campo de busca (ou 1º campo) da seção visível."""
+        secao = self._secoes.get(self._secao_atual)
+        if secao is None:
+            return
+        for attr in ("ent_busca", "ent", "ent_emp_matr"):
+            campo = getattr(secao, attr, None)
+            if campo is not None:
+                campo.focus_set()
+                campo.select_range(0, "end")
+                return
 
     def _sair(self):
         if messagebox.askyesno("Encerrar sessão",
@@ -190,7 +224,7 @@ class SecaoPainel(SecaoBase):
                        padx=8, pady=8, ipadx=4)
             self._cards_frame.columnconfigure(i % 3, weight=1)
             ttk.Label(card, text=titulo, style="CardHint.TLabel").pack(anchor="w")
-            valor = ttk.Label(card, text="—", style="Display.TLabel")
+            valor = ttk.Label(card, text="", style="Display.TLabel")
             valor.pack(anchor="w", pady=(6, 0))
             self._cards[chave] = valor
 
@@ -356,8 +390,8 @@ class SecaoLivros(SecaoBase):
         for liv in servicos.listar_livros(self.ent_busca.get(),
                                             self.var_disponiveis.get()):
             self.tree.insert("", "end", values=(
-                liv["id"], liv["titulo"], liv["autores"] or "—",
-                liv["categoria"] or "—", liv["ano_publicacao"] or "—",
+                liv["id"], liv["titulo"], liv["autores"] or "",
+                liv["categoria"] or "", liv["ano_publicacao"] or "",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
         tema.aplicar_zebra(self.tree)
@@ -437,7 +471,8 @@ class SecaoUsuarios(SecaoBase):
         usuario_id = int(valores[0])
         ativo_atual = str(valores[-1]).lower() == "sim"
         try:
-            servicos.alternar_status_usuario(usuario_id, not ativo_atual)
+            servicos.alternar_status_usuario(usuario_id, not ativo_atual,
+                                             executor_id=self.sessao.id)
         except Exception as e:
             messagebox.showerror("Erro", str(e), parent=self.painel)
         self.atualizar()
@@ -506,10 +541,10 @@ class SecaoUsuarios(SecaoBase):
         for u in servicos.listar_usuarios(self.ent_busca.get()):
             self.tree.insert("", "end", values=(
                 u["id"], u["nome"], u["matricula"],
-                u.get("turma") or "—",
+                u.get("turma") or "",
                 u["perfil"],
-                u.get("email") or "—",
-                u.get("codigo_barras") or "—",
+                u.get("email") or "",
+                u.get("codigo_barras") or "",
                 "Sim" if u["ativo"] else "Não",
             ))
         tema.aplicar_zebra(self.tree)
@@ -582,6 +617,10 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._devolver
                     ).grid(row=1, column=2, padx=(8, 0))
 
+        self.lbl_msg_dev = ttk.Label(dev_card, text="", style="Card.TLabel")
+        self.lbl_msg_dev.grid(row=2, column=0, columnspan=4,
+                               sticky="w", pady=(10, 0))
+
         self.ent_emp_cod.bind("<Return>", lambda e: self._emprestar())
         self.ent_emp_matr.bind("<Return>", lambda e: self.ent_emp_cod.focus_set())
         self.ent_dev_cod.bind("<Return>", lambda e: self._devolver())
@@ -607,13 +646,21 @@ class SecaoEmprestimos(SecaoBase):
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
         self.tree.pack(fill="both", expand=True)
+        # Devolução com um clique: duplo clique na linha devolve o livro
+        self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
 
         op = ttk.Frame(self)
         op.pack(fill="x", pady=(8, 0))
+        ttk.Button(op, text="✓ Devolver selecionado",
+                    style="Sucesso.TButton",
+                    command=self._devolver_selecionado
+                    ).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Renovar selecionado",
                     command=self._renovar).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Quitar multa",
                     command=self._quitar).pack(side="left")
+        ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
+                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
 
     def _selecionar_exemplar_emprestimo(self):
         d = DialogoSelecionarExemplar(self.painel)
@@ -649,31 +696,87 @@ class SecaoEmprestimos(SecaoBase):
             foreground=tema.COR_SUCESSO)
         self.ent_emp_cod.delete(0, "end")
         self.ent_emp_matr.delete(0, "end")
+        # Pronto pro próximo atendimento sem tocar no mouse
+        self.ent_emp_matr.focus_set()
         self.atualizar()
 
     def _devolver(self):
+        self._executar_devolucao(self.ent_dev_cod.get())
+
+    def _devolver_selecionado(self):
+        """Devolução com um clique a partir da tabela de empréstimos."""
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de devolver.",
+                parent=self.painel)
+            return
+        v = self.tree.item(sel[0])["values"]
+        titulo, usuario, codigo = v[4], v[1], str(v[5])
+        if not messagebox.askyesno(
+                "Confirmar devolução",
+                f"Registrar a devolução de '{titulo}'\n"
+                f"emprestado a {usuario}?",
+                parent=self.painel):
+            return
+        self._executar_devolucao(codigo)
+
+    def _executar_devolucao(self, codigo: str):
         try:
             res = servicos.realizar_devolucao(
-                codigo_exemplar=self.ent_dev_cod.get(),
+                codigo_exemplar=codigo,
                 operador_id=self.sessao.id,
             )
         except RegraNegocioError as e:
-            messagebox.showwarning("Não foi possível devolver", str(e),
-                                    parent=self.painel)
+            self.lbl_msg_dev.configure(text=f"⚠ {e}",
+                                        foreground=tema.COR_ERRO)
+            self.ent_dev_cod.select_range(0, "end")
+            self.ent_dev_cod.focus_set()
             return
-        msg = f"Devolução registrada: {res['titulo']}"
         if res["multa"] > 0:
-            msg += (f"\n\nMulta gerada: {reais(res['multa'])} "
-                    f"(atraso de {res['dias_atraso']} dia(s))")
+            # Multa exige atenção do operador: mantém o aviso em destaque
+            messagebox.showwarning(
+                "Devolução com multa",
+                f"Devolução registrada: {res['titulo']}\n\n"
+                f"Multa gerada: {reais(res['multa'])} "
+                f"(atraso de {res['dias_atraso']} dia(s)).\n"
+                "Registre o recebimento ou use 'Quitar multa' na tabela.",
+                parent=self.painel)
+            self.lbl_msg_dev.configure(
+                text=(f"⚠ '{res['titulo']}' devolvido com multa de "
+                      f"{reais(res['multa'])}."),
+                foreground=tema.COR_AVISO)
         else:
-            msg += "\n\nSem multa — devolução em dia."
-        messagebox.showinfo("Devolução", msg, parent=self.painel)
+            # Sem multa: mensagem inline, sem modal — permite devolver
+            # uma pilha de livros só escaneando (scan, Enter, scan...)
+            self.lbl_msg_dev.configure(
+                text=f"✓ '{res['titulo']}' devolvido em dia, sem multa.",
+                foreground=tema.COR_SUCESSO)
+        if res.get("reservado_para"):
+            # Livro com fila: o operador precisa separar o exemplar
+            messagebox.showinfo(
+                "Livro com fila de espera",
+                f"'{res['titulo']}' está reservado para "
+                f"{res['reservado_para']}.\n\nSepare o exemplar: retirada "
+                f"até {data_br(res['reserva_ate'])}.",
+                parent=self.painel)
+            self.lbl_msg_dev.configure(
+                text=(f"✓ '{res['titulo']}' devolvido. Separado para "
+                      f"{res['reservado_para']} até "
+                      f"{data_br(res['reserva_ate'])}."),
+                foreground=tema.COR_AVISO)
         self.ent_dev_cod.delete(0, "end")
+        self.ent_dev_cod.focus_set()
         self.atualizar()
 
     def _renovar(self):
         sel = self.tree.selection()
         if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de renovar.",
+                parent=self.painel)
             return
         emp_id = int(self.tree.item(sel[0])["values"][0])
         try:
@@ -689,6 +792,10 @@ class SecaoEmprestimos(SecaoBase):
     def _quitar(self):
         sel = self.tree.selection()
         if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de quitar a multa.",
+                parent=self.painel)
             return
         emp_id = int(self.tree.item(sel[0])["values"][0])
         if messagebox.askyesno("Quitar multa",
@@ -705,10 +812,10 @@ class SecaoEmprestimos(SecaoBase):
             tag = ("atrasado",) if atrasado else ()
             self.tree.insert("", "end", tags=tag, values=(
                 e["id"], e["usuario"], e["matricula"],
-                e.get("turma") or "—",
+                e.get("turma") or "",
                 e["titulo"],
                 e["codigo_barras"], data_hora_br(e["data_emprestimo"]),
-                data_br(e["data_prevista"]), "SIM" if atrasado else "—",
+                data_br(e["data_prevista"]), "SIM" if atrasado else "",
             ))
         tema.aplicar_zebra(self.tree)
 
@@ -773,7 +880,7 @@ class _DialogoSelecionarUsuario(tk.Toplevel):
                 continue
             self.tree.insert("", "end", values=(
                 u["nome"], u["matricula"], u["perfil"],
-                u.get("email") or "—",
+                u.get("email") or "",
             ))
         tema.aplicar_zebra(self.tree)
 
@@ -1045,6 +1152,102 @@ class SecaoConfig(SecaoBase):
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 0))
 
+        # ---- Avisos de vencimento por e-mail ----
+        from . import notificacoes
+        from .database import get_config as _gc
+        tk.Frame(integ, height=1, bg=tema.COR_BORDA).pack(fill="x", pady=12)
+        self.var_email = tk.BooleanVar(value=notificacoes.avisos_ativos())
+        ttk.Checkbutton(
+            integ,
+            text="Avisar por e-mail quando a devolução estiver próxima",
+            variable=self.var_email,
+            command=lambda: notificacoes.definir_avisos(self.var_email.get())
+            ).pack(anchor="w")
+        ttk.Label(
+            integ,
+            text=("Envia um lembrete único por empréstimo para usuários com "
+                  "e-mail cadastrado, alguns dias antes do prazo. Use o "
+                  "e-mail da biblioteca (ex.: Gmail com senha de app)."),
+            style="CardHint.TLabel", wraplength=700
+            ).pack(anchor="w", pady=(4, 8))
+
+        smtp_form = ttk.Frame(integ, style="Card.TFrame")
+        smtp_form.pack(fill="x")
+        smtp_form.columnconfigure(1, weight=1)
+        self._smtp_entries: dict[str, ttk.Entry] = {}
+        for i, (chave, rotulo, largura) in enumerate([
+            ("SMTP_HOST", "Servidor SMTP (ex.: smtp.gmail.com)", 34),
+            ("SMTP_PORTA", "Porta (587 na maioria)", 8),
+            ("SMTP_USUARIO", "Usuário / e-mail de envio", 34),
+            ("SMTP_SENHA", "Senha (ou senha de app)", 24),
+            ("SMTP_REMETENTE", "Remetente exibido (opcional)", 34),
+            ("EMAIL_DIAS_ANTES", "Avisar quantos dias antes", 8),
+        ]):
+            ttk.Label(smtp_form, text=rotulo, style="Card.TLabel"
+                      ).grid(row=i, column=0, sticky="w", pady=3)
+            ent = ttk.Entry(smtp_form, width=largura)
+            if chave == "SMTP_SENHA":
+                ent.configure(show="•")
+            ent.insert(0, _gc(chave) or "")
+            ent.grid(row=i, column=1, sticky="w", padx=12, pady=3)
+            self._smtp_entries[chave] = ent
+
+        botoes_email = ttk.Frame(integ, style="Card.TFrame")
+        botoes_email.pack(fill="x", pady=(10, 0))
+        self.lbl_email_msg = ttk.Label(botoes_email, text="",
+                                        style="CardHint.TLabel")
+        self.lbl_email_msg.pack(side="left")
+        ttk.Button(botoes_email, text="Enviar avisos agora",
+                    style="Primario.TButton",
+                    command=self._enviar_avisos_email
+                    ).pack(side="right")
+        ttk.Button(botoes_email, text="Salvar dados de e-mail",
+                    command=self._salvar_email
+                    ).pack(side="right", padx=(0, 8))
+
+        # ---- API REST somente leitura ----
+        from . import api
+        tk.Frame(integ, height=1, bg=tema.COR_BORDA).pack(fill="x", pady=12)
+        self.var_api = tk.BooleanVar(value=api.api_ativa())
+        ttk.Checkbutton(
+            integ,
+            text="API REST somente leitura (integração com outros sistemas)",
+            variable=self.var_api,
+            command=self._toggle_api).pack(anchor="w")
+        ttk.Label(
+            integ,
+            text=("Permite que sistemas da escola consultem acervo e "
+                  "empréstimos pela rede local, protegido por token. "
+                  "Nenhuma rota altera dados. Guia completo em docs/API.md."),
+            style="CardHint.TLabel", wraplength=700
+            ).pack(anchor="w", pady=(4, 8))
+
+        api_form = ttk.Frame(integ, style="Card.TFrame")
+        api_form.pack(fill="x")
+        ttk.Label(api_form, text="Porta:", style="Card.TLabel"
+                  ).grid(row=0, column=0, sticky="w", pady=3)
+        self.ent_api_porta = ttk.Entry(api_form, width=8)
+        self.ent_api_porta.insert(0, str(api.porta_configurada()))
+        self.ent_api_porta.grid(row=0, column=1, sticky="w", padx=12)
+        ttk.Label(api_form, text="Token de acesso:", style="Card.TLabel"
+                  ).grid(row=1, column=0, sticky="w", pady=3)
+        self.ent_api_token = ttk.Entry(api_form, width=50)
+        self.ent_api_token.grid(row=1, column=1, sticky="w", padx=12)
+        self._refrescar_token_api()
+
+        botoes_api = ttk.Frame(integ, style="Card.TFrame")
+        botoes_api.pack(fill="x", pady=(10, 0))
+        self.lbl_api_msg = ttk.Label(botoes_api, text="",
+                                      style="CardHint.TLabel")
+        self.lbl_api_msg.pack(side="left")
+        self._refrescar_status_api()
+        ttk.Button(botoes_api, text="Gerar novo token",
+                    command=self._gerar_token_api
+                    ).pack(side="right")
+        ttk.Button(botoes_api, text="Copiar token",
+                    command=self._copiar_token_api
+                    ).pack(side="right", padx=(0, 8))
+
         # ---------------- Aparencia ----------------
         ttk.Label(body, text="Aparência",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
@@ -1181,6 +1384,102 @@ class SecaoConfig(SecaoBase):
     def _toggle_isbn(self):
         servicos.definir_isbn_lookup(self.var_isbn.get())
 
+    # ---------------- Avisos por e-mail ----------------
+    def _salvar_email(self):
+        from .database import set_config
+        for chave, ent in self._smtp_entries.items():
+            set_config(chave, ent.get().strip())
+        self.lbl_email_msg.configure(text="✓ Dados de e-mail salvos.",
+                                      foreground=tema.COR_SUCESSO)
+
+    def _enviar_avisos_email(self):
+        from . import notificacoes
+        self._salvar_email()   # garante que o que está na tela vale
+        self.lbl_email_msg.configure(text="Enviando...",
+                                      foreground=tema.COR_TEXTO)
+        self.painel.update_idletasks()
+        try:
+            res = notificacoes.enviar_avisos(executor_id=self.sessao.id)
+        except RegraNegocioError as e:
+            self.lbl_email_msg.configure(text=f"⚠ {e}",
+                                          foreground=tema.COR_ERRO)
+            return
+        if res["enviados"]:
+            texto = f"✓ {res['enviados']} aviso(s) enviado(s)."
+        else:
+            texto = "Nenhum aviso pendente no momento."
+        self.lbl_email_msg.configure(text=texto,
+                                      foreground=tema.COR_SUCESSO)
+
+    # ---------------- API REST ----------------
+    def _refrescar_token_api(self):
+        from . import api
+        self.ent_api_token.configure(state="normal")
+        self.ent_api_token.delete(0, "end")
+        self.ent_api_token.insert(0, api.obter_token() or "(gerado ao ativar)")
+        self.ent_api_token.configure(state="readonly")
+
+    def _refrescar_status_api(self):
+        from . import api
+        if api.esta_no_ar():
+            porta = api.porta_configurada()
+            self.lbl_api_msg.configure(
+                text=f"✓ API no ar na porta {porta} (somente leitura).",
+                foreground=tema.COR_SUCESSO)
+        elif api.api_ativa():
+            self.lbl_api_msg.configure(
+                text="API ativa; sobe junto com o aplicativo.",
+                foreground=tema.COR_TEXTO)
+        else:
+            self.lbl_api_msg.configure(text="API desligada.",
+                                        foreground=tema.COR_TEXTO)
+
+    def _toggle_api(self):
+        from . import api
+        from .database import set_config
+        ligar = self.var_api.get()
+        porta_txt = self.ent_api_porta.get().strip()
+        if porta_txt.isdigit():
+            set_config("API_PORTA", porta_txt)
+        api.definir_api(ligar, executor_id=self.sessao.id)
+        if ligar:
+            try:
+                api.iniciar_em_thread()
+            except OSError as e:
+                self.lbl_api_msg.configure(
+                    text=f"⚠ Não consegui abrir a porta: {e}",
+                    foreground=tema.COR_ERRO)
+                return
+        else:
+            api.parar()
+        self._refrescar_token_api()
+        self._refrescar_status_api()
+
+    def _copiar_token_api(self):
+        from . import api
+        token = api.obter_token()
+        if not token:
+            self.lbl_api_msg.configure(text="Ative a API primeiro.",
+                                        foreground=tema.COR_AVISO)
+            return
+        self.painel.clipboard_clear()
+        self.painel.clipboard_append(token)
+        self.lbl_api_msg.configure(text="✓ Token copiado.",
+                                    foreground=tema.COR_SUCESSO)
+
+    def _gerar_token_api(self):
+        from . import api
+        if not messagebox.askyesno(
+                "Gerar novo token",
+                "O token atual deixa de funcionar e os sistemas "
+                "integrados precisarão do novo. Continuar?",
+                parent=self.painel):
+            return
+        api.gerar_novo_token(executor_id=self.sessao.id)
+        self._refrescar_token_api()
+        self.lbl_api_msg.configure(text="✓ Novo token gerado.",
+                                    foreground=tema.COR_SUCESSO)
+
     # ---------------- Aparencia ----------------
     def _aplicar_preset_aparencia(self, chave_preset):
         preset = tema.PRESETS.get(chave_preset)
@@ -1299,6 +1598,36 @@ class SecaoPesquisaAluno(SecaoBase):
         ttk.Button(rodape, text="✓ Pegar emprestado",
                     style="Sucesso.TButton",
                     command=self._pegar_emprestado).pack(side="right")
+        ttk.Button(rodape, text="Reservar",
+                    command=self._reservar).pack(side="right", padx=(0, 8))
+
+    def _reservar(self):
+        """Entra na fila de espera de um livro sem exemplar disponível."""
+        sel = self.tree.selection()
+        if not sel:
+            self.lbl_msg.configure(text="Selecione um livro na lista.",
+                                     foreground=tema.COR_AVISO)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        livro_id = int(valores[0])
+        if not messagebox.askyesno(
+                "Reservar",
+                f"Entrar na fila de espera de '{valores[1]}'?\n\n"
+                "Quando um exemplar for devolvido, ele fica separado "
+                "pra você retirar na biblioteca.",
+                parent=self.painel):
+            return
+        from . import reservas
+        try:
+            r = reservas.criar_reserva(livro_id, self.sessao.id)
+        except RegraNegocioError as e:
+            self.lbl_msg.configure(text=f"⚠ {e}",
+                                     foreground=tema.COR_ERRO)
+            return
+        self.lbl_msg.configure(
+            text=(f"✓ Reserva feita: '{r['titulo']}'. Você é o "
+                  f"{r['posicao']}º da fila. Acompanhe em 'Meus empréstimos'."),
+            foreground=tema.COR_SUCESSO)
 
     def _detalhes(self):
         sel = self.tree.selection()
@@ -1358,9 +1687,9 @@ class SecaoPesquisaAluno(SecaoBase):
         for liv in servicos.listar_livros(self.ent.get(),
                                             self.var_disp.get()):
             self.tree.insert("", "end", values=(
-                liv["id"], liv["titulo"], liv["autores"] or "—",
-                liv["categoria"] or "—",
-                liv["ano_publicacao"] or "—",
+                liv["id"], liv["titulo"], liv["autores"] or "",
+                liv["categoria"] or "",
+                liv["ano_publicacao"] or "",
                 f"{liv['disponiveis']}/{liv['total_exemplares']}",
             ))
         tema.aplicar_zebra(self.tree)
@@ -1396,7 +1725,61 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree.tag_configure("devolvido", foreground="#888888")
         self.tree.pack(fill="both", expand=True)
 
+        # ------ Minhas reservas ------
+        ttk.Label(self, text="Minhas reservas",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(14, 4))
+        self.tree_res = ttk.Treeview(
+            self, columns=("rid", "rtitulo", "situacao"),
+            show="headings", height=4)
+        self.tree_res.heading("rid", text="ID")
+        self.tree_res.heading("rtitulo", text="Título")
+        self.tree_res.heading("situacao", text="Situação")
+        self.tree_res.column("rid", width=0, stretch=False)
+        self.tree_res.column("rtitulo", width=300, anchor="w")
+        self.tree_res.column("situacao", width=380, anchor="w")
+        self.tree_res.tag_configure("pronta", background="#FFF6E5")
+        self.tree_res.pack(fill="x")
+        bot_res = ttk.Frame(self)
+        bot_res.pack(fill="x", pady=(6, 0))
+        ttk.Button(bot_res, text="Cancelar reserva selecionada",
+                    command=self._cancelar_reserva).pack(side="right")
+
+    def _cancelar_reserva(self):
+        from . import reservas
+        sel = self.tree_res.selection()
+        if not sel:
+            messagebox.showinfo("Selecione uma reserva",
+                                  "Clique numa reserva da lista primeiro.",
+                                  parent=self.painel)
+            return
+        valores = self.tree_res.item(sel[0])["values"]
+        if not messagebox.askyesno(
+                "Cancelar reserva",
+                f"Cancelar a reserva de '{valores[1]}'?",
+                parent=self.painel):
+            return
+        try:
+            reservas.cancelar_reserva(int(valores[0]),
+                                      usuario_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+        self.atualizar()
+
     def atualizar(self):
+        from . import reservas
+        for it in self.tree_res.get_children():
+            self.tree_res.delete(it)
+        for r in reservas.listar_reservas_usuario(self.sessao.id):
+            if r["exemplar_id"]:
+                situacao = ("Separado pra você! Retire na biblioteca até "
+                            f"{data_br(r['disponivel_ate'])}.")
+                tags = ("pronta",)
+            else:
+                situacao = f"{r['posicao']}º da fila de espera"
+                tags = ()
+            self.tree_res.insert("", "end", tags=tags,
+                                  values=(r["id"], r["titulo"], situacao))
+
         st = servicos.status_usuario(self.sessao.id)
         cor = tema.COR_SUCESSO if st.pode_pegar else tema.COR_AVISO
         self.lbl_status.configure(text=st.motivo, foreground=cor)
@@ -1420,7 +1803,7 @@ class SecaoMeusEmprestimos(SecaoBase):
                 e["titulo"],
                 data_hora_br(e["data_emprestimo"]),
                 data_br(e["data_prevista"]),
-                data_hora_br(e["data_devolucao"]) if e["data_devolucao"] else "—",
+                data_hora_br(e["data_devolucao"]) if e["data_devolucao"] else "",
                 reais(e["multa"]),
                 e["origem"].title(),
             ))

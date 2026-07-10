@@ -2,7 +2,56 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
----
+## [Não lançado] — v1.6.0 em desenvolvimento (branch melhorias-v1.6)
+
+### API REST somente leitura (opt-in)
+- Outros sistemas da escola consultam acervo, disponibilidade e
+  situação de empréstimos pela rede local, sem tocar no banco
+- 100% biblioteca padrão (`http.server`), zero dependência nova
+- Token de acesso obrigatório (gerado via `secrets`, comparação em
+  tempo constante), com regeneração pela tela de Configurações
+- Nasce desligada; ligada, sobe junto com o aplicativo ou roda sem
+  interface com `python sigbef.py --api`
+- 6 rotas GET (ping, estatísticas, livros, detalhes, situação do
+  leitor, circulação); nenhuma rota de escrita; guia em `docs/API.md`
+
+### Reservas com fila de espera
+- Aluno/professor reserva um livro sem exemplar disponível (botão
+  "Reservar" na pesquisa); fila por ordem de chegada
+- Exemplar devolvido de livro com fila fica **separado** pro primeiro
+  da fila por 2 dias (configurável), em vez de voltar pra prateleira
+- Só o dono da vez consegue emprestar o exemplar separado; prazo
+  vencido passa a vez pro próximo automaticamente
+- "Meus empréstimos" mostra as reservas (posição na fila ou prazo de
+  retirada) com cancelamento; balcão e kiosk avisam quando a devolução
+  tem fila esperando
+
+### Avisos de vencimento por e-mail (opt-in)
+- Lembrete único por empréstimo para usuários com e-mail cadastrado,
+  alguns dias antes do prazo (janela configurável)
+- Configuração completa em Configurações → Integrações (servidor SMTP,
+  porta, credenciais, remetente) com botão "Enviar avisos agora"
+- Desligado por padrão: o sistema continua 100% offline pra quem não usar
+- Envio tudo-ou-nada: falha de rede não marca aviso como enviado, a
+  próxima tentativa reenvia
+
+### Segurança e robustez
+- Verificação de senha em tempo constante e proteção contra
+  enumeração de matrículas por tempo de resposta
+- Tentativas de login falhas registradas na auditoria (LOGIN_FALHA)
+- Auditoria de ativar/desativar usuário registra quem executou
+- SQLite em modo WAL: balcão e kiosk simultâneos sem travamentos
+
+### Experiência de uso
+- **Devolução com um clique**: duplo clique (ou botão) na linha do
+  empréstimo aberto devolve o livro, com confirmação; sem digitar código
+- Valores vazios nas tabelas ficam em branco e travessões foram
+  removidos de toda a interface (títulos, mensagens e dados de exemplo)
+- Suíte com 174 testes automatizados cobrindo as regras de negócio
+- F5 recarrega a seção, Ctrl+F foca a busca, sidebar destaca a seção ativa
+- Balcão: devolução em série sem janelinha a cada livro; foco volta
+  sozinho pro próximo atendimento
+- Kiosk avisa 15 segundos antes de encerrar a sessão por inatividade
 
 ## [1.5.1] — 2026-07-08
 
@@ -16,8 +65,6 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   release 1.5.x
 - Saldo: 105 linhas a menos, mesmo comportamento (validado com testes de
   cadastro, detalhes de livro, empréstimo e devolução)
-
----
 
 ## [1.5.0] — 2026-07-08
 
@@ -33,8 +80,6 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 O código do aplicativo não mudou: ele sempre foi Python + Tkinter +
 SQLite portáveis; o que faltava era o empacotamento por plataforma.
-
----
 
 ## [1.4.0] — 2026-07-02
 
@@ -69,8 +114,6 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 
 ### Site
 - Contato direto por **WhatsApp** (botão flutuante, planos e rodapé)
-
----
 
 ## [1.3.0] — 2026-06-25
 
@@ -108,8 +151,6 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 - Repositório Bitbucket configurado: `bitbucket.org/workspacemarcellomelo/sigbef-sistema-de-biblioteca`
 - Push inicial para Bitbucket com 40 arquivos
 
----
-
 ## [1.2.0] — 2026-05-24
 
 Pedido vindo da própria biblioteca do CEFE durante a apresentação do
@@ -141,8 +182,6 @@ identificação do aluno.
   com turma vazia.
 - Tela de cadastro de usuário aumentou de 520x520 para 520x600 pra
   acomodar o novo campo sem cortar conteúdo.
-
----
 
 ## [1.1.0] — 2026-05-22
 
@@ -195,8 +234,6 @@ Sebrae.
   - README atualizado refletindo a nova árvore.
 - `.gitignore` ampliado: ignora `.claude/`, `skills-lock.json` e
   artefatos locais.
-
----
 
 ## [1.0.0] — 2026-05-05
 
@@ -305,8 +342,6 @@ Biblioteca do CEFE**. Pronto para uso em produção.
 - **5 usuários:** admin, bibliotecaria, prof, aluna, pedro
 - **10 livros** com múltiplos exemplares em 6 categorias
   (Literatura Brasileira, Computação, História, etc.)
-
----
 
 ## Versões futuras (roadmap)
 

@@ -17,6 +17,7 @@ from .servicos import RegraNegocioError
 
 
 TEMPO_SESSAO_MS = 90_000   # 90 segundos de inatividade até logout automático
+TEMPO_AVISO_MS = TEMPO_SESSAO_MS - 15_000   # aviso 15s antes do logout
 
 
 class TerminalAutoatendimento(tk.Tk):
@@ -24,8 +25,10 @@ class TerminalAutoatendimento(tk.Tk):
         super().__init__()
         self.sessao: Sessao | None = None
         self._timer = None
+        self._timer_aviso = None
+        self._aviso: tk.Label | None = None
 
-        self.title("SIGBEF — Terminal de Autoatendimento")
+        self.title("SIGBEF - Terminal de Autoatendimento")
         tema.aplicar_tema(self)
         self.configure(bg=tema.COR_FUNDO)
         tema.centralizar_janela(self, 1100, 760)
@@ -105,7 +108,7 @@ class TerminalAutoatendimento(tk.Tk):
 
         rodape = tk.Frame(frame, bg=tema.COR_FUNDO)
         rodape.pack(side="bottom", fill="x", pady=10)
-        tk.Label(rodape, text="SIGBEF — Modo de Autoatendimento",
+        tk.Label(rodape, text="SIGBEF · Modo de Autoatendimento",
                  bg=tema.COR_FUNDO, fg="#6B7280",
                  font=("Segoe UI", 10)).pack()
 
@@ -210,8 +213,7 @@ class TerminalAutoatendimento(tk.Tk):
     # ------------------------------------------------------------------
     def _construir_acao(self, titulo_tela: str, instrucao: str,
                          texto_botao: str, cor_botao: str,
-                         executar, montar_comprovante,
-                         refoca_apos_erro: bool = True) -> tk.Widget:
+                         executar, montar_comprovante) -> tk.Widget:
         """Base compartilhada por 'Pegar emprestado' e 'Devolver': cartão
         com campo de código, confirma via Enter ou botão, mostra erro
         inline ou o comprovante de sucesso."""
@@ -244,8 +246,7 @@ class TerminalAutoatendimento(tk.Tk):
             except RegraNegocioError as e:
                 msg.configure(text=str(e), fg=tema.COR_ERRO)
                 ent.delete(0, "end")
-                if refoca_apos_erro:
-                    ent.focus_set()
+                ent.focus_set()
                 return
             titulo_comprovante, detalhes = montar_comprovante(res)
             self._mostrar_comprovante(titulo_comprovante, res["titulo"], detalhes)
@@ -283,7 +284,7 @@ class TerminalAutoatendimento(tk.Tk):
             "Pegar livro emprestado",
             "Aproxime o livro do leitor de código de barras",
             "Confirmar empréstimo", tema.COR_SUCESSO,
-            executar, montar_comprovante, refoca_apos_erro=True,
+            executar, montar_comprovante,
         )
 
     # ------------------------------------------------------------------
@@ -305,13 +306,17 @@ class TerminalAutoatendimento(tk.Tk):
                                   "Compareça ao balcão para quitar a multa."))
             else:
                 detalhes.append(("Multa", "Sem multa"))
+            if res.get("reservado_para"):
+                detalhes.append(("Reserva",
+                                  "Este livro tem fila de espera. "
+                                  "Entregue-o no balcão."))
             return "Devolução realizada", detalhes
 
         return self._construir_acao(
             "Devolver livro",
             "Aproxime o livro a ser devolvido do leitor",
             "Confirmar devolução", tema.COR_AVISO,
-            executar, montar_comprovante, refoca_apos_erro=False,
+            executar, montar_comprovante,
         )
 
     # ------------------------------------------------------------------
@@ -416,15 +421,37 @@ class TerminalAutoatendimento(tk.Tk):
         if self.sessao is None:
             return
         self._cancelar_timer()
+        self._timer_aviso = self.after(TEMPO_AVISO_MS, self._mostrar_aviso)
         self._timer = self.after(TEMPO_SESSAO_MS, self._mostrar_login)
 
+    def _mostrar_aviso(self):
+        """Faixa no topo avisando que a sessão vai encerrar; qualquer
+        toque ou tecla reseta o timer e a faixa some."""
+        if self.sessao is None or self._aviso is not None:
+            return
+        self._aviso = tk.Label(
+            self,
+            text="⏱  A sessão será encerrada em 15 segundos. "
+                 "Toque na tela para continuar.",
+            bg=tema.COR_AVISO, fg=tema.COR_TEXTO_CLARO,
+            font=("Segoe UI Semibold", 13), pady=10)
+        self._aviso.place(relx=0.5, rely=0, anchor="n", relwidth=1.0)
+
+    def _ocultar_aviso(self):
+        if self._aviso is not None:
+            self._aviso.destroy()
+            self._aviso = None
+
     def _cancelar_timer(self):
-        if self._timer:
-            try:
-                self.after_cancel(self._timer)
-            except tk.TclError:
-                pass
-            self._timer = None
+        self._ocultar_aviso()
+        for attr in ("_timer", "_timer_aviso"):
+            t = getattr(self, attr)
+            if t:
+                try:
+                    self.after_cancel(t)
+                except tk.TclError:
+                    pass
+                setattr(self, attr, None)
 
     # ------------------------------------------------------------------
     def executar(self):
