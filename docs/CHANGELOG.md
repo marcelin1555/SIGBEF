@@ -17,6 +17,15 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   retirada) com cancelamento; balcão e kiosk avisam quando a devolução
   tem fila esperando
 
+### Avisos de vencimento por e-mail (opt-in)
+- Lembrete único por empréstimo para usuários com e-mail cadastrado,
+  alguns dias antes do prazo (janela configurável)
+- Configuração completa em Configurações → Integrações (servidor SMTP,
+  porta, credenciais, remetente) com botão "Enviar avisos agora"
+- Desligado por padrão: o sistema continua 100% offline pra quem não usar
+- Envio tudo-ou-nada: falha de rede não marca aviso como enviado, a
+  próxima tentativa reenvia
+
 ### Segurança e robustez
 - Verificação de senha em tempo constante e proteção contra
   enumeração de matrículas por tempo de resposta

@@ -169,6 +169,13 @@ CREATE TABLE IF NOT EXISTS reserva (
     disponivel_ate TEXT
 );
 
+CREATE TABLE IF NOT EXISTS notificacao (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    emprestimo_id INTEGER NOT NULL REFERENCES emprestimo(id),
+    tipo TEXT NOT NULL DEFAULT 'VENCIMENTO',
+    enviado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
 CREATE TABLE IF NOT EXISTS configuracao (
     chave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
@@ -205,6 +212,15 @@ CONFIG_PADRAO = {
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
+    # E-mail de aviso de vencimento (opt-in; sistema segue 100% offline
+    # com isso desligado)
+    "EMAIL_AVISOS": "0",
+    "EMAIL_DIAS_ANTES": "2",
+    "SMTP_HOST": "",
+    "SMTP_PORTA": "587",
+    "SMTP_USUARIO": "",
+    "SMTP_SENHA": "",
+    "SMTP_REMETENTE": "",
 }
 
 

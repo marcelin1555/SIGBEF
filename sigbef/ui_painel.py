@@ -1114,6 +1114,59 @@ class SecaoConfig(SecaoBase):
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 0))
 
+        # ---- Avisos de vencimento por e-mail ----
+        from . import notificacoes
+        from .database import get_config as _gc
+        tk.Frame(integ, height=1, bg=tema.COR_BORDA).pack(fill="x", pady=12)
+        self.var_email = tk.BooleanVar(value=notificacoes.avisos_ativos())
+        ttk.Checkbutton(
+            integ,
+            text="Avisar por e-mail quando a devolução estiver próxima",
+            variable=self.var_email,
+            command=lambda: notificacoes.definir_avisos(self.var_email.get())
+            ).pack(anchor="w")
+        ttk.Label(
+            integ,
+            text=("Envia um lembrete único por empréstimo para usuários com "
+                  "e-mail cadastrado, alguns dias antes do prazo. Use o "
+                  "e-mail da biblioteca (ex.: Gmail com senha de app)."),
+            style="CardHint.TLabel", wraplength=700
+            ).pack(anchor="w", pady=(4, 8))
+
+        smtp_form = ttk.Frame(integ, style="Card.TFrame")
+        smtp_form.pack(fill="x")
+        smtp_form.columnconfigure(1, weight=1)
+        self._smtp_entries: dict[str, ttk.Entry] = {}
+        for i, (chave, rotulo, largura) in enumerate([
+            ("SMTP_HOST", "Servidor SMTP (ex.: smtp.gmail.com)", 34),
+            ("SMTP_PORTA", "Porta (587 na maioria)", 8),
+            ("SMTP_USUARIO", "Usuário / e-mail de envio", 34),
+            ("SMTP_SENHA", "Senha (ou senha de app)", 24),
+            ("SMTP_REMETENTE", "Remetente exibido (opcional)", 34),
+            ("EMAIL_DIAS_ANTES", "Avisar quantos dias antes", 8),
+        ]):
+            ttk.Label(smtp_form, text=rotulo, style="Card.TLabel"
+                      ).grid(row=i, column=0, sticky="w", pady=3)
+            ent = ttk.Entry(smtp_form, width=largura)
+            if chave == "SMTP_SENHA":
+                ent.configure(show="•")
+            ent.insert(0, _gc(chave) or "")
+            ent.grid(row=i, column=1, sticky="w", padx=12, pady=3)
+            self._smtp_entries[chave] = ent
+
+        botoes_email = ttk.Frame(integ, style="Card.TFrame")
+        botoes_email.pack(fill="x", pady=(10, 0))
+        self.lbl_email_msg = ttk.Label(botoes_email, text="",
+                                        style="CardHint.TLabel")
+        self.lbl_email_msg.pack(side="left")
+        ttk.Button(botoes_email, text="Enviar avisos agora",
+                    style="Primario.TButton",
+                    command=self._enviar_avisos_email
+                    ).pack(side="right")
+        ttk.Button(botoes_email, text="Salvar dados de e-mail",
+                    command=self._salvar_email
+                    ).pack(side="right", padx=(0, 8))
+
         # ---------------- Aparencia ----------------
         ttk.Label(body, text="Aparência",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
@@ -1249,6 +1302,33 @@ class SecaoConfig(SecaoBase):
 
     def _toggle_isbn(self):
         servicos.definir_isbn_lookup(self.var_isbn.get())
+
+    # ---------------- Avisos por e-mail ----------------
+    def _salvar_email(self):
+        from .database import set_config
+        for chave, ent in self._smtp_entries.items():
+            set_config(chave, ent.get().strip())
+        self.lbl_email_msg.configure(text="✓ Dados de e-mail salvos.",
+                                      foreground=tema.COR_SUCESSO)
+
+    def _enviar_avisos_email(self):
+        from . import notificacoes
+        self._salvar_email()   # garante que o que está na tela vale
+        self.lbl_email_msg.configure(text="Enviando...",
+                                      foreground=tema.COR_TEXTO)
+        self.painel.update_idletasks()
+        try:
+            res = notificacoes.enviar_avisos(executor_id=self.sessao.id)
+        except RegraNegocioError as e:
+            self.lbl_email_msg.configure(text=f"⚠ {e}",
+                                          foreground=tema.COR_ERRO)
+            return
+        if res["enviados"]:
+            texto = f"✓ {res['enviados']} aviso(s) enviado(s)."
+        else:
+            texto = "Nenhum aviso pendente no momento."
+        self.lbl_email_msg.configure(text=texto,
+                                      foreground=tema.COR_SUCESSO)
 
     # ---------------- Aparencia ----------------
     def _aplicar_preset_aparencia(self, chave_preset):
