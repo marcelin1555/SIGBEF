@@ -715,6 +715,19 @@ class SecaoEmprestimos(SecaoBase):
             self.lbl_msg_dev.configure(
                 text=f"✓ '{res['titulo']}' devolvido em dia, sem multa.",
                 foreground=tema.COR_SUCESSO)
+        if res.get("reservado_para"):
+            # Livro com fila: o operador precisa separar o exemplar
+            messagebox.showinfo(
+                "Livro com fila de espera",
+                f"'{res['titulo']}' está reservado para "
+                f"{res['reservado_para']}.\n\nSepare o exemplar: retirada "
+                f"até {data_br(res['reserva_ate'])}.",
+                parent=self.painel)
+            self.lbl_msg_dev.configure(
+                text=(f"✓ '{res['titulo']}' devolvido. Separado para "
+                      f"{res['reservado_para']} até "
+                      f"{data_br(res['reserva_ate'])}."),
+                foreground=tema.COR_AVISO)
         self.ent_dev_cod.delete(0, "end")
         self.ent_dev_cod.focus_set()
         self.atualizar()
@@ -1355,6 +1368,36 @@ class SecaoPesquisaAluno(SecaoBase):
         ttk.Button(rodape, text="✓ Pegar emprestado",
                     style="Sucesso.TButton",
                     command=self._pegar_emprestado).pack(side="right")
+        ttk.Button(rodape, text="Reservar",
+                    command=self._reservar).pack(side="right", padx=(0, 8))
+
+    def _reservar(self):
+        """Entra na fila de espera de um livro sem exemplar disponível."""
+        sel = self.tree.selection()
+        if not sel:
+            self.lbl_msg.configure(text="Selecione um livro na lista.",
+                                     foreground=tema.COR_AVISO)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        livro_id = int(valores[0])
+        if not messagebox.askyesno(
+                "Reservar",
+                f"Entrar na fila de espera de '{valores[1]}'?\n\n"
+                "Quando um exemplar for devolvido, ele fica separado "
+                "pra você retirar na biblioteca.",
+                parent=self.painel):
+            return
+        from . import reservas
+        try:
+            r = reservas.criar_reserva(livro_id, self.sessao.id)
+        except RegraNegocioError as e:
+            self.lbl_msg.configure(text=f"⚠ {e}",
+                                     foreground=tema.COR_ERRO)
+            return
+        self.lbl_msg.configure(
+            text=(f"✓ Reserva feita: '{r['titulo']}'. Você é o "
+                  f"{r['posicao']}º da fila. Acompanhe em 'Meus empréstimos'."),
+            foreground=tema.COR_SUCESSO)
 
     def _detalhes(self):
         sel = self.tree.selection()
@@ -1452,7 +1495,61 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree.tag_configure("devolvido", foreground="#888888")
         self.tree.pack(fill="both", expand=True)
 
+        # ------ Minhas reservas ------
+        ttk.Label(self, text="Minhas reservas",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(14, 4))
+        self.tree_res = ttk.Treeview(
+            self, columns=("rid", "rtitulo", "situacao"),
+            show="headings", height=4)
+        self.tree_res.heading("rid", text="ID")
+        self.tree_res.heading("rtitulo", text="Título")
+        self.tree_res.heading("situacao", text="Situação")
+        self.tree_res.column("rid", width=0, stretch=False)
+        self.tree_res.column("rtitulo", width=300, anchor="w")
+        self.tree_res.column("situacao", width=380, anchor="w")
+        self.tree_res.tag_configure("pronta", background="#FFF6E5")
+        self.tree_res.pack(fill="x")
+        bot_res = ttk.Frame(self)
+        bot_res.pack(fill="x", pady=(6, 0))
+        ttk.Button(bot_res, text="Cancelar reserva selecionada",
+                    command=self._cancelar_reserva).pack(side="right")
+
+    def _cancelar_reserva(self):
+        from . import reservas
+        sel = self.tree_res.selection()
+        if not sel:
+            messagebox.showinfo("Selecione uma reserva",
+                                  "Clique numa reserva da lista primeiro.",
+                                  parent=self.painel)
+            return
+        valores = self.tree_res.item(sel[0])["values"]
+        if not messagebox.askyesno(
+                "Cancelar reserva",
+                f"Cancelar a reserva de '{valores[1]}'?",
+                parent=self.painel):
+            return
+        try:
+            reservas.cancelar_reserva(int(valores[0]),
+                                      usuario_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+        self.atualizar()
+
     def atualizar(self):
+        from . import reservas
+        for it in self.tree_res.get_children():
+            self.tree_res.delete(it)
+        for r in reservas.listar_reservas_usuario(self.sessao.id):
+            if r["exemplar_id"]:
+                situacao = ("Separado pra você! Retire na biblioteca até "
+                            f"{data_br(r['disponivel_ate'])}.")
+                tags = ("pronta",)
+            else:
+                situacao = f"{r['posicao']}º da fila de espera"
+                tags = ()
+            self.tree_res.insert("", "end", tags=tags,
+                                  values=(r["id"], r["titulo"], situacao))
+
         st = servicos.status_usuario(self.sessao.id)
         cor = tema.COR_SUCESSO if st.pode_pegar else tema.COR_AVISO
         self.lbl_status.configure(text=st.motivo, foreground=cor)

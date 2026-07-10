@@ -4,6 +4,35 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ---
 
+## [Não lançado] — v1.6.0 em desenvolvimento (branch melhorias-v1.6)
+
+### Reservas com fila de espera
+- Aluno/professor reserva um livro sem exemplar disponível (botão
+  "Reservar" na pesquisa); fila por ordem de chegada
+- Exemplar devolvido de livro com fila fica **separado** pro primeiro
+  da fila por 2 dias (configurável), em vez de voltar pra prateleira
+- Só o dono da vez consegue emprestar o exemplar separado; prazo
+  vencido passa a vez pro próximo automaticamente
+- "Meus empréstimos" mostra as reservas (posição na fila ou prazo de
+  retirada) com cancelamento; balcão e kiosk avisam quando a devolução
+  tem fila esperando
+
+### Segurança e robustez
+- Verificação de senha em tempo constante e proteção contra
+  enumeração de matrículas por tempo de resposta
+- Tentativas de login falhas registradas na auditoria (LOGIN_FALHA)
+- Auditoria de ativar/desativar usuário registra quem executou
+- SQLite em modo WAL: balcão e kiosk simultâneos sem travamentos
+
+### Experiência de uso
+- Suíte com 164 testes automatizados cobrindo as regras de negócio
+- F5 recarrega a seção, Ctrl+F foca a busca, sidebar destaca a seção ativa
+- Balcão: devolução em série sem janelinha a cada livro; foco volta
+  sozinho pro próximo atendimento
+- Kiosk avisa 15 segundos antes de encerrar a sessão por inatividade
+
+---
+
 ## [1.5.1] — 2026-07-08
 
 ### Manutenção interna (sem mudança de comportamento)

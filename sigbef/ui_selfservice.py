@@ -306,6 +306,10 @@ class TerminalAutoatendimento(tk.Tk):
                                   "Compareça ao balcão para quitar a multa."))
             else:
                 detalhes.append(("Multa", "Sem multa"))
+            if res.get("reservado_para"):
+                detalhes.append(("Reserva",
+                                  "Este livro tem fila de espera. "
+                                  "Entregue-o no balcão."))
             return "Devolução realizada", detalhes
 
         return self._construir_acao(
