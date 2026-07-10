@@ -739,7 +739,7 @@ def status_usuario(usuario_id: int) -> StatusUsuario:
         return StatusUsuario(em_aberto, multa_aberta, False,
                               f"Limite de {limite} empréstimos atingido.")
     return StatusUsuario(em_aberto, multa_aberta, True,
-                          f"OK — {em_aberto} de {limite} empréstimos em uso.")
+                          f"OK: {em_aberto} de {limite} empréstimos em uso.")
 
 
 def localizar_exemplar(termo: str) -> Optional[dict]:

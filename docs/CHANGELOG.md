@@ -2,8 +2,6 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
----
-
 ## [Não lançado] — v1.6.0 em desenvolvimento (branch melhorias-v1.6)
 
 ### Reservas com fila de espera
@@ -34,13 +32,15 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 - SQLite em modo WAL: balcão e kiosk simultâneos sem travamentos
 
 ### Experiência de uso
-- Suíte com 164 testes automatizados cobrindo as regras de negócio
+- **Devolução com um clique**: duplo clique (ou botão) na linha do
+  empréstimo aberto devolve o livro, com confirmação; sem digitar código
+- Valores vazios nas tabelas ficam em branco e travessões foram
+  removidos de toda a interface (títulos, mensagens e dados de exemplo)
+- Suíte com 174 testes automatizados cobrindo as regras de negócio
 - F5 recarrega a seção, Ctrl+F foca a busca, sidebar destaca a seção ativa
 - Balcão: devolução em série sem janelinha a cada livro; foco volta
   sozinho pro próximo atendimento
 - Kiosk avisa 15 segundos antes de encerrar a sessão por inatividade
-
----
 
 ## [1.5.1] — 2026-07-08
 
@@ -54,8 +54,6 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   release 1.5.x
 - Saldo: 105 linhas a menos, mesmo comportamento (validado com testes de
   cadastro, detalhes de livro, empréstimo e devolução)
-
----
 
 ## [1.5.0] — 2026-07-08
 
@@ -71,8 +69,6 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 O código do aplicativo não mudou: ele sempre foi Python + Tkinter +
 SQLite portáveis; o que faltava era o empacotamento por plataforma.
-
----
 
 ## [1.4.0] — 2026-07-02
 
@@ -107,8 +103,6 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 
 ### Site
 - Contato direto por **WhatsApp** (botão flutuante, planos e rodapé)
-
----
 
 ## [1.3.0] — 2026-06-25
 
@@ -146,8 +140,6 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 - Repositório Bitbucket configurado: `bitbucket.org/workspacemarcellomelo/sigbef-sistema-de-biblioteca`
 - Push inicial para Bitbucket com 40 arquivos
 
----
-
 ## [1.2.0] — 2026-05-24
 
 Pedido vindo da própria biblioteca do CEFE durante a apresentação do
@@ -179,8 +171,6 @@ identificação do aluno.
   com turma vazia.
 - Tela de cadastro de usuário aumentou de 520x520 para 520x600 pra
   acomodar o novo campo sem cortar conteúdo.
-
----
 
 ## [1.1.0] — 2026-05-22
 
@@ -233,8 +223,6 @@ Sebrae.
   - README atualizado refletindo a nova árvore.
 - `.gitignore` ampliado: ignora `.claude/`, `skills-lock.json` e
   artefatos locais.
-
----
 
 ## [1.0.0] — 2026-05-05
 
@@ -343,8 +331,6 @@ Biblioteca do CEFE**. Pronto para uso em produção.
 - **5 usuários:** admin, bibliotecaria, prof, aluna, pedro
 - **10 livros** com múltiplos exemplares em 6 categorias
   (Literatura Brasileira, Computação, História, etc.)
-
----
 
 ## Versões futuras (roadmap)
 

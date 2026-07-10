@@ -21,7 +21,7 @@ class JanelaLogin(tk.Tk):
         self.sessao: Optional[Sessao] = None
         self.modo_autoatendimento = tk.BooleanVar(value=False)
 
-        self.title("SIGBEF — Acesso ao Sistema")
+        self.title("SIGBEF - Acesso ao Sistema")
         tema.aplicar_tema(self)
         self._construir()
         tema.centralizar_janela(self, 1000, 620)
@@ -59,7 +59,7 @@ class JanelaLogin(tk.Tk):
 
         rodape_lat = tk.Label(
             lateral, bg=tema.COR_PRIMARIA, fg="#9CB7D6",
-            text=f"Versão {__version__} — produto em produção",
+            text=f"Versão {__version__} · produto em produção",
             font=("Segoe UI", 9))
         rodape_lat.pack(side="bottom", pady=20)
 

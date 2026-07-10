@@ -208,7 +208,7 @@ CONFIG_PADRAO = {
     "LIMITE_PROFESSOR": "5",
     "MULTA_POR_DIA": "1.50",
     "MULTA_TETO": "60.00",
-    "NOME_INSTITUICAO": "CEFE — Centro Educacional Felinto Elísio",
+    "NOME_INSTITUICAO": "CEFE, Centro Educacional Felinto Elísio",
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado

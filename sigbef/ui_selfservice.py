@@ -28,7 +28,7 @@ class TerminalAutoatendimento(tk.Tk):
         self._timer_aviso = None
         self._aviso: tk.Label | None = None
 
-        self.title("SIGBEF — Terminal de Autoatendimento")
+        self.title("SIGBEF - Terminal de Autoatendimento")
         tema.aplicar_tema(self)
         self.configure(bg=tema.COR_FUNDO)
         tema.centralizar_janela(self, 1100, 760)
@@ -108,7 +108,7 @@ class TerminalAutoatendimento(tk.Tk):
 
         rodape = tk.Frame(frame, bg=tema.COR_FUNDO)
         rodape.pack(side="bottom", fill="x", pady=10)
-        tk.Label(rodape, text="SIGBEF — Modo de Autoatendimento",
+        tk.Label(rodape, text="SIGBEF · Modo de Autoatendimento",
                  bg=tema.COR_FUNDO, fg="#6B7280",
                  font=("Segoe UI", 10)).pack()
 

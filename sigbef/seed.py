@@ -35,7 +35,7 @@ LIVROS_PADRAO = [
         "edicao": "1ª",
         "sinopse": "Romance clássico de Machado de Assis sobre Bento e Capitu.",
         "quantidade_exemplares": 3,
-        "localizacao": "Estante A — Prateleira 1",
+        "localizacao": "Estante A, Prateleira 1",
     },
     {
         "titulo": "Vidas Secas",
@@ -47,7 +47,7 @@ LIVROS_PADRAO = [
         "edicao": "98ª",
         "sinopse": "Família retirante luta pela sobrevivência no sertão nordestino.",
         "quantidade_exemplares": 2,
-        "localizacao": "Estante A — Prateleira 2",
+        "localizacao": "Estante A, Prateleira 2",
     },
     {
         "titulo": "O Cortiço",
@@ -59,7 +59,7 @@ LIVROS_PADRAO = [
         "edicao": "30ª",
         "sinopse": "Romance naturalista que retrata um cortiço carioca.",
         "quantidade_exemplares": 2,
-        "localizacao": "Estante A — Prateleira 2",
+        "localizacao": "Estante A, Prateleira 2",
     },
     {
         "titulo": "Cálculo - Volume 1",
@@ -71,7 +71,7 @@ LIVROS_PADRAO = [
         "edicao": "8ª",
         "sinopse": "Livro-texto fundamental para cursos de cálculo diferencial e integral.",
         "quantidade_exemplares": 4,
-        "localizacao": "Estante B — Prateleira 1",
+        "localizacao": "Estante B, Prateleira 1",
     },
     {
         "titulo": "Algoritmos: Teoria e Prática",
@@ -83,7 +83,7 @@ LIVROS_PADRAO = [
         "edicao": "3ª",
         "sinopse": "Referência clássica em algoritmos e estruturas de dados.",
         "quantidade_exemplares": 3,
-        "localizacao": "Estante C — Prateleira 1",
+        "localizacao": "Estante C, Prateleira 1",
     },
     {
         "titulo": "Python Fluente",
@@ -95,7 +95,7 @@ LIVROS_PADRAO = [
         "edicao": "1ª",
         "sinopse": "Programação Python idiomática e eficiente.",
         "quantidade_exemplares": 2,
-        "localizacao": "Estante C — Prateleira 2",
+        "localizacao": "Estante C, Prateleira 2",
     },
     {
         "titulo": "Estruturas de Dados e Algoritmos com Java",
@@ -107,10 +107,10 @@ LIVROS_PADRAO = [
         "edicao": "5ª",
         "sinopse": "Estruturas de dados aplicadas com exemplos em Java.",
         "quantidade_exemplares": 2,
-        "localizacao": "Estante C — Prateleira 2",
+        "localizacao": "Estante C, Prateleira 2",
     },
     {
-        "titulo": "Sapiens — Uma breve história da humanidade",
+        "titulo": "Sapiens: Uma breve história da humanidade",
         "autores": ["Yuval Noah Harari"],
         "isbn": "9788525432186",
         "editora": "L&PM",
@@ -119,7 +119,7 @@ LIVROS_PADRAO = [
         "edicao": "1ª",
         "sinopse": "Panorama da história da humanidade desde os primeiros homens.",
         "quantidade_exemplares": 3,
-        "localizacao": "Estante D — Prateleira 1",
+        "localizacao": "Estante D, Prateleira 1",
     },
     {
         "titulo": "1984",
@@ -131,7 +131,7 @@ LIVROS_PADRAO = [
         "edicao": "1ª",
         "sinopse": "Romance distópico sobre vigilância e totalitarismo.",
         "quantidade_exemplares": 4,
-        "localizacao": "Estante E — Prateleira 1",
+        "localizacao": "Estante E, Prateleira 1",
     },
     {
         "titulo": "Física para Cientistas e Engenheiros",
@@ -143,7 +143,7 @@ LIVROS_PADRAO = [
         "edicao": "2ª",
         "sinopse": "Livro-texto de física universitária com aplicações em engenharia.",
         "quantidade_exemplares": 3,
-        "localizacao": "Estante B — Prateleira 2",
+        "localizacao": "Estante B, Prateleira 2",
     },
 ]
 

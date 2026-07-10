@@ -105,7 +105,7 @@ def criar_reserva(livro_id: int, usuario_id: int) -> dict:
         )
         if cur.fetchone()["n"]:
             raise RegraNegocioError(
-                "Este livro tem exemplar disponível agora — pegue "
+                "Este livro tem exemplar disponível agora, pegue "
                 "emprestado em vez de reservar.")
 
         cur.execute(

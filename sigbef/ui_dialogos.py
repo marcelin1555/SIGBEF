@@ -156,9 +156,9 @@ class DialogoSelecionarExemplar(tk.Toplevel):
             self.tree.delete(it)
         for ex in servicos.listar_exemplares_disponiveis(self.ent.get()):
             self.tree.insert("", "end", values=(
-                ex["titulo"], ex.get("autores") or "—",
+                ex["titulo"], ex.get("autores") or "",
                 ex["numero_tombo"], ex["codigo_barras"],
-                ex.get("localizacao") or "—",
+                ex.get("localizacao") or "",
             ))
         tema.aplicar_zebra(self.tree)
 
@@ -418,7 +418,7 @@ class DialogoUsuario(tk.Toplevel):
         except RegraNegocioError as e:
             messagebox.showwarning("Atenção", str(e), parent=self)
             return
-        cartao = res["codigo_barras"] or "—"
+        cartao = res["codigo_barras"] or "(sem cartão)"
         messagebox.showinfo("Usuário cadastrado",
                              f"Usuário #{res['id']} cadastrado.\n"
                              f"Cartão (código de barras): {cartao}",
@@ -460,7 +460,7 @@ class DialogoImportarCSV(tk.Toplevel):
         card = tema.caixa_card(wrap, padx=16, pady=12)
         card.pack(fill="x")
         for txt in (
-            "• Coluna obrigatória: titulo — as demais são opcionais",
+            "• Coluna obrigatória: titulo, as demais são opcionais",
             "• Colunas aceitas: autores, isbn, editora, categoria, ano,",
             "   edicao, sinopse, quantidade, localizacao",
             "• Vários autores na mesma célula: separe com ; ou /",
@@ -660,11 +660,11 @@ class DialogoDetalhesLivro(tk.Toplevel):
         ttk.Label(wrap, text=sub, style="Hint.TLabel").pack(anchor="w")
 
         infos = [
-            ("ISBN", livro.get("isbn") or "—"),
-            ("Editora", livro.get("editora_nome") or "—"),
-            ("Categoria", livro.get("categoria_nome") or "—"),
+            ("ISBN", livro.get("isbn") or "não informado"),
+            ("Editora", livro.get("editora_nome") or "não informada"),
+            ("Categoria", livro.get("categoria_nome") or "não informada"),
             ("Edição/Ano",
-             f"{livro.get('edicao') or '—'} / {livro.get('ano_publicacao') or '—'}"),
+             f"{livro.get('edicao') or '?'} / {livro.get('ano_publicacao') or '?'}"),
         ]
         info_box = ttk.Frame(wrap)
         info_box.pack(fill="x", pady=(12, 8))
@@ -698,7 +698,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
         for ex in livro["exemplares"]:
             tree.insert("", "end",
                         values=(ex["numero_tombo"], ex["codigo_barras"],
-                                ex.get("localizacao") or "—", ex["status"]))
+                                ex.get("localizacao") or "", ex["status"]))
         tree.pack(fill="both", expand=True)
 
         ttk.Button(wrap, text="Imprimir etiquetas (visualizar)",
@@ -713,7 +713,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
 class VisualizadorBarcodes(tk.Toplevel):
     def __init__(self, parent, livro: dict):
         super().__init__(parent)
-        self.title(f"Etiquetas — {livro['titulo']}")
+        self.title(f"Etiquetas - {livro['titulo']}")
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
@@ -737,7 +737,7 @@ class VisualizadorBarcodes(tk.Toplevel):
         for ex in livro["exemplares"]:
             canvas.create_text(
                 20, y, anchor="nw",
-                text=f"{ex['numero_tombo']} — {livro['titulo']}",
+                text=f"{ex['numero_tombo']} · {livro['titulo']}",
                 font=("Segoe UI Semibold", 10))
             barcode_util.desenhar_barras(canvas, ex["codigo_barras"],
                                           x0=20, y0=y + 22, altura=50,

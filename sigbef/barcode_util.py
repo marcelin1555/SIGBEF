@@ -178,7 +178,7 @@ def _pagina_etiquetas(titulo_e: str, cels: list[str]) -> str:
     """Página HTML completa de etiquetas, pronta para Ctrl+P."""
     return f"""<!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
-<title>Etiquetas — {titulo_e}</title>
+<title>Etiquetas - {titulo_e}</title>
 <style>
   body {{ font-family: Segoe UI, Arial, sans-serif; margin: 12mm; color: #111; }}
   .topo {{ margin-bottom: 8mm; }}
@@ -201,7 +201,7 @@ def _pagina_etiquetas(titulo_e: str, cels: list[str]) -> str:
 </style></head>
 <body>
   <div class="topo">
-    <h1>Etiquetas — {titulo_e}</h1>
+    <h1>Etiquetas - {titulo_e}</h1>
     <p class="dica">{len(cels)} etiqueta(s). Use o botão abaixo (ou Ctrl+P)
     para imprimir, ou escolha "Salvar como PDF" na impressora.</p>
     <button onclick="window.print()">Imprimir / Salvar PDF</button>
@@ -233,7 +233,7 @@ def cartoes_html(usuarios: list[dict]) -> str:
             '</div>')
     return f"""<!doctype html>
 <html lang="pt-br"><head><meta charset="utf-8">
-<title>Cartões de usuário — SIGBEF</title>
+<title>Cartões de usuário - SIGBEF</title>
 <style>
   body {{ font-family: Segoe UI, Arial, sans-serif; margin: 12mm; color: #111; }}
   .topo {{ margin-bottom: 8mm; }}
@@ -261,7 +261,7 @@ def cartoes_html(usuarios: list[dict]) -> str:
 </style></head>
 <body>
   <div class="topo">
-    <h1>Cartões de usuário — SIGBEF</h1>
+    <h1>Cartões de usuário - SIGBEF</h1>
     <p class="dica">{len(usuarios)} cartão(ões). Use o botão abaixo (ou Ctrl+P)
     para imprimir, ou escolha "Salvar como PDF" na impressora.</p>
     <button onclick="window.print()">Imprimir / Salvar PDF</button>

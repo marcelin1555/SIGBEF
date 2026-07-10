@@ -35,7 +35,7 @@ class PainelPrincipal(tk.Tk):
     def __init__(self, sessao: Sessao):
         super().__init__()
         self.sessao = sessao
-        self.title(f"SIGBEF — {sessao.nome} ({sessao.perfil.title()})")
+        self.title(f"SIGBEF - {sessao.nome} ({sessao.perfil.title()})")
         tema.aplicar_tema(self)
         tema.centralizar_janela(self, 1280, 780)
         self.minsize(1180, 700)
@@ -216,7 +216,7 @@ class SecaoPainel(SecaoBase):
                        padx=8, pady=8, ipadx=4)
             self._cards_frame.columnconfigure(i % 3, weight=1)
             ttk.Label(card, text=titulo, style="CardHint.TLabel").pack(anchor="w")
-            valor = ttk.Label(card, text="—", style="Display.TLabel")
+            valor = ttk.Label(card, text="", style="Display.TLabel")
             valor.pack(anchor="w", pady=(6, 0))
             self._cards[chave] = valor
 
@@ -382,8 +382,8 @@ class SecaoLivros(SecaoBase):
         for liv in servicos.listar_livros(self.ent_busca.get(),
                                             self.var_disponiveis.get()):
             self.tree.insert("", "end", values=(
-                liv["id"], liv["titulo"], liv["autores"] or "—",
-                liv["categoria"] or "—", liv["ano_publicacao"] or "—",
+                liv["id"], liv["titulo"], liv["autores"] or "",
+                liv["categoria"] or "", liv["ano_publicacao"] or "",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
         tema.aplicar_zebra(self.tree)
@@ -533,10 +533,10 @@ class SecaoUsuarios(SecaoBase):
         for u in servicos.listar_usuarios(self.ent_busca.get()):
             self.tree.insert("", "end", values=(
                 u["id"], u["nome"], u["matricula"],
-                u.get("turma") or "—",
+                u.get("turma") or "",
                 u["perfil"],
-                u.get("email") or "—",
-                u.get("codigo_barras") or "—",
+                u.get("email") or "",
+                u.get("codigo_barras") or "",
                 "Sim" if u["ativo"] else "Não",
             ))
         tema.aplicar_zebra(self.tree)
@@ -638,13 +638,21 @@ class SecaoEmprestimos(SecaoBase):
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
         self.tree.pack(fill="both", expand=True)
+        # Devolução com um clique: duplo clique na linha devolve o livro
+        self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
 
         op = ttk.Frame(self)
         op.pack(fill="x", pady=(8, 0))
+        ttk.Button(op, text="✓ Devolver selecionado",
+                    style="Sucesso.TButton",
+                    command=self._devolver_selecionado
+                    ).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Renovar selecionado",
                     command=self._renovar).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Quitar multa",
                     command=self._quitar).pack(side="left")
+        ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
+                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
 
     def _selecionar_exemplar_emprestimo(self):
         d = DialogoSelecionarExemplar(self.painel)
@@ -685,9 +693,31 @@ class SecaoEmprestimos(SecaoBase):
         self.atualizar()
 
     def _devolver(self):
+        self._executar_devolucao(self.ent_dev_cod.get())
+
+    def _devolver_selecionado(self):
+        """Devolução com um clique a partir da tabela de empréstimos."""
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo(
+                "Selecione um empréstimo",
+                "Clique numa linha da tabela antes de devolver.",
+                parent=self.painel)
+            return
+        v = self.tree.item(sel[0])["values"]
+        titulo, usuario, codigo = v[4], v[1], str(v[5])
+        if not messagebox.askyesno(
+                "Confirmar devolução",
+                f"Registrar a devolução de '{titulo}'\n"
+                f"emprestado a {usuario}?",
+                parent=self.painel):
+            return
+        self._executar_devolucao(codigo)
+
+    def _executar_devolucao(self, codigo: str):
         try:
             res = servicos.realizar_devolucao(
-                codigo_exemplar=self.ent_dev_cod.get(),
+                codigo_exemplar=codigo,
                 operador_id=self.sessao.id,
             )
         except RegraNegocioError as e:
@@ -774,10 +804,10 @@ class SecaoEmprestimos(SecaoBase):
             tag = ("atrasado",) if atrasado else ()
             self.tree.insert("", "end", tags=tag, values=(
                 e["id"], e["usuario"], e["matricula"],
-                e.get("turma") or "—",
+                e.get("turma") or "",
                 e["titulo"],
                 e["codigo_barras"], data_hora_br(e["data_emprestimo"]),
-                data_br(e["data_prevista"]), "SIM" if atrasado else "—",
+                data_br(e["data_prevista"]), "SIM" if atrasado else "",
             ))
         tema.aplicar_zebra(self.tree)
 
@@ -842,7 +872,7 @@ class _DialogoSelecionarUsuario(tk.Toplevel):
                 continue
             self.tree.insert("", "end", values=(
                 u["nome"], u["matricula"], u["perfil"],
-                u.get("email") or "—",
+                u.get("email") or "",
             ))
         tema.aplicar_zebra(self.tree)
 
@@ -1537,9 +1567,9 @@ class SecaoPesquisaAluno(SecaoBase):
         for liv in servicos.listar_livros(self.ent.get(),
                                             self.var_disp.get()):
             self.tree.insert("", "end", values=(
-                liv["id"], liv["titulo"], liv["autores"] or "—",
-                liv["categoria"] or "—",
-                liv["ano_publicacao"] or "—",
+                liv["id"], liv["titulo"], liv["autores"] or "",
+                liv["categoria"] or "",
+                liv["ano_publicacao"] or "",
                 f"{liv['disponiveis']}/{liv['total_exemplares']}",
             ))
         tema.aplicar_zebra(self.tree)
@@ -1653,7 +1683,7 @@ class SecaoMeusEmprestimos(SecaoBase):
                 e["titulo"],
                 data_hora_br(e["data_emprestimo"]),
                 data_br(e["data_prevista"]),
-                data_hora_br(e["data_devolucao"]) if e["data_devolucao"] else "—",
+                data_hora_br(e["data_devolucao"]) if e["data_devolucao"] else "",
                 reais(e["multa"]),
                 e["origem"].title(),
             ))
