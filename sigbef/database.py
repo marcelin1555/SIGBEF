@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 from contextlib import contextmanager
-from datetime import datetime
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
@@ -42,7 +42,6 @@ def _diretorio_padrao() -> Path:
 
 
 # Permite sobrescrever via variável de ambiente
-import sys  # noqa: E402  (import condicional dentro do módulo)
 _env_db = os.environ.get("SIGBEF_DB_PATH")
 if _env_db:
     DB_PATH = Path(_env_db).expanduser().resolve()
@@ -58,10 +57,16 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # Conexão
 # ---------------------------------------------------------------------------
 def get_connection() -> sqlite3.Connection:
-    """Retorna uma conexão SQLite com row_factory configurado."""
-    conn = sqlite3.connect(DB_PATH)
+    """Retorna uma conexão SQLite com row_factory configurado.
+
+    `timeout=10` faz escritas concorrentes esperarem em vez de falhar
+    na hora com "database is locked" (balcão e kiosk simultâneos), e o
+    modo WAL permite leituras durante uma escrita.
+    """
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
+    conn.execute("PRAGMA journal_mode = WAL;")
     return conn
 
 

@@ -437,7 +437,8 @@ class SecaoUsuarios(SecaoBase):
         usuario_id = int(valores[0])
         ativo_atual = str(valores[-1]).lower() == "sim"
         try:
-            servicos.alternar_status_usuario(usuario_id, not ativo_atual)
+            servicos.alternar_status_usuario(usuario_id, not ativo_atual,
+                                             executor_id=self.sessao.id)
         except Exception as e:
             messagebox.showerror("Erro", str(e), parent=self.painel)
         self.atualizar()

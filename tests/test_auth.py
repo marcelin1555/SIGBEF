@@ -180,6 +180,43 @@ class TestPropriedadesSessao(SigbefTestCase):
         self.assertTrue(s.is_professor)
 
 
+class TestAuditoriaLoginFalha(SigbefTestCase):
+    """Tentativas de login falhas geram registro LOGIN_FALHA na auditoria
+    (permite detectar tentativas de força bruta)."""
+
+    def _falhas(self):
+        from sigbef.database import db_cursor
+        with db_cursor() as cur:
+            cur.execute("SELECT usuario_id, detalhes FROM auditoria "
+                        "WHERE acao = 'LOGIN_FALHA'")
+            return [dict(r) for r in cur.fetchall()]
+
+    def test_matricula_inexistente_audita_sem_usuario(self):
+        self.assertIsNone(autenticar("fantasma", "qualquer"))
+        falhas = self._falhas()
+        self.assertEqual(len(falhas), 1)
+        self.assertIsNone(falhas[0]["usuario_id"])
+        self.assertIn("fantasma", falhas[0]["detalhes"])
+
+    def test_senha_errada_audita_com_usuario(self):
+        criado = self.criar_usuario(matricula="real1", senha="senha123")
+        self.assertIsNone(autenticar("real1", "senhaerrada"))
+        falhas = self._falhas()
+        self.assertEqual(len(falhas), 1)
+        self.assertEqual(falhas[0]["usuario_id"], criado["id"])
+
+    def test_cartao_desconhecido_audita(self):
+        self.assertIsNone(autenticar_por_codigo("US000NAOEXISTE"))
+        falhas = self._falhas()
+        self.assertEqual(len(falhas), 1)
+        self.assertIsNone(falhas[0]["usuario_id"])
+
+    def test_login_correto_nao_gera_falha(self):
+        self.criar_usuario(matricula="real2", senha="senha123")
+        self.assertIsNotNone(autenticar("real2", "senha123"))
+        self.assertEqual(self._falhas(), [])
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()

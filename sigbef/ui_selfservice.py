@@ -210,8 +210,7 @@ class TerminalAutoatendimento(tk.Tk):
     # ------------------------------------------------------------------
     def _construir_acao(self, titulo_tela: str, instrucao: str,
                          texto_botao: str, cor_botao: str,
-                         executar, montar_comprovante,
-                         refoca_apos_erro: bool = True) -> tk.Widget:
+                         executar, montar_comprovante) -> tk.Widget:
         """Base compartilhada por 'Pegar emprestado' e 'Devolver': cartão
         com campo de código, confirma via Enter ou botão, mostra erro
         inline ou o comprovante de sucesso."""
@@ -244,8 +243,7 @@ class TerminalAutoatendimento(tk.Tk):
             except RegraNegocioError as e:
                 msg.configure(text=str(e), fg=tema.COR_ERRO)
                 ent.delete(0, "end")
-                if refoca_apos_erro:
-                    ent.focus_set()
+                ent.focus_set()
                 return
             titulo_comprovante, detalhes = montar_comprovante(res)
             self._mostrar_comprovante(titulo_comprovante, res["titulo"], detalhes)
@@ -283,7 +281,7 @@ class TerminalAutoatendimento(tk.Tk):
             "Pegar livro emprestado",
             "Aproxime o livro do leitor de código de barras",
             "Confirmar empréstimo", tema.COR_SUCESSO,
-            executar, montar_comprovante, refoca_apos_erro=True,
+            executar, montar_comprovante,
         )
 
     # ------------------------------------------------------------------
@@ -311,7 +309,7 @@ class TerminalAutoatendimento(tk.Tk):
             "Devolver livro",
             "Aproxime o livro a ser devolvido do leitor",
             "Confirmar devolução", tema.COR_AVISO,
-            executar, montar_comprovante, refoca_apos_erro=False,
+            executar, montar_comprovante,
         )
 
     # ------------------------------------------------------------------

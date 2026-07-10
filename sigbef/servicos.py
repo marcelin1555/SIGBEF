@@ -543,12 +543,14 @@ def alterar_senha(usuario_id: int, nova_senha: str) -> None:
     registrar_auditoria(usuario_id, "TROCA_SENHA", "")
 
 
-def alternar_status_usuario(usuario_id: int, ativo: bool) -> None:
+def alternar_status_usuario(usuario_id: int, ativo: bool,
+                            executor_id: Optional[int] = None) -> None:
     with db_cursor() as cur:
         cur.execute("UPDATE usuario SET ativo = ? WHERE id = ?",
                     (1 if ativo else 0, usuario_id))
-    registrar_auditoria(usuario_id, "STATUS_USUARIO",
-                         f"ativo={'sim' if ativo else 'nao'}")
+    # Auditoria registra QUEM executou; o usuário afetado vai no detalhe
+    registrar_auditoria(executor_id, "STATUS_USUARIO",
+                         f"alvo={usuario_id}; ativo={'sim' if ativo else 'nao'}")
 
 
 def obter_usuario(usuario_id: int) -> dict:

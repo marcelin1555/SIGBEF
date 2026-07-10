@@ -6,6 +6,7 @@ Usa hashlib + sal aleatório (PBKDF2-SHA256) para evitar dependência externa.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import os
 from dataclasses import dataclass
 from typing import Optional
@@ -13,6 +14,19 @@ from typing import Optional
 from .database import db_cursor, registrar_auditoria
 
 ITERACOES = 200_000
+
+# Hash de uma senha aleatória, gerado sob demanda. Usado para manter o
+# tempo de resposta constante quando a matrícula não existe: sem ele, o
+# login falho de matrícula inexistente retorna instantâneo (sem PBKDF2)
+# e permite enumerar matrículas válidas medindo o tempo.
+_HASH_FANTASMA: Optional[str] = None
+
+
+def _hash_fantasma() -> str:
+    global _HASH_FANTASMA
+    if _HASH_FANTASMA is None:
+        _HASH_FANTASMA = gerar_hash(os.urandom(16).hex())
+    return _HASH_FANTASMA
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +50,8 @@ def verificar_senha(senha: str, hash_armazenado: str) -> bool:
         derived = hashlib.pbkdf2_hmac(
             "sha256", senha.encode("utf-8"), salt, int(iteracoes)
         )
-        return derived == esperado
+        # Comparação em tempo constante (não vaza posição da divergência)
+        return hmac.compare_digest(derived, esperado)
     except (ValueError, AttributeError):
         return False
 
@@ -86,8 +101,13 @@ def autenticar(matricula: str, senha: str) -> Optional[Sessao]:
         )
         row = cur.fetchone()
         if not row or not row["ativo"]:
+            # Gasta o mesmo tempo de um login válido antes de negar
+            verificar_senha(senha, _hash_fantasma())
+            registrar_auditoria(None, "LOGIN_FALHA",
+                                 f"matricula={matricula[:40]}")
             return None
         if not verificar_senha(senha, row["senha_hash"]):
+            registrar_auditoria(row["id"], "LOGIN_FALHA", "senha incorreta")
             return None
 
     registrar_auditoria(row["id"], "LOGIN", f"Perfil={row['perfil']}")
@@ -113,6 +133,8 @@ def autenticar_por_codigo(codigo_barras: str) -> Optional[Sessao]:
         )
         row = cur.fetchone()
         if not row or not row["ativo"]:
+            registrar_auditoria(None, "LOGIN_FALHA",
+                                 f"cartao={codigo[:40]}")
             return None
     registrar_auditoria(row["id"], "LOGIN_CARTAO", f"Perfil={row['perfil']}")
     return Sessao(

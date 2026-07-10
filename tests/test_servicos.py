@@ -256,6 +256,20 @@ class TestUsuarios(ServicosTestCase):
         servicos.alternar_status_usuario(u["id"], True)
         self.assertEqual(servicos.obter_usuario(u["id"])["ativo"], 1)
 
+    def test_alternar_status_audita_o_executor(self):
+        """A auditoria registra QUEM desativou; o afetado vai no detalhe."""
+        from sigbef.database import db_cursor
+        admin = self.criar_usuario(matricula="chefe", perfil="ADMINISTRADOR")
+        alvo = self.criar_usuario(matricula="alvo1")
+        servicos.alternar_status_usuario(alvo["id"], False,
+                                         executor_id=admin["id"])
+        with db_cursor() as cur:
+            cur.execute("SELECT usuario_id, detalhes FROM auditoria "
+                        "WHERE acao = 'STATUS_USUARIO'")
+            row = cur.fetchone()
+        self.assertEqual(row["usuario_id"], admin["id"])
+        self.assertIn(f"alvo={alvo['id']}", row["detalhes"])
+
 
 # ---------------------------------------------------------------------------
 # Empréstimos

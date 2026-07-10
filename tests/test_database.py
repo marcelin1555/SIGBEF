@@ -204,6 +204,35 @@ class TestForeignKeys(SigbefTestCase):
                 )
 
 
+class TestConexao(SigbefTestCase):
+    """Configuração da conexão para uso concorrente (balcão + kiosk)."""
+
+    def test_journal_mode_wal(self):
+        conn = database.get_connection()
+        try:
+            modo = conn.execute("PRAGMA journal_mode").fetchone()[0]
+            self.assertEqual(modo.lower(), "wal")
+        finally:
+            conn.close()
+
+    def test_escritas_de_duas_conexoes_abertas(self):
+        """Duas conexões abertas ao mesmo tempo escrevem em sequência
+        sem 'database is locked'."""
+        c1 = database.get_connection()
+        c2 = database.get_connection()
+        try:
+            c1.execute("INSERT INTO configuracao(chave, valor) VALUES ('t1','1')")
+            c1.commit()
+            c2.execute("INSERT INTO configuracao(chave, valor) VALUES ('t2','2')")
+            c2.commit()
+            n = c1.execute("SELECT COUNT(*) FROM configuracao "
+                           "WHERE chave IN ('t1','t2')").fetchone()[0]
+            self.assertEqual(n, 2)
+        finally:
+            c1.close()
+            c2.close()
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()
