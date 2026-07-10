@@ -221,6 +221,10 @@ CONFIG_PADRAO = {
     "SMTP_USUARIO": "",
     "SMTP_SENHA": "",
     "SMTP_REMETENTE": "",
+    # API REST somente leitura (opt-in; desligada = nenhuma porta aberta)
+    "API_ATIVA": "0",
+    "API_PORTA": "8765",
+    "API_TOKEN": "",
 }
 
 

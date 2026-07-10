@@ -51,6 +51,14 @@ class PainelPrincipal(tk.Tk):
         self.bind("<Control-f>", lambda e: self._focar_busca())
         self.bind("<Control-F>", lambda e: self._focar_busca())
 
+        # API REST opt-in: sobe junto com o painel quando está ativa
+        from . import api
+        if api.api_ativa():
+            try:
+                api.iniciar_em_thread()
+            except OSError:
+                pass  # porta ocupada: segue sem API; config mostra o estado
+
     # ------------------------------------------------------------------
     def _construir(self):
         # Cabeçalho
@@ -1197,6 +1205,49 @@ class SecaoConfig(SecaoBase):
                     command=self._salvar_email
                     ).pack(side="right", padx=(0, 8))
 
+        # ---- API REST somente leitura ----
+        from . import api
+        tk.Frame(integ, height=1, bg=tema.COR_BORDA).pack(fill="x", pady=12)
+        self.var_api = tk.BooleanVar(value=api.api_ativa())
+        ttk.Checkbutton(
+            integ,
+            text="API REST somente leitura (integração com outros sistemas)",
+            variable=self.var_api,
+            command=self._toggle_api).pack(anchor="w")
+        ttk.Label(
+            integ,
+            text=("Permite que sistemas da escola consultem acervo e "
+                  "empréstimos pela rede local, protegido por token. "
+                  "Nenhuma rota altera dados. Guia completo em docs/API.md."),
+            style="CardHint.TLabel", wraplength=700
+            ).pack(anchor="w", pady=(4, 8))
+
+        api_form = ttk.Frame(integ, style="Card.TFrame")
+        api_form.pack(fill="x")
+        ttk.Label(api_form, text="Porta:", style="Card.TLabel"
+                  ).grid(row=0, column=0, sticky="w", pady=3)
+        self.ent_api_porta = ttk.Entry(api_form, width=8)
+        self.ent_api_porta.insert(0, str(api.porta_configurada()))
+        self.ent_api_porta.grid(row=0, column=1, sticky="w", padx=12)
+        ttk.Label(api_form, text="Token de acesso:", style="Card.TLabel"
+                  ).grid(row=1, column=0, sticky="w", pady=3)
+        self.ent_api_token = ttk.Entry(api_form, width=50)
+        self.ent_api_token.grid(row=1, column=1, sticky="w", padx=12)
+        self._refrescar_token_api()
+
+        botoes_api = ttk.Frame(integ, style="Card.TFrame")
+        botoes_api.pack(fill="x", pady=(10, 0))
+        self.lbl_api_msg = ttk.Label(botoes_api, text="",
+                                      style="CardHint.TLabel")
+        self.lbl_api_msg.pack(side="left")
+        self._refrescar_status_api()
+        ttk.Button(botoes_api, text="Gerar novo token",
+                    command=self._gerar_token_api
+                    ).pack(side="right")
+        ttk.Button(botoes_api, text="Copiar token",
+                    command=self._copiar_token_api
+                    ).pack(side="right", padx=(0, 8))
+
         # ---------------- Aparencia ----------------
         ttk.Label(body, text="Aparência",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
@@ -1359,6 +1410,75 @@ class SecaoConfig(SecaoBase):
             texto = "Nenhum aviso pendente no momento."
         self.lbl_email_msg.configure(text=texto,
                                       foreground=tema.COR_SUCESSO)
+
+    # ---------------- API REST ----------------
+    def _refrescar_token_api(self):
+        from . import api
+        self.ent_api_token.configure(state="normal")
+        self.ent_api_token.delete(0, "end")
+        self.ent_api_token.insert(0, api.obter_token() or "(gerado ao ativar)")
+        self.ent_api_token.configure(state="readonly")
+
+    def _refrescar_status_api(self):
+        from . import api
+        if api.esta_no_ar():
+            porta = api.porta_configurada()
+            self.lbl_api_msg.configure(
+                text=f"✓ API no ar na porta {porta} (somente leitura).",
+                foreground=tema.COR_SUCESSO)
+        elif api.api_ativa():
+            self.lbl_api_msg.configure(
+                text="API ativa; sobe junto com o aplicativo.",
+                foreground=tema.COR_TEXTO)
+        else:
+            self.lbl_api_msg.configure(text="API desligada.",
+                                        foreground=tema.COR_TEXTO)
+
+    def _toggle_api(self):
+        from . import api
+        from .database import set_config
+        ligar = self.var_api.get()
+        porta_txt = self.ent_api_porta.get().strip()
+        if porta_txt.isdigit():
+            set_config("API_PORTA", porta_txt)
+        api.definir_api(ligar, executor_id=self.sessao.id)
+        if ligar:
+            try:
+                api.iniciar_em_thread()
+            except OSError as e:
+                self.lbl_api_msg.configure(
+                    text=f"⚠ Não consegui abrir a porta: {e}",
+                    foreground=tema.COR_ERRO)
+                return
+        else:
+            api.parar()
+        self._refrescar_token_api()
+        self._refrescar_status_api()
+
+    def _copiar_token_api(self):
+        from . import api
+        token = api.obter_token()
+        if not token:
+            self.lbl_api_msg.configure(text="Ative a API primeiro.",
+                                        foreground=tema.COR_AVISO)
+            return
+        self.painel.clipboard_clear()
+        self.painel.clipboard_append(token)
+        self.lbl_api_msg.configure(text="✓ Token copiado.",
+                                    foreground=tema.COR_SUCESSO)
+
+    def _gerar_token_api(self):
+        from . import api
+        if not messagebox.askyesno(
+                "Gerar novo token",
+                "O token atual deixa de funcionar e os sistemas "
+                "integrados precisarão do novo. Continuar?",
+                parent=self.painel):
+            return
+        api.gerar_novo_token(executor_id=self.sessao.id)
+        self._refrescar_token_api()
+        self.lbl_api_msg.configure(text="✓ Novo token gerado.",
+                                    foreground=tema.COR_SUCESSO)
 
     # ---------------- Aparencia ----------------
     def _aplicar_preset_aparencia(self, chave_preset):

@@ -4,6 +4,17 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Não lançado] — v1.6.0 em desenvolvimento (branch melhorias-v1.6)
 
+### API REST somente leitura (opt-in)
+- Outros sistemas da escola consultam acervo, disponibilidade e
+  situação de empréstimos pela rede local, sem tocar no banco
+- 100% biblioteca padrão (`http.server`), zero dependência nova
+- Token de acesso obrigatório (gerado via `secrets`, comparação em
+  tempo constante), com regeneração pela tela de Configurações
+- Nasce desligada; ligada, sobe junto com o aplicativo ou roda sem
+  interface com `python sigbef.py --api`
+- 6 rotas GET (ping, estatísticas, livros, detalhes, situação do
+  leitor, circulação); nenhuma rota de escrita; guia em `docs/API.md`
+
 ### Reservas com fila de espera
 - Aluno/professor reserva um livro sem exemplar disponível (botão
   "Reservar" na pesquisa); fila por ordem de chegada
