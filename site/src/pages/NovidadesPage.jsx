@@ -20,9 +20,17 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.5.1',
+    data: '10 de julho de 2026',
+    destaque: true,
+    categorias: ['Robustez'],
+    itens: [
+      { cat: 'Robustez', texto: 'Melhorias internas de código e organização, sem mudança no uso do sistema.' },
+    ],
+  },
+  {
     numero: '1.5.0',
     data: '8 de julho de 2026',
-    destaque: true,
     categorias: ['Multiplataforma', 'Site'],
     itens: [
       { cat: 'Multiplataforma', texto: 'O SIGBEF agora é oficialmente multiplataforma: além do instalador para Windows, cada versão traz pacote portátil para Windows, .tar.gz para Linux e aplicativo nativo para macOS' },
