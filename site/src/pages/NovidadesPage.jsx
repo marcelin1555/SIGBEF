@@ -8,6 +8,7 @@ const CATEGORIA_COR = {
   Site: 'bg-amber-50 text-amber-700',
   Segurança: 'bg-red-50 text-red-700',
   Multiplataforma: 'bg-indigo-50 text-indigo-700',
+  API: 'bg-cyan-50 text-cyan-700',
 }
 
 function Badge({ texto }) {
@@ -20,9 +21,21 @@ function Badge({ texto }) {
 
 const versoes = [
   {
-    numero: '1.5.1',
+    numero: '1.6.0',
     data: '10 de julho de 2026',
     destaque: true,
+    categorias: ['Acervo', 'API', 'Segurança', 'Interface'],
+    itens: [
+      { cat: 'Acervo', texto: 'Reservas com fila de espera: peça um livro emprestado assim que ele voltar, sem precisar checar toda hora' },
+      { cat: 'API', texto: 'API REST somente leitura (opt-in) para outros sistemas da escola consultarem acervo e empréstimos' },
+      { cat: 'Acervo', texto: 'Avisos de vencimento por e-mail (opt-in), lembrando o leitor alguns dias antes do prazo' },
+      { cat: 'Segurança', texto: 'Login mais resistente a ataques de força bruta e enumeração de matrícula' },
+      { cat: 'Interface', texto: 'Devolução com um clique na tela de empréstimos abertos, sem digitar código' },
+    ],
+  },
+  {
+    numero: '1.5.1',
+    data: '8 de julho de 2026',
     categorias: ['Robustez'],
     itens: [
       { cat: 'Robustez', texto: 'Melhorias internas de código e organização, sem mudança no uso do sistema.' },

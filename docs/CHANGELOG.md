@@ -2,7 +2,7 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado] — v1.6.0 em desenvolvimento (branch melhorias-v1.6)
+## [1.6.0] — 2026-07-10
 
 ### API REST somente leitura (opt-in)
 - Outros sistemas da escola consultam acervo, disponibilidade e
@@ -47,7 +47,7 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   empréstimo aberto devolve o livro, com confirmação; sem digitar código
 - Valores vazios nas tabelas ficam em branco e travessões foram
   removidos de toda a interface (títulos, mensagens e dados de exemplo)
-- Suíte com 174 testes automatizados cobrindo as regras de negócio
+- Suíte com 189 testes automatizados cobrindo as regras de negócio
 - F5 recarrega a seção, Ctrl+F foca a busca, sidebar destaca a seção ativa
 - Balcão: devolução em série sem janelinha a cada livro; foco volta
   sozinho pro próximo atendimento
@@ -363,6 +363,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.6.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.0
 [1.5.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.1
 [1.5.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.0
 [1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.4.0
