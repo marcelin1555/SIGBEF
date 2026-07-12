@@ -898,6 +898,23 @@ class _DialogoSelecionarUsuario(tk.Toplevel):
 # ---------------------------------------------------------------------------
 # Relatórios
 # ---------------------------------------------------------------------------
+_CARACTERES_FORMULA_CSV = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _neutralizar_celula_csv(valor):
+    """Evita injeção de fórmula em CSV (CWE-1236): células que começam
+    com =, +, -, @ (ou tab/CR) são interpretadas como fórmula pelo
+    Excel/LibreOffice ao abrir o arquivo. Como título de livro, nome de
+    usuário etc. vêm de cadastro livre, um valor tipo
+    '=HYPERLINK(...)' salvo hoje viraria fórmula executável no
+    relatório de amanhã. Prefixar com apóstrofo faz a planilha tratar
+    como texto literal, sem mudar o que aparece na célula."""
+    texto = str(valor)
+    if texto and texto[0] in _CARACTERES_FORMULA_CSV:
+        return "'" + texto
+    return valor
+
+
 class SecaoRelatorios(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
@@ -949,7 +966,8 @@ class SecaoRelatorios(SecaoBase):
         with open(caminho, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f, delimiter=";")
             w.writerow(cabecalho)
-            w.writerows(linhas)
+            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                        for linha in linhas])
 
     def _exportar_acervo(self):
         nome = self._arquivo_destino(
