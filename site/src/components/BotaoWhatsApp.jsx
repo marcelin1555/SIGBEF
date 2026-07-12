@@ -4,7 +4,7 @@ import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 export default function BotaoWhatsApp() {
   return (
     <a
-      href="https://w.app/sigbef"
+      href="https://wa.me/5584991424110"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Fale conosco no WhatsApp"

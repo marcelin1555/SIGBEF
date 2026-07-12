@@ -58,7 +58,7 @@ export default function PlanosPage() {
       <section className="py-14 px-4 bg-white text-center">
         <h2 className="text-2xl font-bold text-[#1F4E79] mb-2">Ficou alguma dúvida?</h2>
         <p className="text-gray-500 mb-6">Chame a equipe no WhatsApp — respondemos rápido.</p>
-        <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+        <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
           className="inline-block bg-[#25D366] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#1EBE5D] transition-colors shadow-lg">
           Falar com a equipe no WhatsApp
         </a>

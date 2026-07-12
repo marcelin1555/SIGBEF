@@ -9,13 +9,13 @@ const planos = [
     nome: 'Implantação Assistida', preco: 'R$ 800–1.500', periodo: 'pagamento único', destaque: true,
     descricao: 'Para escolas que querem ajuda para configurar e treinar a equipe.',
     itens: ['Tudo do plano gratuito','Instalação presencial ou remota','Cadastro inicial do acervo','Treinamento da equipe (4h)','Suporte por 30 dias'],
-    cta: 'Fale conosco', href: 'https://w.app/sigbef',
+    cta: 'Fale conosco', href: 'https://wa.me/5584991424110',
   },
   {
     nome: 'Suporte Mensal', preco: 'R$ 99', periodo: 'por mês', destaque: false,
     descricao: 'Para escolas que querem suporte contínuo e atualizações.',
     itens: ['Tudo do plano gratuito','Suporte por WhatsApp e e-mail','Atualizações de versão','Backup configurado'],
-    cta: 'Fale conosco', href: 'https://w.app/sigbef',
+    cta: 'Fale conosco', href: 'https://wa.me/5584991424110',
   },
 ]
 
@@ -57,7 +57,7 @@ export default function Planos() {
 
         <p className="text-center mt-8 text-gray-400 text-sm">
           Redes municipais e secretarias de educação:{' '}
-          <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+          <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
             className="text-[#2E75B6] font-semibold underline underline-offset-2 hover:text-[#1F4E79] transition-colors">
             entre em contato
           </a>{' '}

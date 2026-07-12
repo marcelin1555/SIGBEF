@@ -50,7 +50,7 @@ export default function Footer() {
                   className="hover:text-white transition-colors">Reportar problema</a>
               </li>
               <li>
-                <a href="https://w.app/sigbef" target="_blank" rel="noopener noreferrer"
+                <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Fale conosco (WhatsApp)</a>
               </li>
             </ul>
