@@ -36,22 +36,40 @@ def api_ativa() -> bool:
     return (get_config("API_ATIVA", "0") or "0").strip() == "1"
 
 
+# Dois níveis de acesso (princípio do menor privilégio):
+#   completo — acervo + dados de leitores e circulação
+#   consulta — só acervo público (livros, disponibilidade, estatísticas)
 def obter_token() -> str:
     return (get_config("API_TOKEN") or "").strip()
 
 
+def obter_token_consulta() -> str:
+    return (get_config("API_TOKEN_CONSULTA") or "").strip()
+
+
 def gerar_novo_token(executor_id: Optional[int] = None) -> str:
-    """Gera (ou regenera) o token de acesso. O antigo deixa de valer."""
+    """Gera (ou regenera) o token COMPLETO. O antigo deixa de valer."""
     token = secrets.token_urlsafe(32)
     set_config("API_TOKEN", token)
-    registrar_auditoria(executor_id, "API_TOKEN_GERADO", "")
+    registrar_auditoria(executor_id, "API_TOKEN_GERADO", "completo")
+    return token
+
+
+def gerar_novo_token_consulta(executor_id: Optional[int] = None) -> str:
+    """Gera (ou regenera) o token de CONSULTA (só acervo)."""
+    token = secrets.token_urlsafe(32)
+    set_config("API_TOKEN_CONSULTA", token)
+    registrar_auditoria(executor_id, "API_TOKEN_GERADO", "consulta")
     return token
 
 
 def definir_api(ativo: bool, executor_id: Optional[int] = None) -> None:
     set_config("API_ATIVA", "1" if ativo else "0")
-    if ativo and not obter_token():
-        gerar_novo_token(executor_id)
+    if ativo:
+        if not obter_token():
+            gerar_novo_token(executor_id)
+        if not obter_token_consulta():
+            gerar_novo_token_consulta(executor_id)
     registrar_auditoria(executor_id,
                          "API_ATIVADA" if ativo else "API_DESATIVADA", "")
 
@@ -89,14 +107,27 @@ class _Handler(BaseHTTPRequestHandler):
     def _erro(self, codigo: int, mensagem: str) -> None:
         self._json(codigo, {"erro": mensagem})
 
-    def _autorizado(self) -> bool:
-        token = obter_token()
-        if not token:
-            return False
+    def _nivel_do_token(self) -> Optional[str]:
+        """Retorna 'completo', 'consulta' ou None conforme o Bearer token."""
         recebido = (self.headers.get("Authorization") or "")
         if not recebido.startswith("Bearer "):
-            return False
-        return hmac.compare_digest(recebido[7:].strip(), token)
+            return None
+        tok = recebido[7:].strip()
+        completo = obter_token()
+        consulta = obter_token_consulta()
+        if completo and hmac.compare_digest(tok, completo):
+            return "completo"
+        if consulta and hmac.compare_digest(tok, consulta):
+            return "consulta"
+        return None
+
+    def _escopo_da_rota(self, caminho: str) -> str:
+        """'completo' para rotas com dados de leitores; 'consulta' para o
+        acervo público."""
+        if (_ROTA_USUARIO_EMP.match(caminho)
+                or caminho == "/api/v1/emprestimos/abertos"):
+            return "completo"
+        return "consulta"
 
     # ---------------- métodos ----------------
     def do_GET(self):  # noqa: N802 (nome exigido pelo http.server)
@@ -113,9 +144,15 @@ class _Handler(BaseHTTPRequestHandler):
         if not api_ativa():
             self._erro(403, "A API está desligada nas configurações do SIGBEF.")
             return
-        if not self._autorizado():
+        nivel = self._nivel_do_token()
+        if nivel is None:
             self._erro(401, "Token ausente ou inválido. Envie o header "
                             "Authorization: Bearer <token>.")
+            return
+        if self._escopo_da_rota(caminho) == "completo" and nivel != "completo":
+            self._erro(403, "Este token é apenas de consulta ao acervo. "
+                            "Rotas com dados de leitores exigem o token "
+                            "completo.")
             return
 
         try:

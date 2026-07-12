@@ -227,7 +227,8 @@ CONFIG_PADRAO = {
     # API REST somente leitura (opt-in; desligada = nenhuma porta aberta)
     "API_ATIVA": "0",
     "API_PORTA": "8765",
-    "API_TOKEN": "",
+    "API_TOKEN": "",           # completo: acervo + dados de leitores
+    "API_TOKEN_CONSULTA": "",  # restrito: só acervo público
 }
 
 

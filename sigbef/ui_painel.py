@@ -1247,10 +1247,22 @@ class SecaoConfig(SecaoBase):
         self.ent_api_porta = ttk.Entry(api_form, width=8)
         self.ent_api_porta.insert(0, str(api.porta_configurada()))
         self.ent_api_porta.grid(row=0, column=1, sticky="w", padx=12)
-        ttk.Label(api_form, text="Token de acesso:", style="Card.TLabel"
+        ttk.Label(api_form, text="Token completo:", style="Card.TLabel"
                   ).grid(row=1, column=0, sticky="w", pady=3)
         self.ent_api_token = ttk.Entry(api_form, width=50)
         self.ent_api_token.grid(row=1, column=1, sticky="w", padx=12)
+        ttk.Label(api_form,
+                  text="acervo + dados de leitores e circulação",
+                  style="CardHint.TLabel"
+                  ).grid(row=2, column=1, sticky="w", padx=12)
+        ttk.Label(api_form, text="Token de consulta:", style="Card.TLabel"
+                  ).grid(row=3, column=0, sticky="w", pady=(8, 3))
+        self.ent_api_token_consulta = ttk.Entry(api_form, width=50)
+        self.ent_api_token_consulta.grid(row=3, column=1, sticky="w", padx=12)
+        ttk.Label(api_form,
+                  text="só o acervo público (sem dados de alunos)",
+                  style="CardHint.TLabel"
+                  ).grid(row=4, column=1, sticky="w", padx=12)
         self._refrescar_token_api()
 
         botoes_api = ttk.Frame(integ, style="Card.TFrame")
@@ -1259,11 +1271,14 @@ class SecaoConfig(SecaoBase):
                                       style="CardHint.TLabel")
         self.lbl_api_msg.pack(side="left")
         self._refrescar_status_api()
-        ttk.Button(botoes_api, text="Gerar novo token",
-                    command=self._gerar_token_api
+        ttk.Button(botoes_api, text="Novo token completo",
+                    command=lambda: self._gerar_token_api("completo")
                     ).pack(side="right")
-        ttk.Button(botoes_api, text="Copiar token",
-                    command=self._copiar_token_api
+        ttk.Button(botoes_api, text="Novo token de consulta",
+                    command=lambda: self._gerar_token_api("consulta")
+                    ).pack(side="right", padx=(0, 8))
+        ttk.Button(botoes_api, text="Copiar completo",
+                    command=lambda: self._copiar_token_api("completo")
                     ).pack(side="right", padx=(0, 8))
 
         # ---------------- Aparencia ----------------
@@ -1432,10 +1447,13 @@ class SecaoConfig(SecaoBase):
     # ---------------- API REST ----------------
     def _refrescar_token_api(self):
         from . import api
-        self.ent_api_token.configure(state="normal")
-        self.ent_api_token.delete(0, "end")
-        self.ent_api_token.insert(0, api.obter_token() or "(gerado ao ativar)")
-        self.ent_api_token.configure(state="readonly")
+        for ent, token in (
+                (self.ent_api_token, api.obter_token()),
+                (self.ent_api_token_consulta, api.obter_token_consulta())):
+            ent.configure(state="normal")
+            ent.delete(0, "end")
+            ent.insert(0, token or "(gerado ao ativar)")
+            ent.configure(state="readonly")
 
     def _refrescar_status_api(self):
         from . import api
@@ -1473,29 +1491,33 @@ class SecaoConfig(SecaoBase):
         self._refrescar_token_api()
         self._refrescar_status_api()
 
-    def _copiar_token_api(self):
+    def _copiar_token_api(self, nivel="completo"):
         from . import api
-        token = api.obter_token()
+        token = (api.obter_token() if nivel == "completo"
+                 else api.obter_token_consulta())
         if not token:
             self.lbl_api_msg.configure(text="Ative a API primeiro.",
                                         foreground=tema.COR_AVISO)
             return
         self.painel.clipboard_clear()
         self.painel.clipboard_append(token)
-        self.lbl_api_msg.configure(text="✓ Token copiado.",
+        self.lbl_api_msg.configure(text=f"✓ Token {nivel} copiado.",
                                     foreground=tema.COR_SUCESSO)
 
-    def _gerar_token_api(self):
+    def _gerar_token_api(self, nivel="completo"):
         from . import api
         if not messagebox.askyesno(
                 "Gerar novo token",
-                "O token atual deixa de funcionar e os sistemas "
-                "integrados precisarão do novo. Continuar?",
+                f"O token {nivel} atual deixa de funcionar e os sistemas "
+                "que o usam precisarão do novo. Continuar?",
                 parent=self.painel):
             return
-        api.gerar_novo_token(executor_id=self.sessao.id)
+        if nivel == "completo":
+            api.gerar_novo_token(executor_id=self.sessao.id)
+        else:
+            api.gerar_novo_token_consulta(executor_id=self.sessao.id)
         self._refrescar_token_api()
-        self.lbl_api_msg.configure(text="✓ Novo token gerado.",
+        self.lbl_api_msg.configure(text=f"✓ Novo token {nivel} gerado.",
                                     foreground=tema.COR_SUCESSO)
 
     # ---------------- Aparencia ----------------

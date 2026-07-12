@@ -171,6 +171,44 @@ class TestSituacaoUsuario(ApiTestCase):
         self.assertEqual(status, 404)
 
 
+class TestEscopoDoToken(ApiTestCase):
+    """Token de consulta acessa só o acervo público; dados de leitores
+    exigem o token completo (princípio do menor privilégio)."""
+
+    def token_consulta(self):
+        return api.obter_token_consulta()
+
+    def test_consulta_acessa_acervo(self):
+        self.criar_livro(titulo="Publico")
+        for rota in ("/api/v1/estatisticas", "/api/v1/livros",
+                     "/api/v1/livros/1"):
+            status, _ = self.get(rota, token=self.token_consulta())
+            self.assertEqual(status, 200, rota)
+
+    def test_consulta_barrado_em_dados_de_leitor(self):
+        self.criar_usuario(matricula="alu9")
+        status, corpo = self.get("/api/v1/usuarios/alu9/emprestimos",
+                                 token=self.token_consulta())
+        self.assertEqual(status, 403)
+        self.assertIn("consulta", corpo["erro"])
+
+    def test_consulta_barrado_em_circulacao(self):
+        status, _ = self.get("/api/v1/emprestimos/abertos",
+                             token=self.token_consulta())
+        self.assertEqual(status, 403)
+
+    def test_completo_acessa_tudo(self):
+        self.criar_usuario(matricula="alu8")
+        status, _ = self.get("/api/v1/usuarios/alu8/emprestimos")  # token completo
+        self.assertEqual(status, 200)
+        status, _ = self.get("/api/v1/emprestimos/abertos")
+        self.assertEqual(status, 200)
+
+    def test_tokens_sao_distintos(self):
+        self.assertNotEqual(api.obter_token(), api.obter_token_consulta())
+        self.assertTrue(api.obter_token_consulta())
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()
