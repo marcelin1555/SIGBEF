@@ -217,6 +217,53 @@ class TestAuditoriaLoginFalha(SigbefTestCase):
         self.assertEqual(self._falhas(), [])
 
 
+class TestBloqueioConta(SigbefTestCase):
+    """Bloqueio temporário após N tentativas de senha falhas."""
+
+    def setUp(self):
+        super().setUp()
+        from sigbef.database import set_config
+        set_config("LOGIN_MAX_TENTATIVAS", "3")
+        set_config("LOGIN_BLOQUEIO_MIN", "15")
+        self.criar_usuario(matricula="vitima", senha="certa123")
+
+    def test_bloqueia_apos_limite_mesmo_com_senha_certa(self):
+        for _ in range(3):
+            self.assertIsNone(autenticar("vitima", "errada"))
+        # Agora, mesmo com a senha CORRETA, o login é barrado
+        self.assertIsNone(autenticar("vitima", "certa123"))
+        from sigbef.auth import minutos_bloqueio_restantes
+        self.assertGreaterEqual(minutos_bloqueio_restantes("vitima"), 1)
+
+    def test_abaixo_do_limite_ainda_aceita_senha_certa(self):
+        for _ in range(2):        # 2 < 3, ainda não bloqueia
+            self.assertIsNone(autenticar("vitima", "errada"))
+        self.assertIsNotNone(autenticar("vitima", "certa123"))
+
+    def test_login_bem_sucedido_zera_o_contador(self):
+        for _ in range(2):
+            self.assertIsNone(autenticar("vitima", "errada"))
+        self.assertIsNotNone(autenticar("vitima", "certa123"))  # zera
+        # Depois do acerto, pode errar de novo sem herdar as falhas antigas
+        for _ in range(2):
+            self.assertIsNone(autenticar("vitima", "errada"))
+        self.assertIsNotNone(autenticar("vitima", "certa123"))
+
+    def test_bloqueio_registra_auditoria(self):
+        from sigbef.database import db_cursor
+        for _ in range(3):
+            autenticar("vitima", "errada")
+        autenticar("vitima", "certa123")   # barrado -> LOGIN_BLOQUEADO
+        with db_cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM auditoria "
+                        "WHERE acao = 'LOGIN_BLOQUEADO'")
+            self.assertGreaterEqual(cur.fetchone()["n"], 1)
+
+    def test_matricula_livre_nao_reporta_bloqueio(self):
+        from sigbef.auth import minutos_bloqueio_restantes
+        self.assertEqual(minutos_bloqueio_restantes("vitima"), 0)
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()

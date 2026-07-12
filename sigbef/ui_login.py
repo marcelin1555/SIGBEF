@@ -113,9 +113,18 @@ class JanelaLogin(tk.Tk):
         senha = self.ent_senha.get()
         sessao = autenticar(matricula, senha)
         if not sessao:
-            messagebox.showerror("Acesso negado",
-                                 "Matrícula ou senha incorretas.",
-                                 parent=self)
+            from .auth import minutos_bloqueio_restantes
+            faltam = minutos_bloqueio_restantes(matricula)
+            if faltam:
+                messagebox.showwarning(
+                    "Conta temporariamente bloqueada",
+                    f"Muitas tentativas de senha. Tente novamente em "
+                    f"{faltam} minuto(s), ou procure o administrador.",
+                    parent=self)
+            else:
+                messagebox.showerror("Acesso negado",
+                                     "Matrícula ou senha incorretas.",
+                                     parent=self)
             self.ent_senha.delete(0, "end")
             self.ent_senha.focus_set()
             return

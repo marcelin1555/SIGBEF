@@ -11,9 +11,68 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from .database import db_cursor, registrar_auditoria
+from .database import db_cursor, get_config, registrar_auditoria
 
 ITERACOES = 200_000
+
+
+def _config_int(chave: str, padrao: int) -> int:
+    try:
+        return int(get_config(chave) or padrao)
+    except (TypeError, ValueError):
+        return padrao
+
+
+# ---------------------------------------------------------------------------
+# Bloqueio temporário por tentativas falhas (anti força-bruta de senha)
+# ---------------------------------------------------------------------------
+def _falhas_recentes(cur, usuario_id: int) -> int:
+    """Conta LOGIN_FALHA do usuário dentro da janela de bloqueio, contando
+    só as falhas ocorridas DEPOIS do último login bem-sucedido dele (um
+    acerto zera o contador)."""
+    minutos = _config_int("LOGIN_BLOQUEIO_MIN", 15)
+    cur.execute(
+        f"""SELECT COUNT(*) AS n FROM auditoria
+            WHERE usuario_id = ? AND acao = 'LOGIN_FALHA'
+              AND timestamp >= datetime('now','localtime','-{minutos} minutes')
+              AND timestamp > COALESCE((
+                    SELECT MAX(timestamp) FROM auditoria
+                    WHERE usuario_id = ? AND acao IN ('LOGIN','LOGIN_CARTAO')
+                  ), '0')""",
+        (usuario_id, usuario_id),
+    )
+    return cur.fetchone()["n"]
+
+
+def _conta_bloqueada(cur, usuario_id: int) -> bool:
+    return _falhas_recentes(cur, usuario_id) >= _config_int(
+        "LOGIN_MAX_TENTATIVAS", 5)
+
+
+def minutos_bloqueio_restantes(matricula: str) -> int:
+    """Se a conta da matrícula está bloqueada, retorna quantos minutos
+    faltam pro desbloqueio; 0 se não está bloqueada. Uso: mensagem da UI."""
+    matricula = (matricula or "").strip()
+    if not matricula:
+        return 0
+    minutos = _config_int("LOGIN_BLOQUEIO_MIN", 15)
+    with db_cursor() as cur:
+        cur.execute("SELECT id FROM usuario WHERE matricula = ?", (matricula,))
+        row = cur.fetchone()
+        if not row or not _conta_bloqueada(cur, row["id"]):
+            return 0
+        # Minutos até a falha mais antiga da janela sair dela
+        cur.execute(
+            f"""SELECT CAST((julianday(MIN(timestamp))
+                    + {minutos}/1440.0 - julianday('now','localtime'))
+                    * 1440 AS INTEGER) + 1 AS faltam
+                FROM auditoria
+                WHERE usuario_id = ? AND acao = 'LOGIN_FALHA'
+                  AND timestamp >= datetime('now','localtime','-{minutos} minutes')""",
+            (row["id"],),
+        )
+        faltam = cur.fetchone()["faltam"]
+        return max(1, faltam or 1)
 
 # Hash de uma senha aleatória, gerado sob demanda. Usado para manter o
 # tempo de resposta constante quando a matrícula não existe: sem ele, o
@@ -105,6 +164,13 @@ def autenticar(matricula: str, senha: str) -> Optional[Sessao]:
             verificar_senha(senha, _hash_fantasma())
             registrar_auditoria(None, "LOGIN_FALHA",
                                  f"matricula={matricula[:40]}")
+            return None
+        # Conta bloqueada: nem testa a senha (barra força-bruta mesmo que
+        # a tentativa atual traga a senha certa, durante a janela)
+        if _conta_bloqueada(cur, row["id"]):
+            verificar_senha(senha, _hash_fantasma())
+            registrar_auditoria(row["id"], "LOGIN_BLOQUEADO",
+                                 "muitas tentativas")
             return None
         if not verificar_senha(senha, row["senha_hash"]):
             registrar_auditoria(row["id"], "LOGIN_FALHA", "senha incorreta")

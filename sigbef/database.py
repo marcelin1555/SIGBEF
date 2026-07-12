@@ -209,6 +209,9 @@ CONFIG_PADRAO = {
     "MULTA_POR_DIA": "1.50",
     "MULTA_TETO": "60.00",
     "NOME_INSTITUICAO": "CEFE, Centro Educacional Felinto Elísio",
+    # Bloqueio temporário de conta após tentativas de senha falhas
+    "LOGIN_MAX_TENTATIVAS": "5",
+    "LOGIN_BLOQUEIO_MIN": "15",
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
