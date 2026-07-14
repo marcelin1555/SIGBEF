@@ -24,6 +24,7 @@ from .ui_dialogos import (
     DialogoImportarCSV,
     DialogoLivro,
     DialogoSelecionarExemplar,
+    DialogoSelecionarUsuario,
     DialogoUsuario,
 )
 
@@ -687,7 +688,7 @@ class SecaoEmprestimos(SecaoBase):
             self.ent_emp_cod.insert(0, d.codigo_selecionado)
 
     def _selecionar_usuario(self):
-        d = _DialogoSelecionarUsuario(self.painel)
+        d = DialogoSelecionarUsuario(self.painel)
         self.painel.wait_window(d)
         if d.matricula_selecionada:
             self.ent_emp_matr.delete(0, "end")
@@ -840,78 +841,6 @@ class SecaoEmprestimos(SecaoBase):
 # ---------------------------------------------------------------------------
 # Diálogo: selecionar usuário
 # ---------------------------------------------------------------------------
-class _DialogoSelecionarUsuario(tk.Toplevel):
-    """Dialogo simples para escolher usuário a partir de uma busca."""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.title("Selecionar usuário")
-        self.transient(parent)
-        self.grab_set()
-        self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 720, 500)
-        self.matricula_selecionada: str = ""
-
-        wrap = ttk.Frame(self, padding=20)
-        wrap.pack(fill="both", expand=True)
-        ttk.Label(wrap, text="Selecionar usuário",
-                  style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(wrap, text="Busque pelo nome, matrícula ou e-mail.",
-                  style="Hint.TLabel").pack(anchor="w", pady=(2, 12))
-
-        f = ttk.Frame(wrap)
-        f.pack(fill="x")
-        ttk.Label(f, text="Buscar:").pack(side="left")
-        self.ent = ttk.Entry(f)
-        self.ent.pack(side="left", fill="x", expand=True, padx=8)
-        self.ent.bind("<Return>", lambda e: self._buscar())
-        ttk.Button(f, text="Pesquisar",
-                    command=self._buscar).pack(side="left")
-
-        cols = ("nome", "matricula", "perfil", "email")
-        self.tree = ttk.Treeview(wrap, columns=cols, show="headings", height=14)
-        for c, t, w in [("nome", "Nome", 240), ("matricula", "Matrícula", 100),
-                         ("perfil", "Perfil", 130),
-                         ("email", "E-mail", 220)]:
-            self.tree.heading(c, text=t)
-            self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
-        self.tree.bind("<Double-1>", lambda e: self._confirmar())
-
-        botoes = ttk.Frame(wrap)
-        botoes.pack(fill="x", pady=(12, 0))
-        ttk.Button(botoes, text="Cancelar",
-                    command=self.destroy).pack(side="right", padx=(8, 0))
-        ttk.Button(botoes, text="Usar usuário selecionado",
-                    style="Primario.TButton",
-                    command=self._confirmar).pack(side="right")
-
-        self._buscar()
-        self.ent.focus_set()
-
-    def _buscar(self):
-        for it in self.tree.get_children():
-            self.tree.delete(it)
-        for u in servicos.listar_usuarios(self.ent.get()):
-            if not u["ativo"]:
-                continue
-            self.tree.insert("", "end", values=(
-                u["nome"], u["matricula"], u["perfil"],
-                u.get("email") or "",
-            ))
-        tema.aplicar_zebra(self.tree)
-
-    def _confirmar(self):
-        sel = self.tree.selection()
-        if not sel:
-            messagebox.showinfo("Nada selecionado",
-                                  "Escolha um usuário na lista.",
-                                  parent=self)
-            return
-        self.matricula_selecionada = str(self.tree.item(sel[0])["values"][1])
-        self.destroy()
-
-
 # ---------------------------------------------------------------------------
 # Relatórios
 # ---------------------------------------------------------------------------

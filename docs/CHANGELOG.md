@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado] — v1.7 em desenvolvimento (branch aprimoramentos-v1.7)
+
+### Avisos por e-mail (opt-in)
+- Novo aviso: quando um livro reservado fica separado para o aluno, ele
+  recebe e-mail avisando que pode retirar (prazo de retirada incluído)
+- O botão "Enviar avisos agora" passa a cobrir os dois tipos de aviso
+  (vencimento próximo e reserva disponível)
+
+### Acervo
+- Busca avançada: filtro por categoria (combo) na pesquisa de livros da
+  bibliotecária e do aluno, além da busca por texto livre
+
+### Qualidade
+- Diálogos de seleção (exemplar e usuário) unificados numa base
+  reutilizável, eliminando a duplicação apontada na auditoria
+- Suíte com 217 testes automatizados
+
 ## [1.6.0] — 2026-07-10
 
 ### API REST somente leitura (opt-in)
