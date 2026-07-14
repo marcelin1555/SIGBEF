@@ -285,9 +285,14 @@ class SecaoLivros(SecaoBase):
         filtros = ttk.Frame(self, padding=(0, 12))
         filtros.pack(fill="x")
         ttk.Label(filtros, text="Buscar:").pack(side="left")
-        self.ent_busca = ttk.Entry(filtros, width=40)
+        self.ent_busca = ttk.Entry(filtros, width=32)
         self.ent_busca.pack(side="left", padx=8)
         self.ent_busca.bind("<Return>", lambda e: self.atualizar())
+        ttk.Label(filtros, text="Categoria:").pack(side="left")
+        self.cbo_categoria = ttk.Combobox(filtros, width=18, state="readonly")
+        self.cbo_categoria.pack(side="left", padx=(4, 8))
+        self.cbo_categoria.bind("<<ComboboxSelected>>",
+                                 lambda e: self.atualizar())
         self.var_disponiveis = tk.BooleanVar(value=False)
         ttk.Checkbutton(filtros, text="Apenas com exemplares disponíveis",
                         variable=self.var_disponiveis,
@@ -385,16 +390,28 @@ class SecaoLivros(SecaoBase):
         webbrowser.open(destino.as_uri())
 
     def atualizar(self):
+        self._recarregar_categorias()
         for it in self.tree.get_children():
             self.tree.delete(it)
-        for liv in servicos.listar_livros(self.ent_busca.get(),
-                                            self.var_disponiveis.get()):
+        cat = self.cbo_categoria.get()
+        for liv in servicos.listar_livros(
+                self.ent_busca.get(), self.var_disponiveis.get(),
+                categoria=cat or None):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "", liv["ano_publicacao"] or "",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
         tema.aplicar_zebra(self.tree)
+
+    def _recarregar_categorias(self):
+        """Mantém o combo de categorias em dia (opção vazia = Todas)."""
+        atual = self.cbo_categoria.get()
+        valores = [""] + servicos.listar_categorias()
+        if list(self.cbo_categoria["values"]) != valores:
+            self.cbo_categoria["values"] = valores
+            if atual not in valores:
+                self.cbo_categoria.set("")
 
 
 # ---------------------------------------------------------------------------
@@ -1604,6 +1621,10 @@ class SecaoPesquisaAluno(SecaoBase):
         self.ent = ttk.Entry(f, font=("Segoe UI", 12))
         self.ent.pack(side="left", fill="x", expand=True, ipady=4)
         self.ent.bind("<Return>", lambda e: self.atualizar())
+        self.cbo_categoria = ttk.Combobox(f, width=16, state="readonly")
+        self.cbo_categoria.pack(side="left", padx=8)
+        self.cbo_categoria.bind("<<ComboboxSelected>>",
+                                 lambda e: self.atualizar())
         self.var_disp = tk.BooleanVar(value=True)
         ttk.Checkbutton(f, text="Apenas disponíveis",
                           variable=self.var_disp,
@@ -1723,10 +1744,17 @@ class SecaoPesquisaAluno(SecaoBase):
 
     def atualizar(self):
         self.lbl_msg.configure(text="")
+        atual = self.cbo_categoria.get()
+        valores = [""] + servicos.listar_categorias()
+        if list(self.cbo_categoria["values"]) != valores:
+            self.cbo_categoria["values"] = valores
+            if atual not in valores:
+                self.cbo_categoria.set("")
         for it in self.tree.get_children():
             self.tree.delete(it)
-        for liv in servicos.listar_livros(self.ent.get(),
-                                            self.var_disp.get()):
+        for liv in servicos.listar_livros(
+                self.ent.get(), self.var_disp.get(),
+                categoria=self.cbo_categoria.get() or None):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "",

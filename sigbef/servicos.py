@@ -176,10 +176,41 @@ def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
     return exemplares
 
 
-def listar_livros(termo: str = "", apenas_disponiveis: bool = False) -> list[dict]:
-    """Lista livros com agregados de exemplares (total e disponíveis)."""
+def listar_categorias() -> list[str]:
+    """Nomes de categorias em uso no acervo, ordenados (para filtros de busca)."""
+    with db_cursor() as cur:
+        cur.execute("SELECT nome FROM categoria ORDER BY nome")
+        return [r["nome"] for r in cur.fetchall()]
+
+
+def listar_autores() -> list[str]:
+    """Nomes de autores em uso no acervo, ordenados (para filtros de busca)."""
+    with db_cursor() as cur:
+        cur.execute("SELECT nome FROM autor ORDER BY nome")
+        return [r["nome"] for r in cur.fetchall()]
+
+
+def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
+                  categoria: Optional[str] = None,
+                  autor: Optional[str] = None) -> list[dict]:
+    """Lista livros com agregados de exemplares (total e disponíveis).
+
+    `termo` faz busca livre (título, ISBN, autor, categoria). `categoria`
+    e `autor` são filtros exatos e opcionais (busca avançada); omitidos,
+    o resultado é idêntico à busca simples.
+    """
     termo_like = f"%{termo.strip()}%" if termo else "%"
-    sql = """
+    params: list = [termo_like, termo_like, termo_like, termo_like]
+    filtros = ""
+    if categoria:
+        filtros += " AND c.nome = ?"
+        params.append(categoria)
+    if autor:
+        filtros += (" AND EXISTS (SELECT 1 FROM livro_autor la2 "
+                    "JOIN autor a2 ON a2.id = la2.autor_id "
+                    "WHERE la2.livro_id = l.id AND a2.nome = ?)")
+        params.append(autor)
+    sql = f"""
         SELECT
             l.id,
             l.titulo,
@@ -211,10 +242,11 @@ def listar_livros(termo: str = "", apenas_disponiveis: bool = False) -> list[dic
                 )
                 OR IFNULL(c.nome, '') LIKE ?
               )
+          {filtros}
         ORDER BY l.titulo
     """
     with db_cursor() as cur:
-        cur.execute(sql, (termo_like, termo_like, termo_like, termo_like))
+        cur.execute(sql, params)
         rows = [dict(r) for r in cur.fetchall()]
     if apenas_disponiveis:
         rows = [r for r in rows if (r["disponiveis"] or 0) > 0]

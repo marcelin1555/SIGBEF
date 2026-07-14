@@ -147,6 +147,29 @@ class TestListarLivros(ServicosTestCase):
         self.assertNotIn("Dom Casmurro", titulos)
         self.assertIn("Python para Todos", titulos)
 
+    def test_filtro_por_categoria_exato(self):
+        rows = servicos.listar_livros(categoria="Romance")
+        self.assertEqual([r["titulo"] for r in rows], ["Dom Casmurro"])
+
+    def test_filtro_por_autor_exato(self):
+        rows = servicos.listar_livros(autor="Guido Docente")
+        self.assertEqual([r["titulo"] for r in rows], ["Python para Todos"])
+
+    def test_texto_mais_categoria_combinados(self):
+        self.criar_livro(titulo="Outro Romance", autores=["Autor X"],
+                         categoria="Romance")
+        rows = servicos.listar_livros("Casmurro", categoria="Romance")
+        self.assertEqual([r["titulo"] for r in rows], ["Dom Casmurro"])
+
+    def test_sem_filtro_devolve_tudo(self):
+        rows = servicos.listar_livros()
+        self.assertEqual(len(rows), 2)
+
+    def test_listar_categorias_e_autores(self):
+        self.assertIn("Romance", servicos.listar_categorias())
+        self.assertIn("Informatica", servicos.listar_categorias())
+        self.assertIn("Machado de Assis", servicos.listar_autores())
+
 
 class TestDetalhesLivro(ServicosTestCase):
     """Ficha completa do livro."""
