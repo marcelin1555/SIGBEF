@@ -1177,15 +1177,16 @@ class SecaoConfig(SecaoBase):
         self.var_email = tk.BooleanVar(value=notificacoes.avisos_ativos())
         ttk.Checkbutton(
             integ,
-            text="Avisar por e-mail quando a devolução estiver próxima",
+            text="Avisar por e-mail (vencimento próximo e reserva pronta)",
             variable=self.var_email,
             command=lambda: notificacoes.definir_avisos(self.var_email.get())
             ).pack(anchor="w")
         ttk.Label(
             integ,
-            text=("Envia um lembrete único por empréstimo para usuários com "
-                  "e-mail cadastrado, alguns dias antes do prazo. Use o "
-                  "e-mail da biblioteca (ex.: Gmail com senha de app)."),
+            text=("Avisa usuários com e-mail cadastrado quando um empréstimo "
+                  "está perto do prazo ou quando um livro reservado por eles "
+                  "fica disponível. Um aviso por situação. Use o e-mail da "
+                  "biblioteca (ex.: Gmail com senha de app)."),
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 8))
 

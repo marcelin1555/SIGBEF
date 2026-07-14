@@ -63,10 +63,33 @@ def emails_pendentes() -> list[dict]:
         return [dict(r) for r in cur.fetchall()]
 
 
+def reservas_pendentes() -> list[dict]:
+    """Reservas já separadas (exemplar à espera de retirada) de usuários
+    com e-mail que ainda não foram avisados de que o livro chegou."""
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT r.id AS reserva_id, u.nome, u.email,
+                       l.titulo, r.disponivel_ate
+               FROM reserva r
+               JOIN usuario u ON u.id = r.usuario_id
+               JOIN livro l ON l.id = r.livro_id
+               LEFT JOIN notificacao_reserva n ON n.reserva_id = r.id
+               WHERE r.status = 'ATIVA' AND r.exemplar_id IS NOT NULL
+                 AND u.email IS NOT NULL AND u.email != ''
+                 AND n.id IS NULL
+               ORDER BY r.disponivel_ate""")
+        return [dict(r) for r in cur.fetchall()]
+
+
+def _remetente() -> str:
+    return get_config("SMTP_REMETENTE") or get_config("SMTP_USUARIO")
+
+
 def _montar_mensagem(aviso: dict) -> EmailMessage:
+    """Monta o e-mail de aviso de vencimento próximo."""
     instituicao = get_config("NOME_INSTITUICAO", "Biblioteca") or "Biblioteca"
     msg = EmailMessage()
-    msg["From"] = get_config("SMTP_REMETENTE") or get_config("SMTP_USUARIO")
+    msg["From"] = _remetente()
     msg["To"] = aviso["email"]
     msg["Subject"] = (f"Biblioteca: devolva '{aviso['titulo']}' até "
                       f"{data_br(aviso['data_prevista'])}")
@@ -77,6 +100,25 @@ def _montar_mensagem(aviso: dict) -> EmailMessage:
         "multa.\n\n"
         "Se precisar de mais tempo, procure a biblioteca e peça a "
         "renovação.\n\n"
+        f"{instituicao}\n"
+        "(mensagem automática do SIGBEF, não precisa responder)"
+    )
+    return msg
+
+
+def _montar_mensagem_reserva(aviso: dict) -> EmailMessage:
+    """Monta o e-mail avisando que o livro reservado está disponível."""
+    instituicao = get_config("NOME_INSTITUICAO", "Biblioteca") or "Biblioteca"
+    msg = EmailMessage()
+    msg["From"] = _remetente()
+    msg["To"] = aviso["email"]
+    msg["Subject"] = f"Biblioteca: '{aviso['titulo']}' está te esperando"
+    msg.set_content(
+        f"Olá, {aviso['nome']}!\n\n"
+        f"O livro '{aviso['titulo']}' que você reservou está disponível "
+        "para retirada na biblioteca. Ele fica separado para você até "
+        f"{data_br(aviso['disponivel_ate'])}; depois disso, passa para o "
+        "próximo da fila.\n\n"
         f"{instituicao}\n"
         "(mensagem automática do SIGBEF, não precisa responder)"
     )
@@ -116,30 +158,41 @@ def enviar_avisos(
     transporte: Optional[Callable[[list[EmailMessage]], None]] = None,
     executor_id: Optional[int] = None,
 ) -> dict:
-    """Envia os avisos pendentes. Retorna {"enviados": N}.
+    """Envia todos os avisos pendentes (vencimento próximo e reserva
+    disponível) de uma vez.
 
+    Retorna {"enviados": total, "vencimento": n, "reserva": m}.
     `transporte` permite injetar um envio alternativo (testes). O
-    registro em `notificacao` só acontece se o envio inteiro der certo,
-    então uma falha permite tentar de novo sem perder ninguém.
+    registro só acontece se o envio inteiro der certo, então uma falha
+    permite tentar de novo sem perder ninguém.
     """
     if not avisos_ativos():
         raise RegraNegocioError(
             "Os avisos por e-mail estão desligados. "
             "Ative em Configurações → Integrações.")
-    pendentes = emails_pendentes()
-    if not pendentes:
-        return {"enviados": 0}
+    venc = emails_pendentes()
+    res = reservas_pendentes()
+    if not venc and not res:
+        return {"enviados": 0, "vencimento": 0, "reserva": 0}
 
-    mensagens = [_montar_mensagem(a) for a in pendentes]
+    mensagens = ([_montar_mensagem(a) for a in venc]
+                 + [_montar_mensagem_reserva(a) for a in res])
     (transporte or _transporte_smtp)(mensagens)
 
     with db_cursor() as cur:
-        for a in pendentes:
+        for a in venc:
             cur.execute(
                 "INSERT INTO notificacao(emprestimo_id, tipo) "
                 "VALUES (?, 'VENCIMENTO')",
                 (a["emprestimo_id"],),
             )
+        for a in res:
+            cur.execute(
+                "INSERT INTO notificacao_reserva(reserva_id) VALUES (?)",
+                (a["reserva_id"],),
+            )
+    total = len(venc) + len(res)
     registrar_auditoria(executor_id, "EMAIL_AVISOS",
-                         f"enviados={len(pendentes)}")
-    return {"enviados": len(pendentes)}
+                         f"enviados={total}; vencimento={len(venc)}; "
+                         f"reserva={len(res)}")
+    return {"enviados": total, "vencimento": len(venc), "reserva": len(res)}
