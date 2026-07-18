@@ -13,6 +13,7 @@ from pathlib import Path
 from tkinter import ttk, messagebox, filedialog
 
 from . import barcode_util
+from . import icones
 from . import servicos
 from . import ui_tema as tema
 from .auth import Sessao
@@ -82,6 +83,7 @@ class PainelPrincipal(tk.Tk):
                  text=f"{self.sessao.perfil.title()} • matrícula {self.sessao.matricula}",
                  font=("Segoe UI", 9)).pack(anchor="e")
         ttk.Button(cabecalho, text="Sair",
+                   image=icones.icone("sair"), compound="left",
                    command=self._sair).pack(side="right", padx=(0, 12))
 
         # Corpo (sidebar + área principal)
@@ -95,26 +97,28 @@ class PainelPrincipal(tk.Tk):
         principal = ttk.Frame(corpo, padding=24)
         principal.pack(side="right", fill="both", expand=True)
 
-        # Itens da sidebar (filtrados por perfil)
-        itens = [("painel", "Painel inicial")]
+        # Itens da sidebar (filtrados por perfil): chave, rótulo, ícone
+        itens = [("painel", "Painel inicial", "home")]
         if self.sessao.is_bibliotecario:
             itens += [
-                ("livros", "Livros e exemplares"),
-                ("usuarios", "Usuários"),
-                ("emprestimos", "Empréstimos abertos"),
-                ("relatorios", "Relatórios"),
+                ("livros", "Livros e exemplares", "livro"),
+                ("usuarios", "Usuários", "usuarios"),
+                ("emprestimos", "Empréstimos abertos", "troca"),
+                ("relatorios", "Relatórios", "grafico"),
             ]
         if self.sessao.is_admin:
-            itens.append(("config", "Configurações"))
+            itens.append(("config", "Configurações", "engrenagem"))
 
         # Para alunos/professores, mostrar apenas pesquisa e meus empréstimos
         if not self.sessao.is_bibliotecario:
-            itens = [("painel", "Painel inicial"),
-                     ("pesquisa_aluno", "Pesquisar livros"),
-                     ("meus_emp", "Meus empréstimos")]
+            itens = [("painel", "Painel inicial", "home"),
+                     ("pesquisa_aluno", "Pesquisar livros", "busca"),
+                     ("meus_emp", "Meus empréstimos", "leitor")]
 
-        for chave, rotulo in itens:
-            btn = ttk.Button(sidebar, text=rotulo,
+        for chave, rotulo, nome_icone in itens:
+            btn = ttk.Button(sidebar, text=" " + rotulo,
+                              image=icones.icone(nome_icone),
+                              compound="left",
                               style="Sidebar.TButton",
                               command=lambda k=chave: self._mostrar_secao(k))
             btn.pack(fill="x")
@@ -122,7 +126,7 @@ class PainelPrincipal(tk.Tk):
 
         # Construir frames das seções
         self._principal = principal
-        for chave, _ in itens:
+        for chave, _rotulo, _icone in itens:
             self._construir_secao(chave)
 
     def _secao_inicial(self) -> str:
@@ -211,20 +215,23 @@ class SecaoPainel(SecaoBase):
         self._cards_frame.pack(fill="x")
 
         self._cards: dict[str, ttk.Label] = {}
-        for i, (chave, titulo, _cor) in enumerate([
-            ("livros", "Títulos no acervo", tema.COR_PRIMARIA),
-            ("exemplares", "Exemplares totais", tema.COR_SECUNDARIA),
-            ("disponiveis", "Disponíveis agora", tema.COR_SUCESSO),
-            ("emp_abertos", "Empréstimos abertos", tema.COR_DESTAQUE),
-            ("atrasados", "Em atraso", tema.COR_ERRO),
-            ("usuarios", "Usuários ativos", tema.COR_SECUNDARIA),
+        for i, (chave, titulo, nome_icone, cor_icone) in enumerate([
+            ("livros", "Títulos no acervo", "livro", "cinza"),
+            ("exemplares", "Exemplares totais", "barcode", "cinza"),
+            ("disponiveis", "Disponíveis agora", "check", "verde"),
+            ("emp_abertos", "Empréstimos abertos", "troca", "cinza"),
+            ("atrasados", "Em atraso", "alerta", "vermelho"),
+            ("usuarios", "Usuários ativos", "usuarios", "cinza"),
         ]):
             card = ttk.Frame(self._cards_frame, style="Card.TFrame",
                               padding=20)
             card.grid(row=i // 3, column=i % 3, sticky="ew",
                        padx=8, pady=8, ipadx=4)
             self._cards_frame.columnconfigure(i % 3, weight=1)
-            ttk.Label(card, text=titulo, style="CardHint.TLabel").pack(anchor="w")
+            ttk.Label(card, text=" " + titulo,
+                      image=icones.icone(nome_icone, cor_icone, 20),
+                      compound="left",
+                      style="CardHint.TLabel").pack(anchor="w")
             valor = ttk.Label(card, text="", style="Display.TLabel")
             valor.pack(anchor="w", pady=(6, 0))
             self._cards[chave] = valor

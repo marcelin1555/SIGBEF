@@ -2,6 +2,18 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado]
+
+### Interface
+- Ícones vetoriais (Font Awesome) na sidebar, no botão Sair e nos
+  cards do painel inicial, alinhando o aplicativo à identidade visual
+  do site. Sem emojis e sem dependência nova: os PNGs são gerados em
+  tempo de desenvolvimento (tools/gerar_icones.js) e embutidos em
+  base64; em runtime é só tk.PhotoImage, biblioteca padrão. Cores
+  fixas à prova de paleta personalizada (branco na sidebar, cinza
+  neutro nos cards, verde/vermelho apenas nos cards de convenção
+  universal)
+
 ## [1.6.1] — 2026-07-18
 
 ### Avisos por e-mail (opt-in)
