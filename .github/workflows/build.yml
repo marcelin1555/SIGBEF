@@ -101,10 +101,25 @@ jobs:
             SIGBEF_Setup_*.exe
           if-no-files-found: error
 
+      - name: Extrair notas da release do CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          awk -v ver="${{ steps.versao.outputs.versao }}" '
+            index($0, "## [" ver "]") == 1 {dentro=1; next}
+            dentro && index($0, "## [") == 1 {exit}
+            dentro {print}
+          ' docs/CHANGELOG.md > notas_release.md
+          if [ ! -s notas_release.md ]; then
+            echo "Notas completas em [docs/CHANGELOG.md](https://github.com/${GITHUB_REPOSITORY}/blob/main/docs/CHANGELOG.md)." > notas_release.md
+          fi
+
       - name: Anexar na release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          name: SIGBEF v${{ steps.versao.outputs.versao }}
+          body_path: notas_release.md
           files: |
             SIGBEF-*.zip
             SIGBEF-*.tar.gz

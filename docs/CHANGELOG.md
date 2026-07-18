@@ -146,7 +146,7 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 ### Site
 - Contato direto por **WhatsApp** (botão flutuante, planos e rodapé)
 
-## [1.3.0] — 2026-06-25
+## 1.3.0 — 2026-06-25
 
 ### Site oficial (React + Vite)
 
@@ -182,7 +182,7 @@ SQLite portáveis; o que faltava era o empacotamento por plataforma.
 - Repositório Bitbucket configurado: `bitbucket.org/workspacemarcellomelo/sigbef-sistema-de-biblioteca`
 - Push inicial para Bitbucket com 40 arquivos
 
-## [1.2.0] — 2026-05-24
+## 1.2.0 — 2026-05-24
 
 Pedido vindo da própria biblioteca do CEFE durante a apresentação do
 sistema ao orientador do projeto: incluir série e turma na
@@ -214,7 +214,7 @@ identificação do aluno.
 - Tela de cadastro de usuário aumentou de 520x520 para 520x600 pra
   acomodar o novo campo sem cortar conteúdo.
 
-## [1.1.0] — 2026-05-22
+## 1.1.0 — 2026-05-22
 
 Refino estrutural e visual para a submissão no Desafio Liga Jovem do
 Sebrae.
@@ -398,8 +398,5 @@ Itens previstos para versões posteriores — ver
 [1.6.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.0
 [1.5.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.1
 [1.5.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.0
-[1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.4.0
-[1.3.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.3.0
-[1.2.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.2.0
-[1.1.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.1.0
-[1.0.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.0.0
+[1.4.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/V.1.4.0
+[1.0.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/V1.0.0
