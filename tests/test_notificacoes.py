@@ -96,6 +96,61 @@ class TestTransporteReal(NotificacoesTestCase):
             notificacoes.enviar_avisos()  # transporte real, sem host
 
 
+class TestAvisoReserva(NotificacoesTestCase):
+    """Aviso de reserva disponível (livro reservado ficou separado)."""
+
+    def setUp(self):
+        super().setUp()
+        from sigbef import reservas
+        self.reservas = reservas
+        # Beto tem e-mail e reserva um livro esgotado; ao devolver, o
+        # exemplar fica separado pra ele (vira pendente de aviso).
+        self.beto = self.criar_usuario(matricula="beto", nome="Beto B",
+                                       email="beto@escola.br")
+        liv = self.criar_livro(titulo="Reservadão", exemplares=1)
+        self.codigo_res = liv["exemplares"][0][1]
+        servicos.realizar_emprestimo(codigo_exemplar=self.codigo_res,
+                                     matricula_usuario="a1")
+        reservas.criar_reserva(liv["livro_id"], self.beto["id"])
+        servicos.realizar_devolucao(codigo_exemplar=self.codigo_res)
+
+    def test_reserva_separada_entra_em_pendentes(self):
+        pend = notificacoes.reservas_pendentes()
+        self.assertEqual(len(pend), 1)
+        self.assertEqual(pend[0]["email"], "beto@escola.br")
+        self.assertEqual(pend[0]["titulo"], "Reservadão")
+
+    def test_reserva_de_usuario_sem_email_fica_de_fora(self):
+        semmail = self.criar_usuario(matricula="semmail", nome="Sem Mail")
+        liv = self.criar_livro(titulo="Outro Esgotado", exemplares=1)
+        cod = liv["exemplares"][0][1]
+        servicos.realizar_emprestimo(codigo_exemplar=cod,
+                                     matricula_usuario="a1")
+        self.reservas.criar_reserva(liv["livro_id"], semmail["id"])
+        servicos.realizar_devolucao(codigo_exemplar=cod)
+        titulos = [p["titulo"] for p in notificacoes.reservas_pendentes()]
+        self.assertNotIn("Outro Esgotado", titulos)
+
+    def test_envio_combinado_conta_os_dois_tipos(self):
+        caixa, transporte = self.transporte_fake()
+        res = notificacoes.enviar_avisos(transporte=transporte)
+        # 1 de vencimento (Ana, do setUp base) + 1 de reserva (Beto)
+        self.assertEqual(res["vencimento"], 1)
+        self.assertEqual(res["reserva"], 1)
+        self.assertEqual(res["enviados"], 2)
+        destinatarios = {m["To"] for m in caixa}
+        self.assertIn("beto@escola.br", destinatarios)
+        assunto_reserva = [m["Subject"] for m in caixa
+                           if m["To"] == "beto@escola.br"][0]
+        self.assertIn("Reservadão", assunto_reserva)
+
+    def test_nao_reenvia_aviso_de_reserva(self):
+        _, transporte = self.transporte_fake()
+        notificacoes.enviar_avisos(transporte=transporte)
+        res2 = notificacoes.enviar_avisos(transporte=transporte)
+        self.assertEqual(res2["reserva"], 0)
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()

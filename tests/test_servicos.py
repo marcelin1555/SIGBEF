@@ -147,6 +147,29 @@ class TestListarLivros(ServicosTestCase):
         self.assertNotIn("Dom Casmurro", titulos)
         self.assertIn("Python para Todos", titulos)
 
+    def test_filtro_por_categoria_exato(self):
+        rows = servicos.listar_livros(categoria="Romance")
+        self.assertEqual([r["titulo"] for r in rows], ["Dom Casmurro"])
+
+    def test_filtro_por_autor_exato(self):
+        rows = servicos.listar_livros(autor="Guido Docente")
+        self.assertEqual([r["titulo"] for r in rows], ["Python para Todos"])
+
+    def test_texto_mais_categoria_combinados(self):
+        self.criar_livro(titulo="Outro Romance", autores=["Autor X"],
+                         categoria="Romance")
+        rows = servicos.listar_livros("Casmurro", categoria="Romance")
+        self.assertEqual([r["titulo"] for r in rows], ["Dom Casmurro"])
+
+    def test_sem_filtro_devolve_tudo(self):
+        rows = servicos.listar_livros()
+        self.assertEqual(len(rows), 2)
+
+    def test_listar_categorias_e_autores(self):
+        self.assertIn("Romance", servicos.listar_categorias())
+        self.assertIn("Informatica", servicos.listar_categorias())
+        self.assertIn("Machado de Assis", servicos.listar_autores())
+
 
 class TestDetalhesLivro(ServicosTestCase):
     """Ficha completa do livro."""
@@ -569,6 +592,70 @@ class TestImportacaoCSV(ServicosTestCase):
         self.assertEqual(res["exemplares"], 5)
         livro = servicos.listar_livros("Cinco Copias")[0]
         self.assertEqual(livro["total_exemplares"], 5)
+
+    def test_tombo_preservado_na_importacao(self):
+        """Tombo do livro físico entra no exemplar, em vez do automático."""
+        caminho = self.csv_temporario(
+            "titulo;autores;tombo\n"
+            "Meu Pé de Laranja Lima;José Mauro de Vasconcelos;8626\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["erros"], [])
+        livro = servicos.listar_livros("Laranja Lima")[0]
+        det = servicos.detalhes_livro(livro["id"])
+        self.assertEqual(det["exemplares"][0]["numero_tombo"], "8626")
+
+    def test_tombos_multiplos_um_por_exemplar(self):
+        caminho = self.csv_temporario(
+            "titulo;autores;quantidade;tombo\n"
+            "Auto da Barca;Gil Vicente;3;101/102/103\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["exemplares"], 3)
+        livro = servicos.listar_livros("Auto da Barca")[0]
+        det = servicos.detalhes_livro(livro["id"])
+        tombos = sorted(ex["numero_tombo"] for ex in det["exemplares"])
+        self.assertEqual(tombos, ["101", "102", "103"])
+
+    def test_tombo_divergente_da_quantidade_vai_para_erros(self):
+        caminho = self.csv_temporario(
+            "titulo;autores;quantidade;tombo\n"
+            "Dois Sem Par;Fulano;2;só-um\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["livros"], 0)
+        self.assertEqual(len(res["erros"]), 1)
+        self.assertIn("tombos", res["erros"][0][1])
+
+    def test_tombo_repetido_no_arquivo_vai_para_erros(self):
+        caminho = self.csv_temporario(
+            "titulo;autores;tombo\n"
+            "Primeiro;Fulano;777\n"
+            "Segundo;Beltrano;777\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["livros"], 1)
+        self.assertEqual(len(res["erros"]), 1)
+        self.assertEqual(res["erros"][0][0], 3)  # linha 3 do arquivo
+        self.assertIn("777", res["erros"][0][1])
+
+    def test_tombo_ja_no_banco_vai_para_erros(self):
+        caminho1 = self.csv_temporario(
+            "titulo;autores;tombo\nOriginal;Fulano;555\n")
+        servicos.importar_acervo_csv(caminho1)
+        caminho2 = self.csv_temporario(
+            "titulo;autores;tombo\nOutro Livro;Beltrano;555\n")
+        res = servicos.importar_acervo_csv(caminho2)
+        self.assertEqual(res["livros"], 0)
+        self.assertEqual(len(res["erros"]), 1)
+        self.assertIn("555", res["erros"][0][1])
+
+    def test_cabecalho_n_de_registro_como_alias_de_tombo(self):
+        """O cabeçalho do livro de tombo em papel (Nº de Registro) funciona."""
+        caminho = self.csv_temporario(
+            "titulo;autores;Nº de Registro\n"
+            "Com Registro;Fulano;42\n", encoding="utf-8-sig")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["erros"], [])
+        livro = servicos.listar_livros("Com Registro")[0]
+        det = servicos.detalhes_livro(livro["id"])
+        self.assertEqual(det["exemplares"][0]["numero_tombo"], "42")
 
     def test_gerar_modelo_csv(self):
         pasta = tempfile.mkdtemp(prefix="sigbef-modelo-")

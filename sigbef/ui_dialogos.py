@@ -88,32 +88,38 @@ class DialogoSobre(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
-# Diálogo: selecionar exemplar disponível para empréstimo
+# Base reutilizável: modal de busca + tabela + seleção
 # ---------------------------------------------------------------------------
-class DialogoSelecionarExemplar(tk.Toplevel):
-    """Lista os exemplares disponíveis e devolve o selecionado.
+class DialogoBuscaSelecao(tk.Toplevel):
+    """Modal genérico: campo de busca + Treeview; duplo-clique (ou botão)
+    devolve o valor da coluna-chave do item escolhido.
 
-    Use o atributo `codigo_selecionado` após `wait_window()` para obter
-    o código de barras do exemplar escolhido (string vazia se cancelado).
+    A subclasse define `COLUNAS` (lista de `(key, rótulo, largura,
+    âncora)`) e `COLUNA_RETORNO` (a key cujo valor vira o resultado), e
+    implementa `buscar(termo) -> list[dict]` e `linha(item) -> tuple`.
+    Após `wait_window()`, leia `self.selecionado` (string vazia se
+    cancelado).
     """
 
-    def __init__(self, parent, titulo: str = "Selecionar exemplar"):
+    COLUNAS: list[tuple[str, str, int, str]] = []
+    COLUNA_RETORNO: str = ""
+
+    def __init__(self, parent, titulo: str, dica: str,
+                 texto_confirmar: str, largura: int = 820,
+                 altura: int = 560):
         super().__init__(parent)
         self.title(titulo)
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 820, 560)
-        self.codigo_selecionado: str = ""
+        tema.centralizar_janela(self, largura, altura)
+        self.selecionado: str = ""
 
         wrap = ttk.Frame(self, padding=20)
         wrap.pack(fill="both", expand=True)
-        ttk.Label(wrap, text=titulo,
-                  style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(wrap,
-                  text=("Apenas exemplares disponíveis aparecem aqui. "
-                        "Dê um duplo-clique ou selecione e clique em 'Usar exemplar'."),
-                  style="Hint.TLabel").pack(anchor="w", pady=(2, 12))
+        ttk.Label(wrap, text=titulo, style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text=dica, style="Hint.TLabel"
+                  ).pack(anchor="w", pady=(2, 12))
 
         f = ttk.Frame(wrap)
         f.pack(fill="x")
@@ -121,58 +127,113 @@ class DialogoSelecionarExemplar(tk.Toplevel):
         self.ent = ttk.Entry(f)
         self.ent.pack(side="left", fill="x", expand=True, padx=8)
         self.ent.bind("<Return>", lambda e: self._buscar())
-        ttk.Button(f, text="Pesquisar",
-                    command=self._buscar).pack(side="left")
+        ttk.Button(f, text="Pesquisar", command=self._buscar).pack(side="left")
 
-        cols = ("titulo", "autores", "tombo", "codigo", "loc")
-        self.tree = ttk.Treeview(wrap, columns=cols, show="headings",
+        keys = [c[0] for c in self.COLUNAS]
+        self.tree = ttk.Treeview(wrap, columns=keys, show="headings",
                                   height=14)
-        self.tree.heading("titulo", text="Título")
-        self.tree.heading("autores", text="Autor(es)")
-        self.tree.heading("tombo", text="Tombo")
-        self.tree.heading("codigo", text="Código de barras")
-        self.tree.heading("loc", text="Localização")
-        self.tree.column("titulo", width=240, anchor="w")
-        self.tree.column("autores", width=180, anchor="w")
-        self.tree.column("tombo", width=90, anchor="center")
-        self.tree.column("codigo", width=170, anchor="w")
-        self.tree.column("loc", width=120, anchor="w")
+        for key, rotulo, largura_c, ancora in self.COLUNAS:
+            self.tree.heading(key, text=rotulo)
+            self.tree.column(key, width=largura_c, anchor=ancora)
         self.tree.pack(fill="both", expand=True, pady=(12, 0))
         self.tree.bind("<Double-1>", lambda e: self._confirmar())
+        self._idx_retorno = keys.index(self.COLUNA_RETORNO)
 
         botoes = ttk.Frame(wrap)
         botoes.pack(fill="x", pady=(12, 0))
         ttk.Button(botoes, text="Cancelar",
                     command=self.destroy).pack(side="right", padx=(8, 0))
-        ttk.Button(botoes, text="Usar exemplar selecionado",
-                    style="Primario.TButton",
+        ttk.Button(botoes, text=texto_confirmar, style="Primario.TButton",
                     command=self._confirmar).pack(side="right")
 
         self._buscar()
         self.ent.focus_set()
 
-    def _buscar(self):
+    def buscar(self, termo: str) -> list[dict]:
+        raise NotImplementedError
+
+    def linha(self, item: dict) -> tuple:
+        return tuple(item.get(c[0], "") for c in self.COLUNAS)
+
+    def _buscar(self) -> None:
         for it in self.tree.get_children():
             self.tree.delete(it)
-        for ex in servicos.listar_exemplares_disponiveis(self.ent.get()):
-            self.tree.insert("", "end", values=(
-                ex["titulo"], ex.get("autores") or "",
-                ex["numero_tombo"], ex["codigo_barras"],
-                ex.get("localizacao") or "",
-            ))
+        for item in self.buscar(self.ent.get()):
+            self.tree.insert("", "end", values=self.linha(item))
         tema.aplicar_zebra(self.tree)
 
-    def _confirmar(self):
+    def _confirmar(self) -> None:
         sel = self.tree.selection()
         if not sel:
             messagebox.showinfo("Nada selecionado",
-                                  "Escolha um exemplar na lista.",
-                                  parent=self)
+                                  "Escolha um item na lista.", parent=self)
             return
         valores = self.tree.item(sel[0])["values"]
-        # codigo está na coluna 3 (index)
-        self.codigo_selecionado = str(valores[3])
+        self.selecionado = str(valores[self._idx_retorno])
         self.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: selecionar exemplar disponível para empréstimo
+# ---------------------------------------------------------------------------
+class DialogoSelecionarExemplar(DialogoBuscaSelecao):
+    """Lista os exemplares disponíveis e devolve o código de barras
+    escolhido em `codigo_selecionado` (string vazia se cancelado)."""
+
+    COLUNAS = [("titulo", "Título", 240, "w"),
+               ("autores", "Autor(es)", 180, "w"),
+               ("tombo", "Tombo", 90, "center"),
+               ("codigo", "Código de barras", 170, "w"),
+               ("loc", "Localização", 120, "w")]
+    COLUNA_RETORNO = "codigo"
+
+    def __init__(self, parent, titulo: str = "Selecionar exemplar"):
+        super().__init__(
+            parent, titulo,
+            "Apenas exemplares disponíveis aparecem aqui. Dê um "
+            "duplo-clique ou selecione e clique em 'Usar exemplar'.",
+            "Usar exemplar selecionado")
+
+    def buscar(self, termo: str) -> list[dict]:
+        return servicos.listar_exemplares_disponiveis(termo)
+
+    def linha(self, ex: dict) -> tuple:
+        return (ex["titulo"], ex.get("autores") or "", ex["numero_tombo"],
+                ex["codigo_barras"], ex.get("localizacao") or "")
+
+    @property
+    def codigo_selecionado(self) -> str:
+        return self.selecionado
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: selecionar usuário ativo
+# ---------------------------------------------------------------------------
+class DialogoSelecionarUsuario(DialogoBuscaSelecao):
+    """Lista usuários ativos e devolve a matrícula escolhida em
+    `matricula_selecionada` (string vazia se cancelado)."""
+
+    COLUNAS = [("nome", "Nome", 240, "w"),
+               ("matricula", "Matrícula", 100, "w"),
+               ("perfil", "Perfil", 130, "w"),
+               ("email", "E-mail", 220, "w")]
+    COLUNA_RETORNO = "matricula"
+
+    def __init__(self, parent):
+        super().__init__(
+            parent, "Selecionar usuário",
+            "Busque pelo nome, matrícula ou e-mail.",
+            "Usar usuário selecionado", largura=720, altura=500)
+
+    def buscar(self, termo: str) -> list[dict]:
+        return [u for u in servicos.listar_usuarios(termo) if u["ativo"]]
+
+    def linha(self, u: dict) -> tuple:
+        return (u["nome"], u["matricula"], u["perfil"], u.get("email") or "")
+
+    @property
+    def matricula_selecionada(self) -> str:
+        return self.selecionado
 
 
 # ---------------------------------------------------------------------------
@@ -462,8 +523,10 @@ class DialogoImportarCSV(tk.Toplevel):
         for txt in (
             "• Coluna obrigatória: titulo, as demais são opcionais",
             "• Colunas aceitas: autores, isbn, editora, categoria, ano,",
-            "   edicao, sinopse, quantidade, localizacao",
+            "   edicao, sinopse, quantidade, tombo, localizacao",
             "• Vários autores na mesma célula: separe com ; ou /",
+            "• Tombo: número de registro do livro físico (um por exemplar,",
+            "   separados por / quando a quantidade for maior que 1)",
             "• Separador (; ou ,) e acentuação detectados automaticamente",
             "• Linhas com ISBN já cadastrado são puladas (não duplica)",
         ):

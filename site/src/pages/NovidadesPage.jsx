@@ -21,9 +21,20 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.6.1',
+    data: '18 de julho de 2026',
+    destaque: true,
+    categorias: ['Acervo', 'Interface'],
+    itens: [
+      { cat: 'Acervo', texto: 'Aviso por e-mail também quando o livro reservado fica separado para retirada (opt-in, junto com o aviso de vencimento)' },
+      { cat: 'Acervo', texto: 'Busca avançada no acervo: filtro por categoria na pesquisa da bibliotecária e do aluno, além do texto livre' },
+      { cat: 'Acervo', texto: 'Importação por planilha preserva o número de tombo do livro físico, que também serve para emprestar no balcão' },
+      { cat: 'Interface', texto: 'Tela de Configurações mais limpa, sem bordas duplicadas nos blocos internos' },
+    ],
+  },
+  {
     numero: '1.6.0',
     data: '10 de julho de 2026',
-    destaque: true,
     categorias: ['Acervo', 'API', 'Segurança', 'Interface'],
     itens: [
       { cat: 'Acervo', texto: 'Reservas com fila de espera: peça um livro emprestado assim que ele voltar, sem precisar checar toda hora' },

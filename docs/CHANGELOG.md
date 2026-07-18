@@ -2,6 +2,37 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.6.1] — 2026-07-18
+
+### Avisos por e-mail (opt-in)
+- Novo aviso: quando um livro reservado fica separado para o aluno, ele
+  recebe e-mail avisando que pode retirar (prazo de retirada incluído)
+- O botão "Enviar avisos agora" passa a cobrir os dois tipos de aviso
+  (vencimento próximo e reserva disponível)
+
+### Acervo
+- Busca avançada: filtro por categoria (combo) na pesquisa de livros da
+  bibliotecária e do aluno, além da busca por texto livre
+- Importação CSV com número de tombo: a coluna `tombo` (aliases:
+  `numero_tombo`, `nº de registro`, `registro`) preserva o número do
+  livro de tombo em papel; um por exemplar, separados por `/` quando a
+  quantidade for maior que 1. Como o empréstimo já aceita o tombo como
+  identificador, a bibliotecária pode emprestar digitando o número que
+  está escrito no livro físico. Tombos repetidos viram erro de linha
+
+### Interface
+- Tela de Configurações sem bordas duplicadas: os blocos internos de
+  SMTP, API e predefinições de cor não desenham mais "card dentro de
+  card" (novo estilo interno sem borda, aplicado também no assistente
+  de primeira execução)
+- Botões "Salvar aparência" e "Restaurar padrão" agora acompanham a
+  rolagem da tela, em vez de flutuarem fora da área de conteúdo
+
+### Qualidade
+- Diálogos de seleção (exemplar e usuário) unificados numa base
+  reutilizável, eliminando a duplicação apontada na auditoria
+- Suíte com 223 testes automatizados
+
 ## [1.6.0] — 2026-07-10
 
 ### API REST somente leitura (opt-in)
@@ -363,6 +394,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.6.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.1
 [1.6.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.0
 [1.5.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.1
 [1.5.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.0

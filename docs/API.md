@@ -46,7 +46,7 @@ escola**; não exponha a porta pra internet.
 
 ### `GET /api/v1/ping` (sem token)
 
-Healthcheck. `{"ok": true, "servico": "SIGBEF", "versao": "1.6.0"}`
+Healthcheck. `{"ok": true, "servico": "SIGBEF", "versao": "1.6.1"}`
 
 ### `GET /api/v1/estatisticas`
 

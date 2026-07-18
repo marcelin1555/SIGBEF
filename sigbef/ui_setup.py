@@ -100,12 +100,12 @@ class JanelaPrimeiraExecucao(tk.Tk):
                   "O sistema abre e você pode começar a cadastrar livros e usuários."),
         ]
         for num, titulo, desc in passos:
-            linha = ttk.Frame(card, style="Card.TFrame")
+            linha = ttk.Frame(card, style="CardInner.TFrame")
             linha.pack(fill="x", pady=4)
             tk.Label(linha, text=num, bg=tema.COR_CARD,
                      fg=tema.COR_PRIMARIA,
                      font=("Segoe UI Semibold", 14)).pack(side="left", padx=(0, 12))
-            txt = ttk.Frame(linha, style="Card.TFrame")
+            txt = ttk.Frame(linha, style="CardInner.TFrame")
             txt.pack(side="left", fill="x", expand=True)
             ttk.Label(txt, text=titulo, style="Card.TLabel",
                       font=("Segoe UI Semibold", 11)).pack(anchor="w")

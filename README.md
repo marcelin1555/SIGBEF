@@ -585,6 +585,9 @@ Funcionalidades planejadas para versões futuras:
 - [ ] Migração opcional para PostgreSQL para ambientes em rede com múltiplos postos
 - [ ] Internacionalização (i18n) — espanhol e inglês como primeiros idiomas adicionais
 - [ ] Versão web hospedada (SaaS) para escolas sem servidor local
+- [ ] Avaliar uma reescrita em Java como exercício de aprendizado
+      (POO mais rígida) — ideia em aberto, sem compromisso de
+      substituir a stack atual (Python + Tkinter + SQLite)
 
 ### Concluído recentemente
 

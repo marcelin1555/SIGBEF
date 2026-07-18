@@ -24,6 +24,7 @@ from .ui_dialogos import (
     DialogoImportarCSV,
     DialogoLivro,
     DialogoSelecionarExemplar,
+    DialogoSelecionarUsuario,
     DialogoUsuario,
 )
 
@@ -285,9 +286,14 @@ class SecaoLivros(SecaoBase):
         filtros = ttk.Frame(self, padding=(0, 12))
         filtros.pack(fill="x")
         ttk.Label(filtros, text="Buscar:").pack(side="left")
-        self.ent_busca = ttk.Entry(filtros, width=40)
+        self.ent_busca = ttk.Entry(filtros, width=32)
         self.ent_busca.pack(side="left", padx=8)
         self.ent_busca.bind("<Return>", lambda e: self.atualizar())
+        ttk.Label(filtros, text="Categoria:").pack(side="left")
+        self.cbo_categoria = ttk.Combobox(filtros, width=18, state="readonly")
+        self.cbo_categoria.pack(side="left", padx=(4, 8))
+        self.cbo_categoria.bind("<<ComboboxSelected>>",
+                                 lambda e: self.atualizar())
         self.var_disponiveis = tk.BooleanVar(value=False)
         ttk.Checkbutton(filtros, text="Apenas com exemplares disponíveis",
                         variable=self.var_disponiveis,
@@ -385,16 +391,28 @@ class SecaoLivros(SecaoBase):
         webbrowser.open(destino.as_uri())
 
     def atualizar(self):
+        self._recarregar_categorias()
         for it in self.tree.get_children():
             self.tree.delete(it)
-        for liv in servicos.listar_livros(self.ent_busca.get(),
-                                            self.var_disponiveis.get()):
+        cat = self.cbo_categoria.get()
+        for liv in servicos.listar_livros(
+                self.ent_busca.get(), self.var_disponiveis.get(),
+                categoria=cat or None):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "", liv["ano_publicacao"] or "",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
         tema.aplicar_zebra(self.tree)
+
+    def _recarregar_categorias(self):
+        """Mantém o combo de categorias em dia (opção vazia = Todas)."""
+        atual = self.cbo_categoria.get()
+        valores = [""] + servicos.listar_categorias()
+        if list(self.cbo_categoria["values"]) != valores:
+            self.cbo_categoria["values"] = valores
+            if atual not in valores:
+                self.cbo_categoria.set("")
 
 
 # ---------------------------------------------------------------------------
@@ -670,7 +688,7 @@ class SecaoEmprestimos(SecaoBase):
             self.ent_emp_cod.insert(0, d.codigo_selecionado)
 
     def _selecionar_usuario(self):
-        d = _DialogoSelecionarUsuario(self.painel)
+        d = DialogoSelecionarUsuario(self.painel)
         self.painel.wait_window(d)
         if d.matricula_selecionada:
             self.ent_emp_matr.delete(0, "end")
@@ -823,78 +841,6 @@ class SecaoEmprestimos(SecaoBase):
 # ---------------------------------------------------------------------------
 # Diálogo: selecionar usuário
 # ---------------------------------------------------------------------------
-class _DialogoSelecionarUsuario(tk.Toplevel):
-    """Dialogo simples para escolher usuário a partir de uma busca."""
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.title("Selecionar usuário")
-        self.transient(parent)
-        self.grab_set()
-        self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 720, 500)
-        self.matricula_selecionada: str = ""
-
-        wrap = ttk.Frame(self, padding=20)
-        wrap.pack(fill="both", expand=True)
-        ttk.Label(wrap, text="Selecionar usuário",
-                  style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(wrap, text="Busque pelo nome, matrícula ou e-mail.",
-                  style="Hint.TLabel").pack(anchor="w", pady=(2, 12))
-
-        f = ttk.Frame(wrap)
-        f.pack(fill="x")
-        ttk.Label(f, text="Buscar:").pack(side="left")
-        self.ent = ttk.Entry(f)
-        self.ent.pack(side="left", fill="x", expand=True, padx=8)
-        self.ent.bind("<Return>", lambda e: self._buscar())
-        ttk.Button(f, text="Pesquisar",
-                    command=self._buscar).pack(side="left")
-
-        cols = ("nome", "matricula", "perfil", "email")
-        self.tree = ttk.Treeview(wrap, columns=cols, show="headings", height=14)
-        for c, t, w in [("nome", "Nome", 240), ("matricula", "Matrícula", 100),
-                         ("perfil", "Perfil", 130),
-                         ("email", "E-mail", 220)]:
-            self.tree.heading(c, text=t)
-            self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
-        self.tree.bind("<Double-1>", lambda e: self._confirmar())
-
-        botoes = ttk.Frame(wrap)
-        botoes.pack(fill="x", pady=(12, 0))
-        ttk.Button(botoes, text="Cancelar",
-                    command=self.destroy).pack(side="right", padx=(8, 0))
-        ttk.Button(botoes, text="Usar usuário selecionado",
-                    style="Primario.TButton",
-                    command=self._confirmar).pack(side="right")
-
-        self._buscar()
-        self.ent.focus_set()
-
-    def _buscar(self):
-        for it in self.tree.get_children():
-            self.tree.delete(it)
-        for u in servicos.listar_usuarios(self.ent.get()):
-            if not u["ativo"]:
-                continue
-            self.tree.insert("", "end", values=(
-                u["nome"], u["matricula"], u["perfil"],
-                u.get("email") or "",
-            ))
-        tema.aplicar_zebra(self.tree)
-
-    def _confirmar(self):
-        sel = self.tree.selection()
-        if not sel:
-            messagebox.showinfo("Nada selecionado",
-                                  "Escolha um usuário na lista.",
-                                  parent=self)
-            return
-        self.matricula_selecionada = str(self.tree.item(sel[0])["values"][1])
-        self.destroy()
-
-
 # ---------------------------------------------------------------------------
 # Relatórios
 # ---------------------------------------------------------------------------
@@ -1177,19 +1123,20 @@ class SecaoConfig(SecaoBase):
         self.var_email = tk.BooleanVar(value=notificacoes.avisos_ativos())
         ttk.Checkbutton(
             integ,
-            text="Avisar por e-mail quando a devolução estiver próxima",
+            text="Avisar por e-mail (vencimento próximo e reserva pronta)",
             variable=self.var_email,
             command=lambda: notificacoes.definir_avisos(self.var_email.get())
             ).pack(anchor="w")
         ttk.Label(
             integ,
-            text=("Envia um lembrete único por empréstimo para usuários com "
-                  "e-mail cadastrado, alguns dias antes do prazo. Use o "
-                  "e-mail da biblioteca (ex.: Gmail com senha de app)."),
+            text=("Avisa usuários com e-mail cadastrado quando um empréstimo "
+                  "está perto do prazo ou quando um livro reservado por eles "
+                  "fica disponível. Um aviso por situação. Use o e-mail da "
+                  "biblioteca (ex.: Gmail com senha de app)."),
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 8))
 
-        smtp_form = ttk.Frame(integ, style="Card.TFrame")
+        smtp_form = ttk.Frame(integ, style="CardInner.TFrame")
         smtp_form.pack(fill="x")
         smtp_form.columnconfigure(1, weight=1)
         self._smtp_entries: dict[str, ttk.Entry] = {}
@@ -1210,7 +1157,7 @@ class SecaoConfig(SecaoBase):
             ent.grid(row=i, column=1, sticky="w", padx=12, pady=3)
             self._smtp_entries[chave] = ent
 
-        botoes_email = ttk.Frame(integ, style="Card.TFrame")
+        botoes_email = ttk.Frame(integ, style="CardInner.TFrame")
         botoes_email.pack(fill="x", pady=(10, 0))
         self.lbl_email_msg = ttk.Label(botoes_email, text="",
                                         style="CardHint.TLabel")
@@ -1240,8 +1187,9 @@ class SecaoConfig(SecaoBase):
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 8))
 
-        api_form = ttk.Frame(integ, style="Card.TFrame")
+        api_form = ttk.Frame(integ, style="CardInner.TFrame")
         api_form.pack(fill="x")
+        api_form.columnconfigure(1, weight=1)
         ttk.Label(api_form, text="Porta:", style="Card.TLabel"
                   ).grid(row=0, column=0, sticky="w", pady=3)
         self.ent_api_porta = ttk.Entry(api_form, width=8)
@@ -1265,7 +1213,7 @@ class SecaoConfig(SecaoBase):
                   ).grid(row=4, column=1, sticky="w", padx=12)
         self._refrescar_token_api()
 
-        botoes_api = ttk.Frame(integ, style="Card.TFrame")
+        botoes_api = ttk.Frame(integ, style="CardInner.TFrame")
         botoes_api.pack(fill="x", pady=(10, 0))
         self.lbl_api_msg = ttk.Label(botoes_api, text="",
                                       style="CardHint.TLabel")
@@ -1298,7 +1246,7 @@ class SecaoConfig(SecaoBase):
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=0, column=0, sticky="w", pady=(0, 8))
-        presets_frame = ttk.Frame(aparencia, style="Card.TFrame")
+        presets_frame = ttk.Frame(aparencia, style="CardInner.TFrame")
         presets_frame.grid(row=0, column=1, columnspan=3, sticky="w",
                            padx=12, pady=(0, 8))
         for chave_p, preset in tema.PRESETS.items():
@@ -1335,7 +1283,7 @@ class SecaoConfig(SecaoBase):
             self._cor_swatches[chave_c] = swatch
 
         # Botoes de acao
-        botoes_aparencia = ttk.Frame(self)
+        botoes_aparencia = ttk.Frame(body)
         botoes_aparencia.pack(fill="x", pady=(12, 0))
         ttk.Button(botoes_aparencia, text="Salvar aparência",
                    style="Primario.TButton",
@@ -1603,6 +1551,10 @@ class SecaoPesquisaAluno(SecaoBase):
         self.ent = ttk.Entry(f, font=("Segoe UI", 12))
         self.ent.pack(side="left", fill="x", expand=True, ipady=4)
         self.ent.bind("<Return>", lambda e: self.atualizar())
+        self.cbo_categoria = ttk.Combobox(f, width=16, state="readonly")
+        self.cbo_categoria.pack(side="left", padx=8)
+        self.cbo_categoria.bind("<<ComboboxSelected>>",
+                                 lambda e: self.atualizar())
         self.var_disp = tk.BooleanVar(value=True)
         ttk.Checkbutton(f, text="Apenas disponíveis",
                           variable=self.var_disp,
@@ -1722,10 +1674,17 @@ class SecaoPesquisaAluno(SecaoBase):
 
     def atualizar(self):
         self.lbl_msg.configure(text="")
+        atual = self.cbo_categoria.get()
+        valores = [""] + servicos.listar_categorias()
+        if list(self.cbo_categoria["values"]) != valores:
+            self.cbo_categoria["values"] = valores
+            if atual not in valores:
+                self.cbo_categoria.set("")
         for it in self.tree.get_children():
             self.tree.delete(it)
-        for liv in servicos.listar_livros(self.ent.get(),
-                                            self.var_disp.get()):
+        for liv in servicos.listar_livros(
+                self.ent.get(), self.var_disp.get(),
+                categoria=self.cbo_categoria.get() or None):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "",

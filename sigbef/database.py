@@ -176,6 +176,12 @@ CREATE TABLE IF NOT EXISTS notificacao (
     enviado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 
+CREATE TABLE IF NOT EXISTS notificacao_reserva (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    reserva_id INTEGER NOT NULL REFERENCES reserva(id),
+    enviado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
+);
+
 CREATE TABLE IF NOT EXISTS configuracao (
     chave TEXT PRIMARY KEY,
     valor TEXT NOT NULL
