@@ -17,7 +17,7 @@ USUARIOS_PADRAO = [
     # (nome, matricula, perfil, senha, email, turma)
     ("Marcello Melo",            "admin",     "ADMINISTRADOR", "admin123",     "marcello@cefe.edu",        ""),
     ("Laiane Souza",             "laiane",    "BIBLIOTECARIO", "laiane123",    "laiane@cefe.edu",          ""),
-    ("Jaqueline Oliveira",       "jaqueline", "BIBLIOTECARIO", "jaqueline123", "jaqueline@cefe.edu",       ""),
+    ("Jaqueline Dantas",       "jaqueline", "BIBLIOTECARIO", "jaqueline123", "jaqueline@cefe.edu",       ""),
     ("Macilene Lima",            "macilene",  "PROFESSOR",     "macilene123",  "macilene@cefe.edu",        ""),
     ("Lucas Pereira Santos",     "2024001",   "ALUNO",         "lucas123",     "lucas.santos@cefe.edu",    "3º Ano Técnico em Informática"),
     ("Beatriz Almeida Rocha",    "2024002",   "ALUNO",         "beatriz123",   "beatriz.rocha@cefe.edu",   "2º Ano Técnico em Administração"),
