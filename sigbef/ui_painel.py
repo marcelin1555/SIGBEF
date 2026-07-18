@@ -1136,7 +1136,7 @@ class SecaoConfig(SecaoBase):
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 8))
 
-        smtp_form = ttk.Frame(integ, style="Card.TFrame")
+        smtp_form = ttk.Frame(integ, style="CardInner.TFrame")
         smtp_form.pack(fill="x")
         smtp_form.columnconfigure(1, weight=1)
         self._smtp_entries: dict[str, ttk.Entry] = {}
@@ -1157,7 +1157,7 @@ class SecaoConfig(SecaoBase):
             ent.grid(row=i, column=1, sticky="w", padx=12, pady=3)
             self._smtp_entries[chave] = ent
 
-        botoes_email = ttk.Frame(integ, style="Card.TFrame")
+        botoes_email = ttk.Frame(integ, style="CardInner.TFrame")
         botoes_email.pack(fill="x", pady=(10, 0))
         self.lbl_email_msg = ttk.Label(botoes_email, text="",
                                         style="CardHint.TLabel")
@@ -1187,8 +1187,9 @@ class SecaoConfig(SecaoBase):
             style="CardHint.TLabel", wraplength=700
             ).pack(anchor="w", pady=(4, 8))
 
-        api_form = ttk.Frame(integ, style="Card.TFrame")
+        api_form = ttk.Frame(integ, style="CardInner.TFrame")
         api_form.pack(fill="x")
+        api_form.columnconfigure(1, weight=1)
         ttk.Label(api_form, text="Porta:", style="Card.TLabel"
                   ).grid(row=0, column=0, sticky="w", pady=3)
         self.ent_api_porta = ttk.Entry(api_form, width=8)
@@ -1212,7 +1213,7 @@ class SecaoConfig(SecaoBase):
                   ).grid(row=4, column=1, sticky="w", padx=12)
         self._refrescar_token_api()
 
-        botoes_api = ttk.Frame(integ, style="Card.TFrame")
+        botoes_api = ttk.Frame(integ, style="CardInner.TFrame")
         botoes_api.pack(fill="x", pady=(10, 0))
         self.lbl_api_msg = ttk.Label(botoes_api, text="",
                                       style="CardHint.TLabel")
@@ -1245,7 +1246,7 @@ class SecaoConfig(SecaoBase):
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=0, column=0, sticky="w", pady=(0, 8))
-        presets_frame = ttk.Frame(aparencia, style="Card.TFrame")
+        presets_frame = ttk.Frame(aparencia, style="CardInner.TFrame")
         presets_frame.grid(row=0, column=1, columnspan=3, sticky="w",
                            padx=12, pady=(0, 8))
         for chave_p, preset in tema.PRESETS.items():
@@ -1282,7 +1283,7 @@ class SecaoConfig(SecaoBase):
             self._cor_swatches[chave_c] = swatch
 
         # Botoes de acao
-        botoes_aparencia = ttk.Frame(self)
+        botoes_aparencia = ttk.Frame(body)
         botoes_aparencia.pack(fill="x", pady=(12, 0))
         ttk.Button(botoes_aparencia, text="Salvar aparência",
                    style="Primario.TButton",

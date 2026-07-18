@@ -14,6 +14,14 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 - Busca avançada: filtro por categoria (combo) na pesquisa de livros da
   bibliotecária e do aluno, além da busca por texto livre
 
+### Interface
+- Tela de Configurações sem bordas duplicadas: os blocos internos de
+  SMTP, API e predefinições de cor não desenham mais "card dentro de
+  card" (novo estilo interno sem borda, aplicado também no assistente
+  de primeira execução)
+- Botões "Salvar aparência" e "Restaurar padrão" agora acompanham a
+  rolagem da tela, em vez de flutuarem fora da área de conteúdo
+
 ### Qualidade
 - Diálogos de seleção (exemplar e usuário) unificados numa base
   reutilizável, eliminando a duplicação apontada na auditoria

@@ -127,6 +127,9 @@ def aplicar_tema(root):
     style.configure("TFrame", background=COR_FUNDO)
     style.configure("Card.TFrame", background=COR_CARD, relief="solid",
                     borderwidth=1, bordercolor=COR_BORDA)
+    # Frame interno de um card: mesmo fundo, sem borda propria (evita
+    # o efeito "card dentro de card" com bordas duplicadas)
+    style.configure("CardInner.TFrame", background=COR_CARD)
     style.configure("Sidebar.TFrame", background=COR_PRIMARIA)
     style.configure("Header.TFrame", background=COR_PRIMARIA)
 
