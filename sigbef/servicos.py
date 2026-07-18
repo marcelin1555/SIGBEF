@@ -98,12 +98,17 @@ def _inserir_livro_cur(
     sinopse: str = "",
     quantidade_exemplares: int = 1,
     localizacao: str = "",
+    tombos: Optional[list[str]] = None,
 ) -> dict:
     """Núcleo do cadastro de livro dentro de uma transação já aberta.
 
     Compartilhado entre o cadastro unitário e a importação CSV — na
     importação, milhares de livros entram numa transação única (um
     commit por livro limitava a ~35 livros/s no teste de estresse).
+
+    `tombos`, quando informado, atribui um número de tombo próprio a
+    cada exemplar (na ordem), em vez do tombo gerado automaticamente.
+    Deve ter exatamente `quantidade_exemplares` itens.
     """
     titulo = (titulo or "").strip()
     if not titulo:
@@ -113,6 +118,11 @@ def _inserir_livro_cur(
         raise RegraNegocioError("Informe pelo menos um autor.")
     if quantidade_exemplares < 1:
         raise RegraNegocioError("Cadastre pelo menos um exemplar.")
+    tombos_limpos = [t.strip() for t in (tombos or []) if t and t.strip()]
+    if tombos_limpos and len(tombos_limpos) != quantidade_exemplares:
+        raise RegraNegocioError(
+            f"Número de tombos ({len(tombos_limpos)}) diferente da "
+            f"quantidade de exemplares ({quantidade_exemplares}).")
 
     editora = (editora or "").strip()
     categoria = (categoria or "").strip()
@@ -136,7 +146,10 @@ def _inserir_livro_cur(
     exemplares: list[tuple[int, str]] = []
     for i in range(1, quantidade_exemplares + 1):
         codigo = _codigo_barras_unico(cur, "exemplar", gerar_codigo_exemplar)
-        tombo = f"{livro_id:05d}-{i:03d}"
+        if tombos_limpos:
+            tombo = tombos_limpos[i - 1]
+        else:
+            tombo = f"{livro_id:05d}-{i:03d}"
         cur.execute(
             """INSERT INTO exemplar(livro_id, codigo_barras, numero_tombo, localizacao)
                    VALUES (?, ?, ?, ?)""",
@@ -331,12 +344,15 @@ _ALIASES_CSV = {
     "quantidade": "quantidade", "quantidade_exemplares": "quantidade",
     "exemplares": "quantidade", "qtd": "quantidade",
     "localizacao": "localizacao", "estante": "localizacao",
+    "tombo": "tombo", "tombos": "tombo", "numero_tombo": "tombo",
+    "n_tombo": "tombo", "registro": "tombo", "n_de_registro": "tombo",
+    "no_de_registro": "tombo", "numero_de_registro": "tombo",
 }
 
 MODELO_CSV = (
-    "titulo;autores;isbn;editora;categoria;ano;edicao;quantidade;localizacao\n"
-    "Dom Casmurro;Machado de Assis;9788535910663;Editora Exemplo;Romance;1899;1ª;3;Estante B2\n"
-    'Contos Novos;"Mário de Andrade; Antonio Candido";;Outra Editora;Contos;1947;;2;Estante C1\n'
+    "titulo;autores;isbn;editora;categoria;ano;edicao;quantidade;tombo;localizacao\n"
+    "Dom Casmurro;Machado de Assis;9788535910663;Editora Exemplo;Romance;1899;1ª;3;101/102/103;Estante B2\n"
+    'Contos Novos;"Mário de Andrade; Antonio Candido";;Outra Editora;Contos;1947;;2;;Estante C1\n'
 )
 
 
@@ -358,11 +374,18 @@ def importar_acervo_csv(caminho: str,
 
     Formato: primeira linha é o cabeçalho; `titulo` é obrigatório e as
     demais colunas (autores, isbn, editora, categoria, ano, edicao,
-    sinopse, quantidade, localizacao) são opcionais. Aceita separador
-    `;` ou `,` (Excel BR e internacional) e codificação UTF-8 ou
-    Windows-1252, detectados automaticamente. Vários autores na mesma
+    sinopse, quantidade, tombo, localizacao) são opcionais. Aceita
+    separador `;` ou `,` (Excel BR e internacional) e codificação UTF-8
+    ou Windows-1252, detectados automaticamente. Vários autores na mesma
     célula separados por `;` ou `/`. Linhas com ISBN já cadastrado (ou
     repetido no arquivo) são puladas para não duplicar o acervo.
+
+    A coluna `tombo` preserva o número de registro do livro físico (do
+    livro de tombo em papel): um número por exemplar, separados por `/`
+    quando a quantidade for maior que 1. Vazia, os tombos continuam
+    sendo gerados automaticamente. Tombos repetidos (no arquivo ou já
+    no banco) viram erro de linha, pois o empréstimo aceita o tombo
+    como identificador do exemplar.
 
     Retorna {"livros", "exemplares", "pulados": [(linha, motivo)],
     "erros": [(linha, motivo)]}.
@@ -389,11 +412,14 @@ def importar_acervo_csv(caminho: str,
         raise RegraNegocioError(
             "O CSV precisa de uma coluna 'titulo'. Colunas aceitas: "
             "titulo, autores, isbn, editora, categoria, ano, edicao, "
-            "sinopse, quantidade, localizacao.")
+            "sinopse, quantidade, tombo, localizacao.")
 
     with db_cursor() as cur:
         cur.execute("SELECT isbn FROM livro WHERE ativo = 1 AND isbn IS NOT NULL")
         isbns_existentes = {r["isbn"] for r in cur.fetchall()}
+        cur.execute(
+            "SELECT numero_tombo FROM exemplar WHERE numero_tombo IS NOT NULL")
+        tombos_existentes = {r["numero_tombo"] for r in cur.fetchall()}
 
     # Fase 1 — validar todas as linhas (nada é gravado ainda)
     validas, erros, pulados = [], [], []
@@ -430,6 +456,20 @@ def importar_acervo_csv(caminho: str,
                 erros.append((num,
                               f"quantidade inválida: {dados['quantidade']!r}"))
                 continue
+        tombos = [t.strip() for t in re.split(r"[;/]", dados.get("tombo", ""))
+                  if t.strip()]
+        if tombos:
+            if len(tombos) != quantidade:
+                erros.append((num,
+                              f"tombos informados ({len(tombos)}) diferentes "
+                              f"da quantidade de exemplares ({quantidade})"))
+                continue
+            repetido = next((t for t in tombos if t in tombos_existentes
+                             or tombos.count(t) > 1), None)
+            if repetido:
+                erros.append((num, f"tombo {repetido} repetido ou já em uso"))
+                continue
+            tombos_existentes.update(tombos)  # deduplica dentro do arquivo
         isbn = dados.get("isbn", "")
         if isbn:
             if isbn in isbns_existentes:
@@ -443,6 +483,7 @@ def importar_acervo_csv(caminho: str,
             edicao=dados.get("edicao", ""), sinopse=dados.get("sinopse", ""),
             quantidade_exemplares=quantidade,
             localizacao=dados.get("localizacao", ""),
+            tombos=tombos,
         ))
 
     # Fase 2 — inserir tudo em UMA transação (rápido e tudo-ou-nada)

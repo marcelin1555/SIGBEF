@@ -13,6 +13,12 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 ### Acervo
 - Busca avançada: filtro por categoria (combo) na pesquisa de livros da
   bibliotecária e do aluno, além da busca por texto livre
+- Importação CSV com número de tombo: a coluna `tombo` (aliases:
+  `numero_tombo`, `nº de registro`, `registro`) preserva o número do
+  livro de tombo em papel; um por exemplar, separados por `/` quando a
+  quantidade for maior que 1. Como o empréstimo já aceita o tombo como
+  identificador, a bibliotecária pode emprestar digitando o número que
+  está escrito no livro físico. Tombos repetidos viram erro de linha
 
 ### Interface
 - Tela de Configurações sem bordas duplicadas: os blocos internos de
@@ -25,7 +31,7 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 ### Qualidade
 - Diálogos de seleção (exemplar e usuário) unificados numa base
   reutilizável, eliminando a duplicação apontada na auditoria
-- Suíte com 217 testes automatizados
+- Suíte com 223 testes automatizados
 
 ## [1.6.0] — 2026-07-10
 

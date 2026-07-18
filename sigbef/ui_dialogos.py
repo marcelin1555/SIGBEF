@@ -523,8 +523,10 @@ class DialogoImportarCSV(tk.Toplevel):
         for txt in (
             "• Coluna obrigatória: titulo, as demais são opcionais",
             "• Colunas aceitas: autores, isbn, editora, categoria, ano,",
-            "   edicao, sinopse, quantidade, localizacao",
+            "   edicao, sinopse, quantidade, tombo, localizacao",
             "• Vários autores na mesma célula: separe com ; ou /",
+            "• Tombo: número de registro do livro físico (um por exemplar,",
+            "   separados por / quando a quantidade for maior que 1)",
             "• Separador (; ou ,) e acentuação detectados automaticamente",
             "• Linhas com ISBN já cadastrado são puladas (não duplica)",
         ):
