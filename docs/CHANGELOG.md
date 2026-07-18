@@ -246,7 +246,7 @@ Sebrae.
   (carregado em Configurações → Ferramentas → "Carregar dados de
   exemplo") foi reescrito com nomes plausíveis de uma escola real:
   admin "Marcello Melo", bibliotecárias "Laiane Souza" e "Jaqueline
-  Oliveira", professora "Macilene Lima", alunos "Lucas Pereira
+  Dantas", professora "Macilene Lima", alunos "Lucas Pereira
   Santos" (matrícula 2024001) e "Beatriz Almeida Rocha" (2024002).
   Substitui os placeholders genéricos anteriores (Maria Bibliotecária,
   João Professor, Ana Aluna, Pedro Aluno) que prejudicavam a

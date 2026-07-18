@@ -2,7 +2,7 @@ import Equipe from '../components/Equipe'
 
 const linha_do_tempo = [
   { ano: 'jan/26', evento: 'Marcello identifica o problema, a biblioteca do CEFE controlava tudo em planilha, e começa o SIGBEF durante as aulas de Banco de Dados.' },
-  { ano: 'mar/26', evento: 'Primeira versão funcional testada na biblioteca do CEFE com a bibliotecária Jaqueline Oliveira.' },
+  { ano: 'mar/26', evento: 'Primeira versão funcional testada na biblioteca do CEFE com a bibliotecária Jaqueline Dantas.' },
   { ano: 'abr/26', evento: 'A equipe DLJ4 se forma: Júlia e Maria Laura entram no projeto para o desafio do Sebrae.' },
   { ano: 'jun/26', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
   { ano: 'jun/26', evento: 'v1.3.0: site oficial multi-página no ar, com ícones e novo hero.' },

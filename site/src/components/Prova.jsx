@@ -32,7 +32,7 @@ export default function Prova() {
             "Antes eu levava 15 minutos pra achar um livro. Agora levo 5 segundos."
           </blockquote>
           <figcaption className="text-[#1F4E79] font-semibold">
-            Jaqueline Oliveira, bibliotecária do CEFE
+            Jaqueline Dantas, bibliotecária do CEFE
           </figcaption>
         </figure>
       </div>
