@@ -5,6 +5,11 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 ## [Não lançado]
 
 ### Interface
+- Brasão da instituição: em Configurações, Aparência, o administrador
+  pode escolher uma imagem (PNG ou GIF, até 512 KB) que passa a
+  aparecer na tela de login e no cabeçalho do painel. A imagem fica
+  guardada dentro do próprio banco, então o backup de 1 arquivo
+  continua levando tudo junto
 - Logo institucional (a mesma do site) no cabeçalho do aplicativo,
   ao lado do nome SIGBEF
 - Ícones vetoriais (Font Awesome) na sidebar, no botão Sair e nos

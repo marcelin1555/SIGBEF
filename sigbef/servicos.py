@@ -6,6 +6,7 @@ consultas) em funções puras, separadas da camada de UI.
 """
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import re
@@ -201,6 +202,54 @@ def listar_autores() -> list[str]:
     with db_cursor() as cur:
         cur.execute("SELECT nome FROM autor ORDER BY nome")
         return [r["nome"] for r in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Brasão da instituição (imagem opcional, exibida no login e no cabeçalho)
+# ---------------------------------------------------------------------------
+# Guardado em base64 na tabela de configuração: o backup do banco (1
+# arquivo) continua levando tudo junto, sem caminho de arquivo frágil.
+# PNG e GIF apenas: são os formatos que o tk.PhotoImage lê nativamente
+# no Tk 8.6, mantendo a regra de zero dependência externa.
+BRASAO_CHAVE = "BRASAO_INSTITUICAO"
+BRASAO_LIMITE_BYTES = 512 * 1024
+
+_MAGIC_PNG = b"\x89PNG\r\n\x1a\n"
+_MAGIC_GIF = (b"GIF87a", b"GIF89a")
+
+
+def salvar_brasao(caminho: str, usuario_id: Optional[int] = None) -> None:
+    """Valida e grava a imagem do brasão da instituição.
+
+    Levanta RegraNegocioError com mensagem amigável se o arquivo não
+    for PNG/GIF ou passar do limite de tamanho.
+    """
+    dados = Path(caminho).read_bytes()
+    eh_png = dados[:8] == _MAGIC_PNG
+    eh_gif = dados[:6] in _MAGIC_GIF
+    if not (eh_png or eh_gif):
+        raise RegraNegocioError(
+            "Formato não suportado. Use uma imagem PNG ou GIF "
+            "(JPEG não é aceito).")
+    if len(dados) > BRASAO_LIMITE_BYTES:
+        kb = BRASAO_LIMITE_BYTES // 1024
+        raise RegraNegocioError(
+            f"Imagem muito grande ({len(dados) // 1024} KB). "
+            f"O limite é {kb} KB; reduza a imagem e tente de novo.")
+    set_config(BRASAO_CHAVE, base64.b64encode(dados).decode("ascii"))
+    registrar_auditoria(usuario_id, "BRASAO_DEFINIDO",
+                         f"{len(dados)} bytes")
+
+
+def obter_brasao() -> Optional[str]:
+    """Base64 do brasão configurado, ou None se não houver."""
+    valor = get_config(BRASAO_CHAVE, "")
+    return valor or None
+
+
+def remover_brasao(usuario_id: Optional[int] = None) -> None:
+    set_config(BRASAO_CHAVE, "")
+    registrar_auditoria(usuario_id, "BRASAO_REMOVIDO", "")
 
 
 def listar_livros(termo: str = "", apenas_disponiveis: bool = False,

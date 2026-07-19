@@ -495,6 +495,55 @@ class TestStatusUsuario(ServicosTestCase):
 
 
 # ---------------------------------------------------------------------------
+# Brasão da instituição
+# ---------------------------------------------------------------------------
+class TestBrasaoInstituicao(ServicosTestCase):
+    """Imagem opcional da escola, guardada em base64 na configuração."""
+
+    def _arquivo_imagem(self, dados: bytes) -> str:
+        import shutil
+        pasta = tempfile.mkdtemp(prefix="sigbef-brasao-")
+        self.addCleanup(shutil.rmtree, pasta, ignore_errors=True)
+        caminho = os.path.join(pasta, "brasao.png")
+        Path(caminho).write_bytes(dados)
+        return caminho
+
+    def _png_valido(self) -> bytes:
+        """Reusa um PNG real dos ícones embutidos como massa de teste."""
+        import base64
+        from sigbef.icones_data import ICONES
+        return base64.b64decode(next(iter(ICONES.values())))
+
+    def test_salvar_e_obter_brasao(self):
+        caminho = self._arquivo_imagem(self._png_valido())
+        servicos.salvar_brasao(caminho)
+        self.assertIsNotNone(servicos.obter_brasao())
+
+    def test_sem_brasao_por_padrao(self):
+        self.assertIsNone(servicos.obter_brasao())
+
+    def test_formato_invalido_rejeitado(self):
+        jpeg_falso = b"\xff\xd8\xff\xe0" + b"\x00" * 64
+        caminho = self._arquivo_imagem(jpeg_falso)
+        with self.assertRaises(RegraNegocioError):
+            servicos.salvar_brasao(caminho)
+        self.assertIsNone(servicos.obter_brasao())
+
+    def test_imagem_grande_demais_rejeitada(self):
+        png = self._png_valido()
+        inflado = png + b"\x00" * (servicos.BRASAO_LIMITE_BYTES + 1)
+        caminho = self._arquivo_imagem(inflado)
+        with self.assertRaises(RegraNegocioError):
+            servicos.salvar_brasao(caminho)
+
+    def test_remover_brasao(self):
+        caminho = self._arquivo_imagem(self._png_valido())
+        servicos.salvar_brasao(caminho)
+        servicos.remover_brasao()
+        self.assertIsNone(servicos.obter_brasao())
+
+
+# ---------------------------------------------------------------------------
 # Importação de acervo via CSV
 # ---------------------------------------------------------------------------
 class TestImportacaoCSV(ServicosTestCase):

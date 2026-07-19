@@ -79,6 +79,12 @@ class PainelPrincipal(tk.Tk):
 
         info_user = tk.Frame(cabecalho, bg=tema.COR_PRIMARIA)
         info_user.pack(side="right", padx=20)
+
+        # Brasão da instituição no cabeçalho, quando configurado
+        img_brasao = icones.brasao(max_altura=40)
+        if img_brasao is not None:
+            tk.Label(cabecalho, bg=tema.COR_PRIMARIA, image=img_brasao
+                     ).pack(side="right", padx=(0, 4))
         tk.Label(info_user, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text=self.sessao.nome,
                  font=("Segoe UI Semibold", 10)).pack(anchor="e")
@@ -1292,6 +1298,32 @@ class SecaoConfig(SecaoBase):
             self._cor_entries[chave_c] = ent
             self._cor_swatches[chave_c] = swatch
 
+        # Brasão da instituição
+        tk.Frame(aparencia, height=1, bg=tema.COR_BORDA
+                 ).grid(row=5, column=0, columnspan=4, sticky="ew",
+                        pady=12)
+        ttk.Label(aparencia, text="Brasão da instituição",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=6, column=0, sticky="w")
+        self.lbl_brasao = ttk.Label(aparencia, text="",
+                                     style="CardHint.TLabel")
+        self.lbl_brasao.grid(row=7, column=0, columnspan=2, sticky="w")
+        ttk.Label(aparencia,
+                  text=("Aparece na tela de login e no cabeçalho. "
+                        "PNG ou GIF, até 512 KB."),
+                  style="CardHint.TLabel"
+                  ).grid(row=8, column=0, columnspan=3, sticky="w")
+        botoes_brasao = ttk.Frame(aparencia, style="CardInner.TFrame")
+        botoes_brasao.grid(row=6, column=2, columnspan=2, rowspan=2,
+                           sticky="e", padx=(12, 0))
+        ttk.Button(botoes_brasao, text="Escolher imagem...",
+                   command=self._escolher_brasao).pack(side="left")
+        ttk.Button(botoes_brasao, text="Remover",
+                   command=self._remover_brasao
+                   ).pack(side="left", padx=(8, 0))
+        self._refrescar_status_brasao()
+
         # Botoes de acao
         botoes_aparencia = ttk.Frame(body)
         botoes_aparencia.pack(fill="x", pady=(12, 0))
@@ -1312,6 +1344,52 @@ class SecaoConfig(SecaoBase):
             set_config(chave, ent.get().strip())
         messagebox.showinfo("Configurações", "Salvo com sucesso.",
                              parent=self.painel)
+
+    # ---- Brasão da instituição ----
+    def _refrescar_status_brasao(self):
+        b64 = servicos.obter_brasao()
+        if b64:
+            kb = (len(b64) * 3 // 4) // 1024
+            self.lbl_brasao.configure(text=f"Brasão definido ({kb} KB).")
+        else:
+            self.lbl_brasao.configure(text="Nenhum brasão definido.")
+
+    def _escolher_brasao(self):
+        caminho = filedialog.askopenfilename(
+            parent=self.painel,
+            title="Escolher brasão da instituição",
+            filetypes=[("Imagens PNG ou GIF", "*.png *.gif"),
+                       ("Todos os arquivos", "*.*")],
+        )
+        if not caminho:
+            return
+        try:
+            servicos.salvar_brasao(caminho, self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showerror("Brasão da instituição", str(e),
+                                   parent=self.painel)
+            return
+        except OSError as e:
+            messagebox.showerror("Brasão da instituição",
+                                   f"Não foi possível ler o arquivo:\n{e}",
+                                   parent=self.painel)
+            return
+        icones.invalidar_brasao()
+        self._refrescar_status_brasao()
+        messagebox.showinfo(
+            "Brasão da instituição",
+            "Brasão salvo. Ele aparece na tela de login e no cabeçalho "
+            "na próxima vez que o sistema abrir.",
+            parent=self.painel)
+
+    def _remover_brasao(self):
+        if not servicos.obter_brasao():
+            return
+        servicos.remover_brasao(self.sessao.id)
+        icones.invalidar_brasao()
+        self._refrescar_status_brasao()
+        messagebox.showinfo("Brasão da instituição",
+                             "Brasão removido.", parent=self.painel)
 
     def _backup(self):
         from datetime import datetime as _dt

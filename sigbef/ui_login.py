@@ -47,6 +47,14 @@ class JanelaLogin(tk.Tk):
         tk.Frame(lateral, bg=tema.COR_DESTAQUE, height=4, width=120
                  ).pack(padx=40, anchor="w")
 
+        # Brasão da instituição, quando configurado (Configurações,
+        # Aparência). Deixa a tela com a identidade da escola.
+        from . import icones
+        img_brasao = icones.brasao(max_altura=120)
+        if img_brasao is not None:
+            tk.Label(lateral, bg=tema.COR_PRIMARIA, image=img_brasao
+                     ).pack(padx=40, anchor="w", pady=(24, 0))
+
         descricao = (
             "• Cadastro e busca de livros\n"
             "• Empréstimos e devoluções\n"
