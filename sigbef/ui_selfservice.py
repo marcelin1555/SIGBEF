@@ -10,6 +10,7 @@ import tkinter as tk
 from datetime import datetime
 from tkinter import ttk, messagebox
 
+from . import icones
 from . import servicos
 from . import ui_tema as tema
 from .auth import Sessao, autenticar, autenticar_por_codigo
@@ -30,6 +31,7 @@ class TerminalAutoatendimento(tk.Tk):
 
         self.title("SIGBEF - Terminal de Autoatendimento")
         tema.aplicar_tema(self)
+        icones.aplicar_icone_janela(self)
         self.configure(bg=tema.COR_FUNDO)
         tema.centralizar_janela(self, 1100, 760)
         self.minsize(960, 700)
@@ -58,12 +60,22 @@ class TerminalAutoatendimento(tk.Tk):
 
         topo = tk.Frame(frame, bg=tema.COR_PRIMARIA, height=120)
         topo.pack(fill="x")
+        # Identidade: logo do SIGBEF e, se configurado, o brasão da escola
+        marcas = tk.Frame(topo, bg=tema.COR_PRIMARIA)
+        marcas.pack(pady=(18, 2))
+        img_brasao = icones.brasao(max_altura=56)
+        if img_brasao is not None:
+            tk.Label(marcas, bg=tema.COR_PRIMARIA, image=img_brasao
+                     ).pack(side="left", padx=(0, 14))
+        tk.Label(marcas, bg=tema.COR_PRIMARIA,
+                 image=icones.icone("logoplaca", "original", 48)
+                 ).pack(side="left")
         tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="Bem-vindo à Biblioteca",
-                 font=("Segoe UI Semibold", 30)).pack(pady=(20, 4))
-        tk.Label(topo, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+                 font=("Segoe UI Semibold", 30)).pack(pady=(4, 4))
+        tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text="Identifique-se para começar",
-                 font=("Segoe UI", 14)).pack()
+                 font=("Segoe UI", 14)).pack(pady=(0, 16))
 
         centro = tk.Frame(frame, bg=tema.COR_FUNDO)
         centro.pack(expand=True)
@@ -89,7 +101,7 @@ class TerminalAutoatendimento(tk.Tk):
 
         tk.Button(card, text="Entrar", bg=tema.COR_PRIMARIA,
                   fg=tema.COR_TEXTO_CLARO, font=("Segoe UI Semibold", 18),
-                  bd=0, padx=20, pady=14, activebackground="#13365B",
+                  bd=0, padx=20, pady=14, activebackground=tema.COR_PRIMARIA_ESCURA,
                   command=self._fazer_login_senha
                   ).grid(row=4, column=0, sticky="ew", pady=(0, 10))
 
@@ -166,7 +178,7 @@ class TerminalAutoatendimento(tk.Tk):
                  text=f"Olá, {self.sessao.nome.split()[0]}!",
                  font=("Segoe UI Semibold", 28)).pack(pady=(20, 0))
         st = servicos.status_usuario(self.sessao.id)
-        tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg="#CFE2F8",
+        tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text=st.motivo, font=("Segoe UI", 13)).pack()
 
         centro = tk.Frame(frame, bg=tema.COR_FUNDO)
@@ -406,7 +418,7 @@ class TerminalAutoatendimento(tk.Tk):
         topo.pack_propagate(False)
         tk.Button(topo, text="←  Voltar",
                    bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
-                   activebackground="#13365B",
+                   activebackground=tema.COR_PRIMARIA_ESCURA,
                    font=("Segoe UI Semibold", 13), bd=0, padx=14,
                    command=self._mostrar_inicio).pack(side="left", padx=18,
                                                         pady=12)
@@ -431,7 +443,9 @@ class TerminalAutoatendimento(tk.Tk):
             return
         self._aviso = tk.Label(
             self,
-            text="⏱  A sessão será encerrada em 15 segundos. "
+            image=icones.icone("relogio", "branco", 16),
+            compound="left",
+            text="  A sessão será encerrada em 15 segundos. "
                  "Toque na tela para continuar.",
             bg=tema.COR_AVISO, fg=tema.COR_TEXTO_CLARO,
             font=("Segoe UI Semibold", 13), pady=10)

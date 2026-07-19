@@ -32,6 +32,21 @@ def icone(nome: str, cor: str = "branco", tamanho: int = 16) -> tk.PhotoImage:
     return _cache[chave]
 
 
+def aplicar_icone_janela(janela: tk.Tk | tk.Toplevel) -> None:
+    """Usa a logo do SIGBEF como ícone da janela (barra de título e
+    barra de tarefas), no lugar da pena padrão do Tk.
+
+    Com default=True, os Toplevels criados depois (diálogos) herdam o
+    ícone automaticamente. Dois tamanhos deixam o sistema escolher o
+    melhor pra barra de título (pequeno) e pro alt-tab (grande).
+    """
+    try:
+        janela.iconphoto(True, icone("logo", "original", 32),
+                         icone("logo", "original", 64))
+    except tk.TclError:
+        pass  # ambiente sem suporte: segue com o ícone padrão
+
+
 def limpar_cache() -> None:
     """Descarta as imagens (usado ao trocar de root em testes)."""
     _cache.clear()

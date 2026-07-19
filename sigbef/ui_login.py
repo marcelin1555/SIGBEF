@@ -11,6 +11,7 @@ from tkinter import ttk, messagebox
 from typing import Optional
 
 from . import __version__
+from . import icones
 from .auth import autenticar, Sessao
 from . import ui_tema as tema
 
@@ -23,6 +24,7 @@ class JanelaLogin(tk.Tk):
 
         self.title("SIGBEF - Acesso ao Sistema")
         tema.aplicar_tema(self)
+        icones.aplicar_icone_janela(self)
         self._construir()
         tema.centralizar_janela(self, 1000, 620)
         self.minsize(960, 600)
@@ -35,9 +37,12 @@ class JanelaLogin(tk.Tk):
         lateral.pack(side="left", fill="both", expand=False)
         lateral.configure(width=440)
 
+        tk.Label(lateral, bg=tema.COR_PRIMARIA,
+                 image=icones.icone("logoplaca", "original", 56)
+                 ).pack(pady=(64, 0), padx=40, anchor="w")
         tk.Label(lateral, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="SIGBEF", font=("Segoe UI Semibold", 56)
-                 ).pack(pady=(80, 0), padx=40, anchor="w")
+                 ).pack(pady=(12, 0), padx=40, anchor="w")
 
         tk.Label(lateral, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="Sistema Integrado de Gestão\nda Biblioteca Escolar",
@@ -49,7 +54,6 @@ class JanelaLogin(tk.Tk):
 
         # Brasão da instituição, quando configurado (Configurações,
         # Aparência). Deixa a tela com a identidade da escola.
-        from . import icones
         img_brasao = icones.brasao(max_altura=120)
         if img_brasao is not None:
             tk.Label(lateral, bg=tema.COR_PRIMARIA, image=img_brasao
@@ -66,7 +70,7 @@ class JanelaLogin(tk.Tk):
                  ).pack(padx=40, anchor="w", pady=(30, 0))
 
         rodape_lat = tk.Label(
-            lateral, bg=tema.COR_PRIMARIA, fg="#9CB7D6",
+            lateral, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
             text=f"Versão {__version__} · produto em produção",
             font=("Segoe UI", 9))
         rodape_lat.pack(side="bottom", pady=20)

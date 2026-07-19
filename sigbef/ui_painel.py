@@ -39,6 +39,7 @@ class PainelPrincipal(tk.Tk):
         self.sessao = sessao
         self.title(f"SIGBEF - {sessao.nome} ({sessao.perfil.title()})")
         tema.aplicar_tema(self)
+        icones.aplicar_icone_janela(self)
         tema.centralizar_janela(self, 1280, 780)
         self.minsize(1180, 700)
 
@@ -68,12 +69,12 @@ class PainelPrincipal(tk.Tk):
         cabecalho.pack(fill="x")
         cabecalho.pack_propagate(False)
         tk.Label(cabecalho, bg=tema.COR_PRIMARIA,
-                 image=icones.icone("logo", "original", 36)
+                 image=icones.icone("logoplaca", "original", 36)
                  ).pack(side="left", padx=(16, 0))
         tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="SIGBEF", font=("Segoe UI Semibold", 18)
                  ).pack(side="left", padx=12)
-        tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+        tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text="Sistema Integrado de Gestão da Biblioteca",
                  font=("Segoe UI", 11)).pack(side="left")
 
@@ -88,7 +89,7 @@ class PainelPrincipal(tk.Tk):
         tk.Label(info_user, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text=self.sessao.nome,
                  font=("Segoe UI Semibold", 10)).pack(anchor="e")
-        tk.Label(info_user, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+        tk.Label(info_user, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text=f"{self.sessao.perfil.title()} • matrícula {self.sessao.matricula}",
                  font=("Segoe UI", 9)).pack(anchor="e")
         ttk.Button(cabecalho, text="Sair",
@@ -281,7 +282,9 @@ class SecaoLivros(SecaoBase):
         topo.pack(fill="x")
         ttk.Label(topo, text="Livros e exemplares",
                   style="Titulo.TLabel").pack(side="left")
-        ttk.Button(topo, text="+ Cadastrar livro",
+        ttk.Button(topo, text=" Cadastrar livro",
+                    image=icones.icone("mais", "branco", 14),
+                    compound="left",
                     style="Primario.TButton",
                     command=self._novo_livro
                     ).pack(side="right")
@@ -441,7 +444,9 @@ class SecaoUsuarios(SecaoBase):
         topo = ttk.Frame(self)
         topo.pack(fill="x")
         ttk.Label(topo, text="Usuários", style="Titulo.TLabel").pack(side="left")
-        ttk.Button(topo, text="+ Cadastrar usuário",
+        ttk.Button(topo, text=" Cadastrar usuário",
+                    image=icones.icone("mais", "branco", 14),
+                    compound="left",
                     style="Primario.TButton",
                     command=self._novo_usuario
                     ).pack(side="right")
@@ -622,7 +627,9 @@ class SecaoEmprestimos(SecaoBase):
         ttk.Button(emp_card, text="Selecionar exemplar...",
                     command=self._selecionar_exemplar_emprestimo
                     ).grid(row=2, column=2, padx=8, pady=(8, 0))
-        ttk.Button(emp_card, text="✓ Registrar empréstimo",
+        ttk.Button(emp_card, text=" Registrar empréstimo",
+                    image=icones.icone("confirmar", "branco", 14),
+                    compound="left",
                     style="Sucesso.TButton",
                     command=self._emprestar
                     ).grid(row=2, column=3, padx=(8, 0), pady=(8, 0))
@@ -646,7 +653,9 @@ class SecaoEmprestimos(SecaoBase):
                                              padx=(0, 6))
         self.ent_dev_cod = ttk.Entry(dev_card, width=26)
         self.ent_dev_cod.grid(row=1, column=1, sticky="w")
-        ttk.Button(dev_card, text="↻ Registrar devolução",
+        ttk.Button(dev_card, text=" Registrar devolução",
+                    image=icones.icone("desfazer", "branco", 14),
+                    compound="left",
                     style="Aviso.TButton",
                     command=self._devolver
                     ).grid(row=1, column=2, padx=(8, 0))
@@ -685,7 +694,9 @@ class SecaoEmprestimos(SecaoBase):
 
         op = ttk.Frame(self)
         op.pack(fill="x", pady=(8, 0))
-        ttk.Button(op, text="✓ Devolver selecionado",
+        ttk.Button(op, text=" Devolver selecionado",
+                    image=icones.icone("confirmar", "branco", 14),
+                    compound="left",
                     style="Sucesso.TButton",
                     command=self._devolver_selecionado
                     ).pack(side="left", padx=(0, 8))
@@ -1675,7 +1686,9 @@ class SecaoPesquisaAluno(SecaoBase):
         self.lbl_msg.pack(side="left")
         ttk.Button(rodape, text="Ver detalhes",
                     command=self._detalhes).pack(side="right", padx=(8, 0))
-        ttk.Button(rodape, text="✓ Pegar emprestado",
+        ttk.Button(rodape, text=" Pegar emprestado",
+                    image=icones.icone("confirmar", "branco", 14),
+                    compound="left",
                     style="Sucesso.TButton",
                     command=self._pegar_emprestado).pack(side="right")
         ttk.Button(rodape, text="Reservar",

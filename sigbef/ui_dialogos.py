@@ -32,14 +32,18 @@ class DialogoSobre(tk.Toplevel):
         self.resizable(False, False)
 
         # Topo institucional
+        from . import icones
         topo = tk.Frame(self, bg=tema.COR_PRIMARIA, height=110)
         topo.pack(fill="x")
         topo.pack_propagate(False)
-        tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
-                 text="SIGBEF", font=("Segoe UI Semibold", 36)
-                 ).pack(pady=(18, 0))
+        tk.Label(topo, bg=tema.COR_PRIMARIA,
+                 image=icones.icone("logoplaca", "original", 48),
+                 compound="left",
+                 text="  SIGBEF", fg=tema.COR_TEXTO_CLARO,
+                 font=("Segoe UI Semibold", 36)
+                 ).pack(pady=(14, 0))
         from . import __version__
-        tk.Label(topo, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+        tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text=f"Versão {__version__}",
                  font=("Segoe UI", 11)).pack()
 

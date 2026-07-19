@@ -5,6 +5,20 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 ## [Não lançado]
 
 ### Interface
+- Identidade visual completa em todas as telas: logo do SIGBEF (em
+  plaqueta branca, legível sobre qualquer paleta) no login, no
+  assistente de primeira execução, no autoatendimento e no diálogo
+  Sobre; brasão da instituição também no autoatendimento; e a logo
+  como ícone das janelas (barra de título e barra de tarefas), no
+  lugar do ícone padrão do Tk
+- Paletas de verdade: os textos secundários sobre a cor primária
+  (subtítulos de cabeçalho, versão no login, avisos do kiosk) agora
+  derivam da paleta escolhida, em vez dos tons de azul fixos que
+  destoavam em temas como o marrom; o efeito de clique dos botões do
+  kiosk também acompanha a paleta
+- Botões de ação com ícones vetoriais no lugar de símbolos de texto
+  (cadastrar, registrar empréstimo, devolução, aviso de sessão do
+  kiosk)
 - Brasão da instituição: em Configurações, Aparência, o administrador
   pode escolher uma imagem (PNG ou GIF, até 512 KB) que passa a
   aparecer na tela de login e no cabeçalho do painel. A imagem fica

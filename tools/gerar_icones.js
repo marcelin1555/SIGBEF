@@ -17,7 +17,7 @@ const fs = require("fs");
 const {
   FaHome, FaBook, FaUsers, FaExchangeAlt, FaChartBar, FaCog, FaSearch,
   FaBookReader, FaSignOutAlt, FaBarcode, FaCheckCircle,
-  FaExclamationTriangle,
+  FaExclamationTriangle, FaPlus, FaCheck, FaUndoAlt, FaClock,
 } = require(NPM + "react-icons/fa");
 
 // Paleta fixa (à prova de paleta personalizada do usuário):
@@ -35,6 +35,8 @@ const COMPONENTES = {
   grafico: FaChartBar, engrenagem: FaCog, busca: FaSearch,
   leitor: FaBookReader, sair: FaSignOutAlt, barcode: FaBarcode,
   check: FaCheckCircle, alerta: FaExclamationTriangle,
+  mais: FaPlus, confirmar: FaCheck, desfazer: FaUndoAlt,
+  relogio: FaClock,
 };
 
 // (nome, cor, tamanho em px) — só o que a UI realmente usa
@@ -48,19 +50,46 @@ const SPEC = [
   ["livro", "cinza", 20], ["barcode", "cinza", 20], ["check", "verde", 20],
   ["troca", "cinza", 20], ["alerta", "vermelho", 20],
   ["usuarios", "cinza", 20],
+  // Botões de ação (texto branco) e avisos
+  ["mais", "branco", 14], ["confirmar", "branco", 14],
+  ["desfazer", "branco", 14], ["relogio", "branco", 16],
+  // Tela final do assistente de primeira execução
+  ["check", "verde", 28],
 ];
 
 async function main() {
   const linhas = [];
 
-  // Logo institucional (a mesma do site), pro cabeçalho do aplicativo.
-  // "original" = cores próprias da marca, não segue a paleta de ícones.
-  const LOGO_TAM = 36;
-  const logo = await sharp("site/public/logo.png")
-    .resize(LOGO_TAM, LOGO_TAM, { fit: "contain",
-                                  background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .png().toBuffer();
-  linhas.push(`    "logo_original_${LOGO_TAM}": "${logo.toString("base64")}",`);
+  // Logo institucional (a mesma do site). "original" = cores próprias
+  // da marca (fundo transparente), usada como ícone de janela.
+  for (const tam of [32, 36, 64]) {
+    const logo = await sharp("site/public/logo.png")
+      .resize(tam, tam, { fit: "contain",
+                          background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png().toBuffer();
+    linhas.push(`    "logo_original_${tam}": "${logo.toString("base64")}",`);
+  }
+
+  // Variante "placa": logo sobre uma plaqueta branca arredondada, pra
+  // assentar com contraste sobre a cor primária de QUALQUER paleta
+  // (azul sobre azul ou azul sobre marrom ficavam "soltos").
+  for (const tam of [28, 36, 48, 56]) {
+    const raio = Math.round(tam * 0.22);
+    const placa = Buffer.from(
+      `<svg width="${tam}" height="${tam}">` +
+      `<rect width="${tam}" height="${tam}" rx="${raio}" ry="${raio}" ` +
+      `fill="#FFFFFF"/></svg>`);
+    const miolo = Math.round(tam * 0.82);
+    const logoMenor = await sharp("site/public/logo.png")
+      .resize(miolo, miolo, { fit: "contain",
+                              background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png().toBuffer();
+    const off = Math.round((tam - miolo) / 2);
+    const png = await sharp(placa)
+      .composite([{ input: logoMenor, left: off, top: off }])
+      .png().toBuffer();
+    linhas.push(`    "logoplaca_original_${tam}": "${png.toString("base64")}",`);
+  }
 
   for (const [nome, cor, tam] of SPEC) {
     const svg = ReactDOMServer.renderToStaticMarkup(

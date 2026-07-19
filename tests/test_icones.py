@@ -12,12 +12,21 @@ from sigbef.icones_data import ICONES
 # painel). Se tools/gerar_icones.js deixar de gerar alguma, este teste
 # quebra antes de o app quebrar em produção.
 CHAVES_USADAS = [
-    "logo_original_36",
+    # Ícone de janela (barra de título / alt-tab)
+    "logo_original_32", "logo_original_64",
+    # Logo em plaqueta (sobre a cor primária de qualquer paleta)
+    "logoplaca_original_28", "logoplaca_original_36",
+    "logoplaca_original_48", "logoplaca_original_56",
+    # Sidebar e cabeçalho
     "home_branco_16", "livro_branco_16", "usuarios_branco_16",
     "troca_branco_16", "grafico_branco_16", "engrenagem_branco_16",
     "busca_branco_16", "leitor_branco_16", "sair_branco_16",
+    # Cards do painel
     "livro_cinza_20", "barcode_cinza_20", "check_verde_20",
     "troca_cinza_20", "alerta_vermelho_20", "usuarios_cinza_20",
+    # Botões de ação, aviso do kiosk e tela final do setup
+    "mais_branco_14", "confirmar_branco_14", "desfazer_branco_14",
+    "relogio_branco_16", "check_verde_28",
 ]
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"

@@ -13,6 +13,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional
 
+from . import icones
 from . import ui_tema as tema
 from . import servicos
 from .database import set_config
@@ -27,6 +28,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
         self.sucesso: bool = False
         self.title("SIGBEF - Configuração inicial")
         tema.aplicar_tema(self)
+        icones.aplicar_icone_janela(self)
         tema.centralizar_janela(self, 1000, 680)
         self.minsize(960, 640)
 
@@ -46,10 +48,13 @@ class JanelaPrimeiraExecucao(tk.Tk):
         topo = tk.Frame(self, bg=tema.COR_PRIMARIA, height=80)
         topo.pack(fill="x")
         topo.pack_propagate(False)
+        tk.Label(topo, bg=tema.COR_PRIMARIA,
+                 image=icones.icone("logoplaca", "original", 28)
+                 ).pack(side="left", padx=(24, 0))
         tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="SIGBEF", font=("Segoe UI Semibold", 22)
-                 ).pack(side="left", padx=24, pady=18)
-        tk.Label(topo, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
+                 ).pack(side="left", padx=12, pady=18)
+        tk.Label(topo, bg=tema.COR_PRIMARIA, fg=tema.COR_PRIMARIA_SUAVE,
                  text="Configuração inicial do sistema",
                  font=("Segoe UI", 13)).pack(side="left", pady=22)
 
@@ -278,9 +283,8 @@ class JanelaPrimeiraExecucao(tk.Tk):
 
         check = tk.Frame(card, bg=tema.COR_CARD)
         check.pack(fill="x", pady=(0, 10))
-        tk.Label(check, text="✓", bg=tema.COR_CARD,
-                 fg=tema.COR_SUCESSO,
-                 font=("Segoe UI Semibold", 28)
+        tk.Label(check, bg=tema.COR_CARD,
+                 image=icones.icone("check", "verde", 28)
                  ).pack(side="left", padx=(0, 12))
         cont = tk.Frame(check, bg=tema.COR_CARD)
         cont.pack(side="left", fill="x", expand=True, anchor="w")

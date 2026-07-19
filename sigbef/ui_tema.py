@@ -107,8 +107,35 @@ def _ajustar_cor(cor_hex: str, fator: float) -> str:
     return f"#{r:02X}{g:02X}{b:02X}"
 
 
+def _mesclar_branco(cor_hex: str, proporcao: float) -> str:
+    """Mistura a cor com branco (proporcao 0..1 = quanto de branco).
+
+    Diferente de _ajustar_cor (multiplicativo), esta mistura desloca a
+    cor em direção ao branco preservando o matiz — ideal pra derivar o
+    tom "suave" de texto secundário sobre a cor primária de QUALQUER
+    paleta, no lugar dos azuis-claros fixos que só combinavam com o
+    tema padrão.
+    """
+    cor_hex = cor_hex.lstrip("#")
+    try:
+        r, g, b = (int(cor_hex[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return f"#{cor_hex}"
+    r, g, b = (round(c + (255 - c) * proporcao) for c in (r, g, b))
+    return f"#{r:02X}{g:02X}{b:02X}"
+
+
+# Derivadas da primária, recalculadas em aplicar_tema() (acompanham a
+# paleta escolhida, inclusive personalizada)
+COR_PRIMARIA_SUAVE = _mesclar_branco(COR_PRIMARIA, 0.65)
+COR_PRIMARIA_ESCURA = _ajustar_cor(COR_PRIMARIA, 0.72)
+
+
 def aplicar_tema(root):
+    global COR_PRIMARIA_SUAVE, COR_PRIMARIA_ESCURA
     carregar_personalizacao()
+    COR_PRIMARIA_SUAVE = _mesclar_branco(COR_PRIMARIA, 0.65)
+    COR_PRIMARIA_ESCURA = _ajustar_cor(COR_PRIMARIA, 0.72)
     style = ttk.Style(root)
     try:
         style.theme_use("clam")
@@ -163,15 +190,15 @@ def aplicar_tema(root):
     style.configure("TButton", font=FONTE_BOTAO, padding=(14, 8),
                     background=COR_SECUNDARIA, foreground=COR_TEXTO_CLARO, borderwidth=0)
     style.map("TButton", background=[("pressed", press_sec), ("active", hover_sec),
-                                      ("disabled", "#9DB1C8")])
+                                      ("disabled", "#A9B2BD")])
 
     style.configure("Primario.TButton", font=FONTE_BOTAO_GRANDE,
                     background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO, padding=(18, 10))
     style.map("Primario.TButton", background=[("pressed", press_prim), ("active", hover_prim),
-                                               ("disabled", "#9DB1C8")])
+                                               ("disabled", "#A9B2BD")])
 
     style.configure("Sucesso.TButton", background=COR_SUCESSO, foreground=COR_TEXTO_CLARO)
-    style.map("Sucesso.TButton", background=[("active", "#1B5E20"), ("disabled", "#9DB1C8")])
+    style.map("Sucesso.TButton", background=[("active", "#1B5E20"), ("disabled", "#A9B2BD")])
 
     style.configure("Perigo.TButton", background=COR_ERRO, foreground=COR_TEXTO_CLARO)
     style.map("Perigo.TButton", background=[("active", "#8E1F1F"), ("disabled", "#D9A0A0")])
