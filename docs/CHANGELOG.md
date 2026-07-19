@@ -24,6 +24,10 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   aparecer na tela de login e no cabeçalho do painel. A imagem fica
   guardada dentro do próprio banco, então o backup de 1 arquivo
   continua levando tudo junto
+- Aparência protegida contra cor ilegível: ao escolher uma cor
+  primária clara demais (onde o texto e os ícones brancos do menu e
+  do cabeçalho sumiriam), o sistema avisa na hora e não deixa salvar,
+  usando a razão de contraste do padrão WCAG
 - Logo institucional (a mesma do site) no cabeçalho do aplicativo,
   ao lado do nome SIGBEF
 - Ícones vetoriais (Font Awesome) na sidebar, no botão Sair e nos

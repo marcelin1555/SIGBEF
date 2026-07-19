@@ -107,6 +107,34 @@ def _ajustar_cor(cor_hex: str, fator: float) -> str:
     return f"#{r:02X}{g:02X}{b:02X}"
 
 
+def _luminancia(cor_hex: str) -> float:
+    """Luminância relativa (0 = preto, 1 = branco), fórmula WCAG."""
+    cor_hex = cor_hex.lstrip("#")
+    try:
+        canais = [int(cor_hex[i:i + 2], 16) / 255 for i in (0, 2, 4)]
+    except (ValueError, IndexError):
+        return 0.0
+    lin = [(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+           for c in canais]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def contraste(cor1: str, cor2: str) -> float:
+    """Razão de contraste WCAG entre duas cores (1 a 21)."""
+    l1, l2 = _luminancia(cor1), _luminancia(cor2)
+    claro, escuro = max(l1, l2), min(l1, l2)
+    return (claro + 0.05) / (escuro + 0.05)
+
+
+def primaria_clara_demais(cor_primaria: str) -> bool:
+    """True se texto/ícones brancos ficariam ilegíveis sobre a cor.
+
+    A sidebar, o cabeçalho e vários botões usam branco sobre a cor
+    primária. Abaixo de ~3:1 de contraste com o branco, o branco some.
+    """
+    return contraste(cor_primaria, "#FFFFFF") < 3.0
+
+
 def _mesclar_branco(cor_hex: str, proporcao: float) -> str:
     """Mistura a cor com branco (proporcao 0..1 = quanto de branco).
 

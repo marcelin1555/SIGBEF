@@ -1595,6 +1595,14 @@ class SecaoConfig(SecaoBase):
             self._cor_entries[chave].delete(0, "end")
             self._cor_entries[chave].insert(0, cor)
             self._cor_swatches[chave].configure(bg=cor)
+            if chave == "primaria" and tema.primaria_clara_demais(cor):
+                messagebox.showwarning(
+                    "Cor primária clara demais",
+                    "Essa cor primária é muito clara: o texto e os "
+                    "ícones brancos do menu e do cabeçalho ficariam "
+                    "quase invisíveis.\n\nEscolha um tom mais escuro "
+                    "para a cor primária.",
+                    parent=self.painel)
 
     def _salvar_aparencia(self):
         valores = {}
@@ -1608,6 +1616,15 @@ class SecaoConfig(SecaoBase):
                     parent=self.painel)
                 return
             valores[chave] = v
+        if tema.primaria_clara_demais(valores["primaria"]):
+            messagebox.showwarning(
+                "Cor primária clara demais",
+                "A cor primária escolhida é muito clara. O menu "
+                "lateral e o cabeçalho usam texto e ícones brancos, "
+                "que ficariam ilegíveis sobre ela.\n\nEscolha uma cor "
+                "primária mais escura antes de salvar.",
+                parent=self.painel)
+            return
         tema.salvar_cores(valores["primaria"], valores["secundaria"],
                           valores["destaque"], valores["fundo"])
         messagebox.showinfo(
