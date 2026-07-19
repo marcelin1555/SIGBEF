@@ -27,6 +27,8 @@ CHAVES_USADAS = [
     # Botões de ação, aviso do kiosk e tela final do setup
     "mais_branco_14", "confirmar_branco_14", "desfazer_branco_14",
     "relogio_branco_16", "check_verde_28",
+    # Menu principal do kiosk (3 cards grandes)
+    "barcode_branco_40", "desfazer_branco_40", "leitor_branco_40",
 ]
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"

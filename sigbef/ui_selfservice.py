@@ -185,16 +185,16 @@ class TerminalAutoatendimento(tk.Tk):
         centro.pack(fill="both", expand=True, padx=40, pady=30)
 
         # Botões grandes
-        for col, (titulo, descricao, cor, callback) in enumerate([
+        for col, (titulo, descricao, nome_icone, cor, callback) in enumerate([
             ("Pegar emprestado",
              "Pegue um livro escaneando o código de barras.",
-             tema.COR_SUCESSO, self._mostrar_emprestar),
+             "barcode", tema.COR_SUCESSO, self._mostrar_emprestar),
             ("Devolver",
              "Aproxime o livro do leitor para devolvê-lo.",
-             tema.COR_AVISO, self._mostrar_devolver),
+             "desfazer", tema.COR_AVISO, self._mostrar_devolver),
             ("Meus empréstimos",
              "Veja os livros que estão com você.",
-             tema.COR_SECUNDARIA, self._mostrar_meus),
+             "leitor", tema.COR_SECUNDARIA, self._mostrar_meus),
         ]):
             card = tk.Frame(centro, bg=cor, cursor="hand2")
             card.grid(row=0, column=col, padx=10, sticky="nsew",
@@ -202,9 +202,12 @@ class TerminalAutoatendimento(tk.Tk):
             centro.columnconfigure(col, weight=1)
             centro.rowconfigure(0, weight=1)
             card.bind("<Button-1>", lambda e, c=callback: c())
+            tk.Label(card, bg=cor,
+                     image=icones.icone(nome_icone, "branco", 40)
+                     ).pack(pady=(40, 12))
             tk.Label(card, text=titulo, bg=cor,
                      fg=tema.COR_TEXTO_CLARO,
-                     font=("Segoe UI Semibold", 22)).pack(pady=(40, 8))
+                     font=("Segoe UI Semibold", 22)).pack(pady=(0, 8))
             tk.Label(card, text=descricao, bg=cor,
                      fg=tema.COR_TEXTO_CLARO, wraplength=240,
                      justify="center",

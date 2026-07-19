@@ -2,6 +2,13 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado]
+
+### Interface
+- Ícones nos 3 cards grandes do menu principal do autoatendimento
+  (Pegar emprestado, Devolver, Meus empréstimos), que tinham ficado
+  de fora da rodada anterior de identidade visual
+
 ## [1.6.2] — 2026-07-19
 
 ### Interface

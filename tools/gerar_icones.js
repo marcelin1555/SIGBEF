@@ -55,6 +55,9 @@ const SPEC = [
   ["desfazer", "branco", 14], ["relogio", "branco", 16],
   // Tela final do assistente de primeira execução
   ["check", "verde", 28],
+  // Menu principal do kiosk: 3 cards grandes coloridos
+  ["barcode", "branco", 40], ["desfazer", "branco", 40],
+  ["leitor", "branco", 40],
 ];
 
 async function main() {
