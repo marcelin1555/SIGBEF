@@ -12,6 +12,7 @@ from sigbef.icones_data import ICONES
 # painel). Se tools/gerar_icones.js deixar de gerar alguma, este teste
 # quebra antes de o app quebrar em produção.
 CHAVES_USADAS = [
+    "logo_original_36",
     "home_branco_16", "livro_branco_16", "usuarios_branco_16",
     "troca_branco_16", "grafico_branco_16", "engrenagem_branco_16",
     "busca_branco_16", "leitor_branco_16", "sair_branco_16",

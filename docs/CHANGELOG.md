@@ -5,6 +5,8 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 ## [Não lançado]
 
 ### Interface
+- Logo institucional (a mesma do site) no cabeçalho do aplicativo,
+  ao lado do nome SIGBEF
 - Ícones vetoriais (Font Awesome) na sidebar, no botão Sair e nos
   cards do painel inicial, alinhando o aplicativo à identidade visual
   do site. Sem emojis e sem dependência nova: os PNGs são gerados em

@@ -67,9 +67,12 @@ class PainelPrincipal(tk.Tk):
         cabecalho = tk.Frame(self, bg=tema.COR_PRIMARIA, height=60)
         cabecalho.pack(fill="x")
         cabecalho.pack_propagate(False)
+        tk.Label(cabecalho, bg=tema.COR_PRIMARIA,
+                 image=icones.icone("logo", "original", 36)
+                 ).pack(side="left", padx=(16, 0))
         tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg=tema.COR_TEXTO_CLARO,
                  text="SIGBEF", font=("Segoe UI Semibold", 18)
-                 ).pack(side="left", padx=20)
+                 ).pack(side="left", padx=12)
         tk.Label(cabecalho, bg=tema.COR_PRIMARIA, fg="#B7CCE5",
                  text="Sistema Integrado de Gestão da Biblioteca",
                  font=("Segoe UI", 11)).pack(side="left")

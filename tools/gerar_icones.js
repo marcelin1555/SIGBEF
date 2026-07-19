@@ -52,6 +52,16 @@ const SPEC = [
 
 async function main() {
   const linhas = [];
+
+  // Logo institucional (a mesma do site), pro cabeçalho do aplicativo.
+  // "original" = cores próprias da marca, não segue a paleta de ícones.
+  const LOGO_TAM = 36;
+  const logo = await sharp("site/public/logo.png")
+    .resize(LOGO_TAM, LOGO_TAM, { fit: "contain",
+                                  background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png().toBuffer();
+  linhas.push(`    "logo_original_${LOGO_TAM}": "${logo.toString("base64")}",`);
+
   for (const [nome, cor, tam] of SPEC) {
     const svg = ReactDOMServer.renderToStaticMarkup(
       React.createElement(COMPONENTES[nome],
