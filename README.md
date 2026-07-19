@@ -579,6 +579,22 @@ Funcionalidades planejadas para versões futuras:
 - [ ] Camada de engajamento de leitura: estatísticas pessoais, recomendações por categoria, conquistas opcionais para alunos
 - [ ] Painel de BI com dashboards interativos e gráficos de uso
 
+### Aproximação de normas de biblioteconomia
+
+O SIGBEF hoje atende bem a realidade da biblioteca escolar (ISBN,
+número de tombo, código de barras), mas não implementa os padrões
+usados por bibliotecas maiores (MARC21, CDD/CDU, Z39.50) — decisão
+consciente para manter a simplicidade. Passos incrementais e opt-in
+para quem quiser se aproximar desses padrões, sem obrigar ninguém:
+
+- [ ] Campo de classificação (CDD ou CDU) e número de chamada por
+      livro, para gerar etiqueta de lombada
+- [ ] Exportação do acervo em formato MARC21, para facilitar migração
+      futura a um sistema profissional (Pergamum, Sophia)
+- [ ] Catalogação automática por ISBN puxando também classificação
+      Dewey, quando disponível na fonte (reaproveita o opt-in
+      `ISBN_LOOKUP` já existente)
+
 ### Longo prazo
 
 - [ ] Suporte a múltiplas unidades/bibliotecas na mesma instalação
