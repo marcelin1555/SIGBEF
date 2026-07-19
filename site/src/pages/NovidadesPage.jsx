@@ -21,9 +21,20 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.6.2',
+    data: '19 de julho de 2026',
+    destaque: true,
+    categorias: ['Interface'],
+    itens: [
+      { cat: 'Interface', texto: 'Identidade visual completa: logo do SIGBEF no login, no autoatendimento e no assistente inicial, e como ícone das janelas' },
+      { cat: 'Interface', texto: 'Brasão da própria escola configurável, exibido no login, no cabeçalho e no autoatendimento' },
+      { cat: 'Interface', texto: 'Ícones vetoriais na sidebar, nos cards e nos botões de ação, no lugar de símbolos de texto' },
+      { cat: 'Interface', texto: 'As paletas de cores personalizadas agora se aplicam a todas as telas de forma consistente, com proteção contra cores que deixariam o texto ilegível' },
+    ],
+  },
+  {
     numero: '1.6.1',
     data: '18 de julho de 2026',
-    destaque: true,
     categorias: ['Acervo', 'Interface'],
     itens: [
       { cat: 'Acervo', texto: 'Aviso por e-mail também quando o livro reservado fica separado para retirada (opt-in, junto com o aviso de vencimento)' },

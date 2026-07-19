@@ -2,7 +2,7 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado]
+## [1.6.2] — 2026-07-19
 
 ### Interface
 - Identidade visual completa em todas as telas: logo do SIGBEF (em
@@ -431,6 +431,7 @@ Itens previstos para versões posteriores — ver
 - Suporte a múltiplas unidades / bibliotecas
 - Migração para PostgreSQL em ambientes em rede
 
+[1.6.2]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.2
 [1.6.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.1
 [1.6.0]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.6.0
 [1.5.1]: https://github.com/marcelin1555/SIGBEF/releases/tag/v1.5.1
