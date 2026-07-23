@@ -76,3 +76,6 @@ skills-lock.json
 /commit.bat
 /commit_github.bat
 /site.zip
+
+# Fotos originais de eventos (so as otimizadas em site/public vao pro repo)
+fotos do coloquio/

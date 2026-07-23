@@ -6,6 +6,7 @@ const links = [
   { to: '/download', label: 'Como instalar' },
   { to: '/planos', label: 'Planos' },
   { to: '/equipe', label: 'Equipe' },
+  { to: '/eventos', label: 'Eventos' },
   { to: '/novidades', label: 'Novidades' },
 ]
 

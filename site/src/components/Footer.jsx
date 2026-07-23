@@ -41,6 +41,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold text-sm mb-3">Projeto</h4>
             <ul className="space-y-2 text-sm">
               <li><Link to="/equipe" className="hover:text-white transition-colors">Equipe</Link></li>
+              <li><Link to="/eventos" className="hover:text-white transition-colors">Eventos</Link></li>
               <li>
                 <a href="https://github.com/marcelin1555/SIGBEF" target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">GitHub</a>

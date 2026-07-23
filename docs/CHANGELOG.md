@@ -9,6 +9,11 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   (Pegar emprestado, Devolver, Meus empréstimos), que tinham ficado
   de fora da rodada anterior de identidade visual
 
+### Site
+- Página **Eventos** (`/eventos`) com galeria de fotos e lightbox,
+  estreando com o V Seminário e II Colóquio de EPT da Rede Estadual
+  do RN (Natal, jul/2026), onde o SIGBEF foi apresentado
+
 ## [1.6.2] — 2026-07-19
 
 ### Interface
