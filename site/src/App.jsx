@@ -20,9 +20,13 @@ function ScrollToTop() {
 export default function App() {
   return (
     <div className="min-h-screen flex flex-col">
+      <a href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-2 focus:left-2 focus:bg-white focus:text-[#1F4E79] focus:font-semibold focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg">
+        Pular para o conteúdo
+      </a>
       <Nav />
       <ScrollToTop />
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/funcionalidades" element={<FuncionalidadesPage />} />

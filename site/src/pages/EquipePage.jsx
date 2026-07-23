@@ -45,7 +45,7 @@ export default function EquipePage() {
       {/* missão */}
       <section className="py-16 px-4 bg-[#1F4E79] text-white text-center">
         <div className="max-w-2xl mx-auto">
-          <div className="text-4xl mb-4">🏫</div>
+          <div aria-hidden="true" className="text-4xl mb-4">🏫</div>
           <blockquote className="text-xl sm:text-2xl font-semibold italic text-yellow-300 mb-4">
             "Escola pública brasileira merece a mesma tecnologia que escola privada tem."
           </blockquote>

@@ -39,7 +39,7 @@ export default function Nav() {
         </div>
 
         <button type="button" className="md:hidden p-2 rounded text-gray-600"
-          onClick={() => setOpen(o => !o)} aria-label="Menu">
+          onClick={() => setOpen(o => !o)} aria-label="Menu" aria-expanded={open}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {open
               ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -53,7 +53,7 @@ export default function Nav() {
           {links.map(({ to, label }) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}
               className={({ isActive }) =>
-                `px-2 py-2 rounded-lg text-sm font-medium ${isActive ? 'bg-blue-50 text-[#2E75B6] font-semibold' : 'text-gray-700 hover:bg-gray-50'}`
+                `px-2 py-2.5 rounded-lg text-sm font-medium ${isActive ? 'bg-blue-50 text-[#2E75B6] font-semibold' : 'text-gray-700 hover:bg-gray-50'}`
               }>
               {label}
             </NavLink>

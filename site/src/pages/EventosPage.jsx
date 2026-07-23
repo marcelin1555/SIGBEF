@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Cada evento tem uma pasta em public/eventos/<id>/ com as fotos.
 // Pra adicionar fotos: solta os arquivos na pasta e lista aqui embaixo.
@@ -48,6 +48,20 @@ function Galeria({ fotos, onAbrir }) {
 
 export default function EventosPage() {
   const [fotoAberta, setFotoAberta] = useState(null)
+  const botaoFechar = useRef(null)
+
+  // Lightbox acessível: fecha com Esc, trava o scroll da página e foca o botão
+  useEffect(() => {
+    if (!fotoAberta) return
+    const aoTeclar = e => { if (e.key === 'Escape') setFotoAberta(null) }
+    document.addEventListener('keydown', aoTeclar)
+    document.body.style.overflow = 'hidden'
+    botaoFechar.current?.focus()
+    return () => {
+      document.removeEventListener('keydown', aoTeclar)
+      document.body.style.overflow = ''
+    }
+  }, [fotoAberta])
 
   return (
     <>
@@ -96,9 +110,10 @@ export default function EventosPage() {
 
       {/* lightbox simples */}
       {fotoAberta && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+        <div role="dialog" aria-modal="true" aria-label={fotoAberta.alt}
+          className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 overscroll-contain"
           onClick={() => setFotoAberta(null)}>
-          <button type="button" aria-label="Fechar"
+          <button type="button" aria-label="Fechar foto ampliada" ref={botaoFechar}
             className="absolute top-4 right-4 text-white/80 hover:text-white p-2"
             onClick={() => setFotoAberta(null)}>
             <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">

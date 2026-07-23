@@ -79,3 +79,6 @@ skills-lock.json
 
 # Fotos originais de eventos (so as otimizadas em site/public vao pro repo)
 fotos do coloquio/
+
+# Capturas de tela do app (nao versionar; usadas no site ja otimizadas)
+capturas app/

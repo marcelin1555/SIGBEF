@@ -1,5 +1,22 @@
-const sim = '✅'
-const nao = '❌'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCircleCheck, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
+
+const sim = 'sim'
+const nao = 'nao'
+
+function Celula({ valor }) {
+  return valor === sim ? (
+    <>
+      <FontAwesomeIcon icon={faCircleCheck} className="text-green-600" />
+      <span className="sr-only">Sim</span>
+    </>
+  ) : (
+    <>
+      <FontAwesomeIcon icon={faCircleXmark} className="text-red-400" />
+      <span className="sr-only">Não</span>
+    </>
+  )
+}
 
 const concorrentes = [
   { nome: 'SIGBEF',    gratuito: sim, offline: sim, kiosk: sim, instalador: sim, suporte: sim, opensource: sim },
@@ -31,9 +48,9 @@ export default function Comparativo() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-[#1F4E79] text-white">
-                <th className="text-left px-4 py-3 font-semibold">Sistema</th>
+                <th scope="col" className="text-left px-4 py-3 font-semibold">Sistema</th>
                 {colunas.map(c => (
-                  <th key={c.key} className="px-3 py-3 font-semibold text-center">{c.label}</th>
+                  <th key={c.key} scope="col" className="px-3 py-3 font-semibold text-center">{c.label}</th>
                 ))}
               </tr>
             </thead>
@@ -51,7 +68,9 @@ export default function Comparativo() {
                     )}
                   </td>
                   {colunas.map(c => (
-                    <td key={c.key} className="px-3 py-3 text-center text-base">{row[c.key]}</td>
+                    <td key={c.key} className="px-3 py-3 text-center text-base">
+                      <Celula valor={row[c.key]} />
+                    </td>
                   ))}
                 </tr>
               ))}

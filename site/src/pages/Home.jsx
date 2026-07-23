@@ -11,19 +11,19 @@ import Prova from '../components/Prova'
 import ODS from '../components/ODS'
 
 const stats = [
-  { valor: '+1.000', label: 'livros suportados' },
+  { valor: '15 mil', label: 'exemplares testados' },
   { valor: '100%', label: 'offline' },
   { valor: '5 min', label: 'para instalar' },
   { valor: 'MIT', label: 'licença livre' },
 ]
 
 const features = [
-  { icon: faBookOpen,   cor: 'bg-blue-100 text-blue-600',   titulo: 'Acervo completo',   texto: 'Cadastro por ISBN com busca por título ou autor' },
-  { icon: faBarcode,    cor: 'bg-purple-100 text-purple-600', titulo: 'Código de barras', texto: 'Geração automática no cadastro de cada livro' },
-  { icon: faRotateLeft, cor: 'bg-green-100 text-green-600',  titulo: 'Empréstimos',       texto: 'Controle de prazo com cálculo automático de multa' },
-  { icon: faDesktop,    cor: 'bg-indigo-100 text-indigo-600', titulo: 'Kiosk',            texto: 'Terminal de autoatendimento para alunos' },
-  { icon: faFileCsv,    cor: 'bg-red-100 text-red-600',      titulo: 'Relatórios',        texto: 'Exportação em CSV com histórico completo' },
-  { icon: faUsers,      cor: 'bg-yellow-100 text-yellow-700', titulo: 'Multi-perfil',     texto: '4 níveis de acesso com permissões distintas' },
+  { icon: faBookOpen,   cor: 'bg-blue-100 text-[#2E75B6]',   titulo: 'Acervo completo',   texto: 'Cadastro por ISBN com busca por título ou autor' },
+  { icon: faBarcode,    cor: 'bg-amber-100 text-amber-700',  titulo: 'Código de barras', texto: 'Geração automática no cadastro de cada livro' },
+  { icon: faRotateLeft, cor: 'bg-blue-100 text-[#2E75B6]',   titulo: 'Empréstimos',       texto: 'Controle de prazo com cálculo automático de multa' },
+  { icon: faDesktop,    cor: 'bg-amber-100 text-amber-700',  titulo: 'Kiosk',            texto: 'Terminal de autoatendimento para alunos' },
+  { icon: faFileCsv,    cor: 'bg-blue-100 text-[#2E75B6]',   titulo: 'Relatórios',        texto: 'Exportação em CSV com histórico completo' },
+  { icon: faUsers,      cor: 'bg-amber-100 text-amber-700',  titulo: 'Multi-perfil',     texto: '4 níveis de acesso com permissões distintas' },
 ]
 
 const passos = [
@@ -61,7 +61,8 @@ export default function Home() {
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
             {features.map(f => (
-              <div key={f.titulo} className="flex gap-4 items-start p-5 rounded-xl border border-gray-100 bg-gray-50 hover:border-[#2E75B6]/30 hover:shadow-sm transition-all">
+              <Link key={f.titulo} to="/funcionalidades"
+                className="flex gap-4 items-start p-5 rounded-xl border border-gray-100 bg-gray-50 hover:border-[#2E75B6]/30 hover:shadow-sm transition-all">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${f.cor}`}>
                   <FontAwesomeIcon icon={f.icon} className="text-base" />
                 </div>
@@ -69,7 +70,7 @@ export default function Home() {
                   <h3 className="font-semibold text-gray-800 mb-1">{f.titulo}</h3>
                   <p className="text-gray-500 text-sm leading-snug">{f.texto}</p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -119,7 +120,7 @@ export default function Home() {
               Guia detalhado
             </Link>
           </div>
-          <p className="text-center mt-3 text-gray-400 text-sm">Licença MIT · Código aberto · Sem limite de usuários</p>
+          <p className="text-center mt-3 text-gray-500 text-sm">Licença MIT · Código aberto · Sem limite de usuários</p>
         </div>
       </section>
 

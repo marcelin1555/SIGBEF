@@ -10,8 +10,11 @@ export default function Screenshots() {
 
         <div className="rounded-2xl overflow-hidden shadow-xl border border-gray-200 bg-white">
           <img
-            src="/screenshot-painel.svg"
-            alt="Painel administrativo do SIGBEF mostrando estatísticas do acervo (11 títulos, 32 exemplares, 24 disponíveis), empréstimos abertos, atrasos, usuários ativos e o ranking dos livros mais emprestados"
+            src="/screenshot-painel.png"
+            width="1600"
+            height="825"
+            loading="lazy"
+            alt="Painel administrativo do SIGBEF mostrando estatísticas do acervo (2.867 títulos, 4.728 exemplares, 4.696 disponíveis), empréstimos, atrasos, usuários ativos e o ranking dos livros mais emprestados"
             className="w-full h-auto"
           />
         </div>

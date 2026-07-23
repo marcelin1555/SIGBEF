@@ -43,7 +43,7 @@ export default function Planos() {
               <ul className="space-y-2 mb-6 flex-1">
                 {p.itens.map((item) => (
                   <li key={item} className={`flex items-start gap-2 text-sm ${p.destaque ? 'text-blue-100' : 'text-gray-600'}`}>
-                    <span className="text-green-400 font-bold mt-0.5">✓</span>{item}
+                    <span aria-hidden="true" className="text-green-400 font-bold mt-0.5">✓</span>{item}
                   </li>
                 ))}
               </ul>
@@ -55,7 +55,7 @@ export default function Planos() {
           ))}
         </div>
 
-        <p className="text-center mt-8 text-gray-400 text-sm">
+        <p className="text-center mt-8 text-gray-500 text-sm">
           Redes municipais e secretarias de educação:{' '}
           <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
             className="text-[#2E75B6] font-semibold underline underline-offset-2 hover:text-[#1F4E79] transition-colors">

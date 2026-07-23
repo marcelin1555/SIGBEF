@@ -11,7 +11,7 @@ const menuLateral = ['Painel inicial', 'Livros e exemplares', 'Usuários', 'Empr
 
 function AppMockup() {
   return (
-    <div className="rounded-xl overflow-hidden shadow-2xl select-none bg-white flex text-[13px]">
+    <div aria-hidden="true" className="rounded-xl overflow-hidden shadow-2xl select-none bg-white flex text-[13px]">
       {/* sidebar */}
       <div className="w-[132px] shrink-0 bg-[#1F4E79] py-4 hidden sm:block">
         <div className="px-4 pb-3 mb-2 border-b border-white/15">
@@ -41,7 +41,7 @@ function AppMockup() {
             <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="truncate">Pesquisar por título ou autor...</span>
+            <span className="truncate">Pesquisar por título ou autor…</span>
           </div>
 
           {/* stats */}
@@ -115,7 +115,7 @@ export default function Hero() {
               </a>
             </div>
 
-            <p className="mt-5 text-blue-200 text-sm">Gratuito para sempre, para qualquer escola pública.</p>
+            <p className="mt-5 text-blue-100 text-sm">Gratuito para sempre, para qualquer escola pública.</p>
           </div>
 
           {/* right: app mockup */}

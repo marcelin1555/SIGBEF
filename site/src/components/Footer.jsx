@@ -13,10 +13,10 @@ export default function Footer() {
               <img src="/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
               <div>
                 <div className="text-white font-bold text-lg leading-none">SIGBEF</div>
-                <div className="text-xs text-gray-500">{`v${VERSAO} · Licença MIT`}</div>
+                <div className="text-xs text-gray-400">{`v${VERSAO} · Licença MIT`}</div>
               </div>
             </div>
-            <p className="text-xs text-gray-500 leading-relaxed">
+            <p className="text-xs text-gray-400 leading-relaxed">
               Sistema gratuito de gestão de biblioteca escolar, feito por estudantes do CEFE, RN.
             </p>
           </div>
@@ -60,7 +60,7 @@ export default function Footer() {
           {/* download cta */}
           <div>
             <h4 className="text-white font-semibold text-sm mb-3">Começar agora</h4>
-            <p className="text-xs text-gray-500 mb-3">Gratuito, sem cadastro, sem limite de usuários.</p>
+            <p className="text-xs text-gray-400 mb-3">Gratuito, sem cadastro, sem limite de usuários.</p>
             <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
               className="inline-block bg-[#2E75B6] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#1F4E79] transition-colors">
               Baixar SIGBEF
@@ -68,7 +68,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-gray-600">
+        <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-gray-400">
           <p>Feito no CEFE, escola pública do Rio Grande do Norte.</p>
           <p>© 2026 SIGBEF. Código aberto sob licença MIT.</p>
         </div>
