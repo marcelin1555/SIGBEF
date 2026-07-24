@@ -210,3 +210,98 @@ def autenticar_por_codigo(codigo_barras: str) -> Optional[Sessao]:
         perfil=row["perfil"],
         email=row["email"],
     )
+
+
+# ---------------------------------------------------------------------------
+# Sessões do aplicativo de celular (R2)
+# ---------------------------------------------------------------------------
+# Cada aparelho pareado recebe um token próprio, preso a UM aluno. Isso
+# substitui o uso do token de sistema no app: com o token de sistema,
+# qualquer aluno conseguiria ler os empréstimos dos colegas.
+SESSAO_APP_DIAS_PADRAO = 30
+
+
+def _hash_token(token: str) -> str:
+    """Hash do token de sessão. Diferente da senha: aqui não precisa de
+    fator de trabalho (o token já é aleatório e longo), só de não guardar
+    o valor em claro no banco."""
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def criar_sessao_app(usuario_id: int, dias: Optional[int] = None) -> str:
+    """Cria uma sessão para um aparelho e devolve o token em claro.
+
+    O token só existe em claro neste retorno — no banco fica o hash.
+    """
+    import secrets
+
+    if dias is None:
+        dias = _config_int("API_SESSAO_DIAS", SESSAO_APP_DIAS_PADRAO)
+    token = secrets.token_urlsafe(32)
+    with db_cursor() as cur:
+        cur.execute(
+            "INSERT INTO sessao_app (usuario_id, token_hash, expira_em) "
+            "VALUES (?, ?, datetime('now', 'localtime', ?))",
+            # :+d preserva o sinal (+30 days / -1 days); "+-1" seria inválido
+            (usuario_id, _hash_token(token), f"{int(dias):+d} days"),
+        )
+    registrar_auditoria(usuario_id, "APP_PAREADO",
+                        f"sessao valida por {dias} dias")
+    return token
+
+
+def sessao_app_valida(token: str) -> Optional[Sessao]:
+    """Devolve a Sessao do dono do token, ou None se inválido/expirado."""
+    token = (token or "").strip()
+    if not token:
+        return None
+    with db_cursor() as cur:
+        cur.execute(
+            "SELECT u.id, u.nome, u.matricula, u.email, u.perfil, u.ativo "
+            "FROM sessao_app s JOIN usuario u ON u.id = s.usuario_id "
+            "WHERE s.token_hash = ? AND s.revogada = 0 "
+            "  AND s.expira_em > datetime('now', 'localtime')",
+            (_hash_token(token),),
+        )
+        row = cur.fetchone()
+    if not row or not row["ativo"]:
+        return None
+    return Sessao(
+        id=row["id"],
+        nome=row["nome"],
+        matricula=row["matricula"],
+        perfil=row["perfil"],
+        email=row["email"],
+    )
+
+
+def revogar_sessoes_app(usuario_id: Optional[int] = None,
+                        executor_id: Optional[int] = None) -> int:
+    """Revoga sessões (de um aluno, ou todas). Devolve quantas caíram.
+
+    Usado quando um aparelho é perdido ou quando a escola quer desconectar
+    todo mundo de uma vez.
+    """
+    with db_cursor() as cur:
+        if usuario_id is None:
+            cur.execute("UPDATE sessao_app SET revogada = 1 "
+                        "WHERE revogada = 0")
+        else:
+            cur.execute("UPDATE sessao_app SET revogada = 1 "
+                        "WHERE revogada = 0 AND usuario_id = ?",
+                        (usuario_id,))
+        total = cur.rowcount
+    registrar_auditoria(executor_id, "APP_SESSOES_REVOGADAS",
+                        f"alvo={'todos' if usuario_id is None else usuario_id};"
+                        f" total={total}")
+    return total
+
+
+def sessoes_app_ativas() -> int:
+    """Quantos aparelhos estão pareados agora (para mostrar na interface)."""
+    with db_cursor() as cur:
+        cur.execute(
+            "SELECT COUNT(*) AS qt FROM sessao_app "
+            "WHERE revogada = 0 AND expira_em > datetime('now', 'localtime')"
+        )
+        return cur.fetchone()["qt"]

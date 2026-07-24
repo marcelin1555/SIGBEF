@@ -149,7 +149,13 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(codigo, {"erro": mensagem})
 
     def _nivel_do_token(self) -> Optional[str]:
-        """Retorna 'completo', 'consulta' ou None conforme o Bearer token."""
+        """Retorna 'completo', 'consulta', 'aluno' ou None.
+
+        No caso de 'aluno' (token de sessão do aplicativo), guarda em
+        `self.matricula_sessao` a matrícula dona daquele aparelho — é o
+        que permite barrar a leitura de dados de outro leitor.
+        """
+        self.matricula_sessao = None
         recebido = (self.headers.get("Authorization") or "")
         if not recebido.startswith("Bearer "):
             return None
@@ -160,6 +166,11 @@ class _Handler(BaseHTTPRequestHandler):
             return "completo"
         if consulta and hmac.compare_digest(tok, consulta):
             return "consulta"
+        from .auth import sessao_app_valida
+        sessao = sessao_app_valida(tok)
+        if sessao is not None:
+            self.matricula_sessao = sessao.matricula
+            return "aluno"
         return None
 
     def _escopo_da_rota(self, caminho: str) -> str:
@@ -191,10 +202,18 @@ class _Handler(BaseHTTPRequestHandler):
                             "Authorization: Bearer <token>.")
             return
         if self._escopo_da_rota(caminho) == "completo" and nivel != "completo":
-            self._erro(403, "Este token é apenas de consulta ao acervo. "
-                            "Rotas com dados de leitores exigem o token "
-                            "completo.")
-            return
+            # Token de sessão do app: pode ler os PRÓPRIOS empréstimos.
+            emp = _ROTA_USUARIO_EMP.match(caminho)
+            if nivel == "aluno" and emp:
+                if emp.group(1) != self.matricula_sessao:
+                    self._erro(403, "Você só pode consultar os seus "
+                                    "próprios empréstimos.")
+                    return
+            else:
+                self._erro(403, "Este token é apenas de consulta ao acervo. "
+                                "Rotas com dados de leitores exigem o token "
+                                "completo.")
+                return
 
         try:
             self._rotear(caminho, query)
@@ -202,9 +221,69 @@ class _Handler(BaseHTTPRequestHandler):
             self._erro(500, "Erro interno ao processar a requisição.")
 
     def do_POST(self):  # noqa: N802
+        """Só existe um POST: o login do aplicativo. O acervo segue
+        intocável — nenhuma rota altera dados da biblioteca."""
+        caminho = urlparse(self.path).path.rstrip("/") or "/"
+        if caminho != "/api/v1/login":
+            self._erro(405, "Esta API é somente leitura (apenas GET).")
+            return
+        if not api_ativa():
+            self._erro(403, "A API está desligada nas configurações do "
+                            "SIGBEF.")
+            return
+        try:
+            self._login()
+        except Exception:
+            self._erro(500, "Erro interno ao processar a requisição.")
+
+    def _login(self) -> None:
+        from .auth import autenticar, criar_sessao_app
+
+        try:
+            tamanho = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            tamanho = 0
+        if tamanho <= 0 or tamanho > 4096:
+            self._erro(400, "Corpo da requisição ausente ou grande demais.")
+            return
+        try:
+            dados = json.loads(self.rfile.read(tamanho).decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            self._erro(400, "Corpo inválido: envie JSON com matricula e "
+                            "senha.")
+            return
+        if not isinstance(dados, dict):
+            self._erro(400, "Corpo inválido: envie um objeto JSON.")
+            return
+
+        matricula = str(dados.get("matricula") or "").strip()
+        senha = str(dados.get("senha") or "")
+        if not matricula or not senha:
+            self._erro(400, "Informe matrícula e senha.")
+            return
+
+        # Reaproveita o login do desktop: já traz bloqueio por tentativas,
+        # tempo constante para matrícula inexistente e registro de auditoria.
+        sessao = autenticar(matricula, senha)
+        if sessao is None:
+            self._erro(401, "Matrícula ou senha incorretos.")
+            return
+
+        token = criar_sessao_app(sessao.id)
+        self._json(200, {
+            "token": token,
+            "usuario": {
+                "nome": sessao.nome,
+                "matricula": sessao.matricula,
+                "perfil": sessao.perfil,
+            },
+        })
+
+    def _somente_leitura(self):
+        """PUT/DELETE/PATCH nunca são aceitos, nem em /login."""
         self._erro(405, "Esta API é somente leitura (apenas GET).")
 
-    do_PUT = do_DELETE = do_PATCH = do_POST
+    do_PUT = do_DELETE = do_PATCH = _somente_leitura
 
     # ---------------- rotas ----------------
     def _rotear(self, caminho: str, query: dict) -> None:

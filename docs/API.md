@@ -27,17 +27,45 @@ Toda rota (exceto `/api/v1/ping`) exige o header:
 Authorization: Bearer SEU_TOKEN_AQUI
 ```
 
-Existem **dois tokens**, com níveis de acesso diferentes (princípio do
-menor privilégio, entregue só o que o sistema integrado precisa):
+Existem **três níveis** de token (princípio do menor privilégio, entregue
+só o que o sistema integrado precisa):
 
 | Token | Acessa | Use para |
 |---|---|---|
 | **Completo** | Tudo: acervo + situação de leitores + circulação | Sistemas internos de confiança |
 | **Consulta** | Só o acervo público (livros, disponibilidade, estatísticas) | Mostrar o catálogo num site/totem, sem expor dados de alunos |
+| **Sessão do app** | Acervo + os empréstimos **do próprio aluno** | Aplicativo de celular, um token por aparelho |
 
 Um token de consulta que tente acessar dados de leitores recebe **403**.
-Ambos aparecem em Configurações → Integrações, cada um com seu botão
-de "gerar novo" (regenerar invalida só aquele token, na hora).
+Os dois primeiros aparecem em Configurações → Integrações, cada um com seu
+botão de "gerar novo" (regenerar invalida só aquele token, na hora).
+
+O token de **sessão do app** é diferente: nasce no login do aluno
+(`POST /api/v1/login`), fica preso àquela matrícula e expira sozinho
+(30 dias por padrão, ajustável em `API_SESSAO_DIAS`). Se o aluno pedir os
+empréstimos de outra matrícula, recebe **403** — é o que impede um aluno
+de ver a vida de leitura dos colegas. No banco fica só o hash do token,
+nunca o valor em claro. A bibliotecária pode desconectar todos os
+aparelhos de uma vez em Configurações → Integrações.
+
+### `POST /api/v1/login` (único POST da API)
+
+```bash
+curl -X POST http://IP:8765/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"matricula":"2026045892","senha":"..."}'
+```
+
+```json
+{
+  "token": "...",
+  "usuario": {"nome": "...", "matricula": "...", "perfil": "ALUNO"}
+}
+```
+
+Usa o mesmo login do sistema, com a mesma proteção contra tentativa em
+massa. Matrícula ou senha errada devolve **401**. Nenhuma outra rota
+aceita POST; o acervo continua não sendo alterável pela API.
 
 Trate os tokens como senhas. A API foi pensada para a **rede local da
 escola**; não exponha a porta pra internet.

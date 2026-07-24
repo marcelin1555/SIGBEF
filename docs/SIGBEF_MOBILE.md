@@ -124,16 +124,16 @@ Requisitos novos que a implementação do app cria no SIGBEF desktop.
 
 | # | Requisito | Prioridade | Por quê |
 |---|---|---|---|
-| R1 | **QR code de pareamento** em Configurações → Integrações, contendo endereço + porta + token | Alta | Sem isso, o aluno teria que digitar IP e token à mão. É o maior atrito do app. |
-| R2 | **Login pelo app** — validar matrícula/senha via API | Alta | Hoje a API autentica por token de sistema, não por usuário. Precisa de rota de login que devolva um token por aluno. |
+| ~~R1~~ | ✅ **ENTREGUE** — QR de pareamento em Configurações → Integrações. Contém **só** endereço + porta (não leva token: o QR fica exposto na tela e seria fotografado). | — | Commit `c54386e` |
+| ~~R2~~ | ✅ **ENTREGUE** — `POST /api/v1/login` com matrícula e senha, devolvendo token de sessão preso ao aluno e com validade. | — | Ver `docs/API.md` |
 | R3 | **Escrita para reserva** (`POST /api/v1/reservas`) | Média | A tela de Reservar existe no desenho, mas fica desativada até isto. |
 | R4 | Campo de **sinopse** no acervo | Baixa | A tela de detalhes mostra sinopse; o banco atual não tem esse campo. |
 
-> ⚠️ **R2 é a decisão de arquitetura mais séria.** Hoje um token dá acesso
-> aos empréstimos de qualquer matrícula. Se o app usar o token completo
-> direto, qualquer aluno com o token vê os empréstimos dos colegas. Antes
-> de implementar, é preciso um token por usuário (ou sessão) com escopo
-> restrito à própria matrícula.
+> ✅ **O furo de privacidade do R2 está fechado.** Antes, um token dava
+> acesso aos empréstimos de qualquer matrícula. Agora o app recebe um
+> token de **sessão**, preso a um aluno: pedir os empréstimos de outra
+> matrícula devolve **403**. Há teste cobrindo exatamente esse caso
+> (`test_aluno_NAO_le_emprestimos_de_outro`).
 
 ---
 

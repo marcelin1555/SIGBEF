@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Não lançado]
 
+### Aplicativo de celular (base no desktop)
+- **Parear celular**: novo botão em Configurações → Integrações que mostra
+  um QR code com o endereço do servidor na rede da escola. O QR **não
+  carrega senha nem token** — ele fica exposto na tela, então quem
+  fotografasse ganharia acesso aos dados de todos os leitores. Também
+  mostra o endereço em texto, para digitar quando a câmera falhar
+- **Login pelo aplicativo** (`POST /api/v1/login`): o aluno entra com a
+  mesma matrícula e senha do sistema e recebe um acesso preso a ele, com
+  validade. Pedir os empréstimos de outro aluno agora devolve erro — antes,
+  quem tivesse o token do sistema via a vida de leitura de todo mundo
+- Contador de celulares pareados e botão para desconectar todos de uma
+  vez (aparelho perdido, fim de ano letivo)
+- Gerador de QR Code próprio, escrito em Python puro: o sistema continua
+  sem nenhuma dependência externa para funcionar
+
 ### Interface
 - Ícones nos 3 cards grandes do menu principal do autoatendimento
   (Pegar emprestado, Devolver, Meus empréstimos), que tinham ficado

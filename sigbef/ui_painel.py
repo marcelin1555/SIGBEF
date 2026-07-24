@@ -1259,6 +1259,17 @@ class SecaoConfig(SecaoBase):
                     command=self._parear_celular
                     ).pack(side="right", padx=(0, 8))
 
+        # Aparelhos pareados
+        aparelhos = ttk.Frame(integ, style="CardInner.TFrame")
+        aparelhos.pack(fill="x", pady=(10, 0))
+        self.lbl_aparelhos = ttk.Label(aparelhos, text="",
+                                        style="CardHint.TLabel")
+        self.lbl_aparelhos.pack(side="left")
+        ttk.Button(aparelhos, text="Desconectar celulares",
+                    command=self._revogar_sessoes_app
+                    ).pack(side="right")
+        self._refrescar_aparelhos()
+
         # ---------------- Aparencia ----------------
         ttk.Label(body, text="Aparência",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
@@ -1504,6 +1515,36 @@ class SecaoConfig(SecaoBase):
             ent.delete(0, "end")
             ent.insert(0, token or "(gerado ao ativar)")
             ent.configure(state="readonly")
+
+    def _refrescar_aparelhos(self):
+        from .auth import sessoes_app_ativas
+        qtd = sessoes_app_ativas()
+        if qtd == 0:
+            texto = "Nenhum celular pareado."
+        elif qtd == 1:
+            texto = "1 celular pareado."
+        else:
+            texto = f"{qtd} celulares pareados."
+        self.lbl_aparelhos.configure(text=texto)
+
+    def _revogar_sessoes_app(self):
+        """Desconecta todos os aparelhos (aparelho perdido, fim de ano...)."""
+        from .auth import revogar_sessoes_app, sessoes_app_ativas
+        if sessoes_app_ativas() == 0:
+            messagebox.showinfo("Celulares", "Nenhum celular está pareado.",
+                                parent=self)
+            return
+        if not messagebox.askyesno(
+                "Desconectar celulares",
+                "Todos os celulares pareados vão perder o acesso e os alunos "
+                "terão que entrar de novo no aplicativo.\n\nConfirma?",
+                parent=self):
+            return
+        total = revogar_sessoes_app(executor_id=self.sessao.id)
+        self._refrescar_aparelhos()
+        messagebox.showinfo("Celulares",
+                            f"{total} celular(es) desconectado(s).",
+                            parent=self)
 
     def _parear_celular(self):
         """Mostra o QR code que o aplicativo do aluno escaneia."""

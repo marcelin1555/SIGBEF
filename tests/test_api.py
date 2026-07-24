@@ -209,6 +209,134 @@ class TestEscopoDoToken(ApiTestCase):
         self.assertTrue(api.obter_token_consulta())
 
 
+class TestLoginDoApp(ApiTestCase):
+    """Login por aluno e isolamento entre leitores (R2)."""
+
+    def post(self, caminho, corpo, token=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.porta, timeout=5)
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        dados = json.dumps(corpo).encode("utf-8")
+        conn.request("POST", caminho, body=dados, headers=headers)
+        resp = conn.getresponse()
+        texto = resp.read().decode("utf-8") or "{}"
+        conn.close()
+        return resp.status, json.loads(texto)
+
+    def _aluno(self, matricula="alu100", senha="senha123"):
+        servicos.cadastrar_usuario(nome="Aluno de Teste",
+                                   matricula=matricula, perfil="ALUNO",
+                                   senha=senha, gerar_cartao=False)
+        return matricula, senha
+
+    def test_login_devolve_token_e_dados(self):
+        matricula, senha = self._aluno()
+        status, corpo = self.post("/api/v1/login",
+                                  {"matricula": matricula, "senha": senha})
+        self.assertEqual(status, 200)
+        self.assertTrue(corpo.get("token"))
+        self.assertEqual(corpo["usuario"]["matricula"], matricula)
+        self.assertNotIn("senha", json.dumps(corpo))
+
+    def test_senha_errada_401(self):
+        matricula, _ = self._aluno()
+        status, _ = self.post("/api/v1/login",
+                              {"matricula": matricula, "senha": "errada"})
+        self.assertEqual(status, 401)
+
+    def test_matricula_inexistente_401(self):
+        status, _ = self.post("/api/v1/login",
+                              {"matricula": "naoexiste", "senha": "x"})
+        self.assertEqual(status, 401)
+
+    def test_corpo_invalido_400(self):
+        status, _ = self.post("/api/v1/login", {"matricula": "so-isso"})
+        self.assertEqual(status, 400)
+
+    def test_token_de_sessao_le_os_proprios_emprestimos(self):
+        matricula, senha = self._aluno()
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        status, _ = self.get(f"/api/v1/usuarios/{matricula}/emprestimos",
+                             token=corpo["token"])
+        self.assertEqual(status, 200)
+
+    def test_aluno_NAO_le_emprestimos_de_outro(self):
+        """O furo de privacidade que motivou o R2."""
+        matricula, senha = self._aluno("alu100")
+        self._aluno("alu200", "outra123")
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        status, _ = self.get("/api/v1/usuarios/alu200/emprestimos",
+                             token=corpo["token"])
+        self.assertEqual(status, 403)
+
+    def test_aluno_nao_ve_circulacao_da_escola(self):
+        matricula, senha = self._aluno()
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        status, _ = self.get("/api/v1/emprestimos/abertos",
+                             token=corpo["token"])
+        self.assertEqual(status, 403)
+
+    def test_aluno_consulta_o_acervo(self):
+        matricula, senha = self._aluno()
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        status, _ = self.get("/api/v1/livros", token=corpo["token"])
+        self.assertEqual(status, 200)
+
+    def test_sessao_revogada_perde_acesso(self):
+        from sigbef import auth
+        matricula, senha = self._aluno()
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        token = corpo["token"]
+        self.assertEqual(
+            self.get(f"/api/v1/usuarios/{matricula}/emprestimos",
+                     token=token)[0], 200)
+        auth.revogar_sessoes_app()
+        self.assertEqual(
+            self.get(f"/api/v1/usuarios/{matricula}/emprestimos",
+                     token=token)[0], 401)
+
+    def test_sessao_expirada_perde_acesso(self):
+        from sigbef import auth
+        matricula, senha = self._aluno()
+        with db_cursor() as cur:
+            cur.execute("SELECT id FROM usuario WHERE matricula = ?",
+                        (matricula,))
+            uid = cur.fetchone()["id"]
+        token = auth.criar_sessao_app(uid, dias=-1)   # já nasce vencida
+        status, _ = self.get(f"/api/v1/usuarios/{matricula}/emprestimos",
+                             token=token)
+        self.assertEqual(status, 401)
+
+    def test_token_nao_fica_em_claro_no_banco(self):
+        matricula, senha = self._aluno()
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        with db_cursor() as cur:
+            cur.execute("SELECT token_hash FROM sessao_app")
+            guardados = [r["token_hash"] for r in cur.fetchall()]
+        self.assertTrue(guardados)
+        self.assertNotIn(corpo["token"], guardados)
+
+    def test_post_em_outra_rota_continua_405(self):
+        status, _ = self.post("/api/v1/livros", {"titulo": "x"})
+        self.assertEqual(status, 405)
+
+    def test_contador_de_aparelhos_pareados(self):
+        from sigbef import auth
+        matricula, senha = self._aluno()
+        self.assertEqual(auth.sessoes_app_ativas(), 0)
+        self.post("/api/v1/login", {"matricula": matricula, "senha": senha})
+        self.assertEqual(auth.sessoes_app_ativas(), 1)
+        auth.revogar_sessoes_app()
+        self.assertEqual(auth.sessoes_app_ativas(), 0)
+
+
 class TestPareamento(SigbefTestCase):
     """Endereço que vai dentro do QR code lido pelo aplicativo (R1)."""
 

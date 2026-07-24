@@ -195,6 +195,20 @@ CREATE TABLE IF NOT EXISTS auditoria (
     timestamp TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 
+-- Sessões do aplicativo de celular (um registro por aparelho pareado).
+-- O token nunca é guardado em claro, só o hash — mesma postura da senha.
+CREATE TABLE IF NOT EXISTS sessao_app (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id),
+    token_hash TEXT UNIQUE NOT NULL,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    expira_em TEXT NOT NULL,
+    revogada INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessao_app_token ON sessao_app(token_hash);
+CREATE INDEX IF NOT EXISTS idx_sessao_app_usuario ON sessao_app(usuario_id);
+
 CREATE INDEX IF NOT EXISTS idx_livro_titulo ON livro(titulo);
 CREATE INDEX IF NOT EXISTS idx_livro_isbn ON livro(isbn);
 CREATE INDEX IF NOT EXISTS idx_exemplar_codigo ON exemplar(codigo_barras);
