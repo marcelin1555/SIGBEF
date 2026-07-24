@@ -31,12 +31,6 @@ android {
       keyAlias = "upload"
       keyPassword = System.getenv("KEY_PASSWORD")
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
   }
 
   buildTypes {
@@ -46,7 +40,10 @@ android {
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       signingConfig = signingConfigs.getByName("release")
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    // debug usa a chave de depuração padrão do Android SDK; a config
+    // antiga apontava para um debug.keystore que nao esta no repositorio
+    // (e nem deve estar), quebrando o build de quem clonasse o projeto.
+    debug { }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11

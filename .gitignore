@@ -3,7 +3,11 @@
 # =====================================================================
 
 # --- Banco de dados local (criado em runtime) ---
-data/
+# A barra inicial ancora a regra na raiz. Sem ela, "data/" casava com
+# QUALQUER pasta chamada data em qualquer profundidade — e estava
+# escondendo do git a camada de dados inteira do app Android
+# (sigbef-mobile/app/src/main/java/com/example/sigbef/data/).
+/data/
 *.db
 *.db-journal
 *.db-wal

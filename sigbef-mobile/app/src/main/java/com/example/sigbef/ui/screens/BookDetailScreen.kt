@@ -17,10 +17,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Tag
@@ -65,12 +65,8 @@ fun BookDetailScreen(
     livro: Livro,
     isOffline: Boolean,
     onBackClick: () -> Unit,
-    onNavigate: (Screen) -> Unit,
-    onReserveClick: ((Int) -> Unit)? = null,
-    onCancelReserveClick: ((Int) -> Unit)? = null
+    onNavigate: (Screen) -> Unit
 ) {
-    var showReserveNotice by remember { mutableStateOf(false) }
-
     val spineColor = try {
         Color(android.graphics.Color.parseColor(livro.spineColorHex))
     } catch (e: Exception) {
@@ -137,13 +133,13 @@ fun BookDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Status Badge
+                // Status do exemplar, como veio da biblioteca
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color.White,
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (livro.reservadoPeloUsuario) Color(0xFFA5D6A7) else SigbefSuccess.copy(alpha = 0.3f)
+                        SigbefSuccess.copy(alpha = 0.3f)
                     )
                 ) {
                     Row(
@@ -153,19 +149,15 @@ fun BookDetailScreen(
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = if (livro.reservadoPeloUsuario) Color(0xFF2E7D32) else SigbefSuccess,
+                            tint = SigbefSuccess,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = when {
-                                livro.reservadoPeloUsuario -> "RESERVADO NO SEU NOME"
-                                livro.disponivel -> "DISPONÍVEL"
-                                else -> "EMPRESTADO"
-                            },
+                            text = if (livro.disponivel) "DISPONÍVEL" else "EMPRESTADO",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (livro.reservadoPeloUsuario) Color(0xFF1B5E20) else SigbefSuccess
+                            color = SigbefSuccess
                         )
                     }
                 }
@@ -287,49 +279,33 @@ fun BookDetailScreen(
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { onBackClick() },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                        shape = RoundedCornerShape(8.dp)
+                    // Reservar e emprestar são operações de balcão: a API da
+                    // biblioteca é somente leitura, então o app não promete
+                    // uma ação que não consegue cumprir.
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        color = SigbefNavy.copy(alpha = 0.06f)
                     ) {
-                        Text("VER SIMILARES", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    if (livro.reservadoPeloUsuario) {
-                        Button(
-                            onClick = {
-                                onCancelReserveClick?.invoke(livro.id)
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("CANCELAR RESERVA", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    } else {
-                        Button(
-                            onClick = {
-                                onReserveClick?.invoke(livro.id)
-                                showReserveNotice = true
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = SigbefGold),
-                            shape = RoundedCornerShape(8.dp)
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.BookmarkAdd,
+                                imageVector = Icons.Default.Info,
                                 contentDescription = null,
                                 tint = SigbefNavy,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("RESERVAR", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = SigbefNavy)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = if (livro.disponivel)
+                                    "Anote o tombo e procure o balcão para levar este livro."
+                                else
+                                    "Livro emprestado. Peça no balcão para entrar na fila de espera.",
+                                fontSize = 13.sp,
+                                color = SigbefNavy
+                            )
                         }
                     }
                 }
@@ -337,27 +313,6 @@ fun BookDetailScreen(
         }
     }
 
-    if (showReserveNotice) {
-        AlertDialog(
-            onDismissRequest = { showReserveNotice = false },
-            title = { Text("Reserva pelo App", fontWeight = FontWeight.Bold) },
-            text = {
-                Text(
-                    "A funcionalidade de reservas pelo aplicativo fica indisponível até a API de escrita ser ativada na biblioteca.\n\nPara reservar este livro, informe ao balcão.",
-                    fontSize = 14.sp,
-                    color = SigbefMuted
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showReserveNotice = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy)
-                ) {
-                    Text("Entendi")
-                }
-            }
-        )
-    }
 }
 
 @Composable

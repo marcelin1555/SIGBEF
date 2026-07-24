@@ -1,29 +1,40 @@
 package com.example.sigbef.model
 
+// Modelos de domínio.
+//
+// Nenhum campo tem valor padrão "de exemplo": um dado que falte tem de
+// aparecer vazio, nunca preenchido com informação inventada. Antes havia
+// aqui o nome de uma aluna fictícia e a ficha do Dom Casmurro como
+// padrão, o que faria o app exibir dado falso como se fosse real.
+
 data class Usuario(
-    val id: Int = 1,
-    val nome: String = "Maria Eduarda Silva",
-    val matricula: String = "2026045892",
-    val turma: String = "3ª série — Técnico em Informática",
-    val escola: String = "Biblioteca do CEFE",
-    val perfil: String = "ALUNO",
+    val id: Int = 0,
+    val nome: String = "",
+    val matricula: String = "",
+    val turma: String = "",
+    val escola: String = "",
+    val perfil: String = "",
     val podePegar: Boolean = true,
-    val limMaxLivros: Int = 3
-)
+    val limMaxLivros: Int = 0
+) {
+    /** Ainda não há ninguém logado neste aparelho. */
+    val vazio: Boolean get() = matricula.isBlank()
+}
 
 data class Livro(
     val id: Int,
     val titulo: String,
     val autor: String,
     val categoria: String,
-    val ano: String = "2021",
-    val tombo: String = "4.821",
-    val isbn: String = "978-85-359",
-    val sinopse: String = "Bento Santiago, o narrador, conta a história de sua vida desde a infância, a promessa da mãe de fazê-lo padre, o amor por Capitu, o seminário, a amizade com Escobar, o casamento e o trágico desfecho alimentado pelo ciúme e a dúvida. Uma das maiores obras da literatura brasileira.",
+    val ano: String = "",
+    val tombo: String = "",
+    val isbn: String = "",
+    val sinopse: String = "",
     val disponivel: Boolean = true,
     val previsaoDevolucao: String? = null,
-    val spineColorHex: String = "#1F4E79",
-    val reservadoPeloUsuario: Boolean = false
+    // Cor da lombada: derivada localmente do título, só para a lista não
+    // ficar monótona. Não vem da biblioteca.
+    val spineColorHex: String = "#1F4E79"
 )
 
 data class Emprestimo(
@@ -34,9 +45,7 @@ data class Emprestimo(
     val atrasado: Boolean,
     val devolvido: Boolean = false,
     val dataDevolvido: String? = null,
-    val spineColorHex: String = "#1F4E79",
-    val renovacoesRestantes: Int = 2,
-    val renovacaoPendente: Boolean = false
+    val spineColorHex: String = "#1F4E79"
 )
 
 enum class Screen {

@@ -342,55 +342,27 @@ private fun ActiveLoanCard(
                             }
                         }
 
-                        if (emp.renovacaoPendente) {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFFFF8E1))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "RENOVAÇÃO SOLICITADA",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = Color(0xFFE65100)
-                                )
-                            }
-                        }
                     }
                 }
             }
 
-            if (!emp.atrasado && !emp.devolvido) {
+            // Renovar é operação de balcão: a API da biblioteca é somente
+            // leitura. Em vez de um botão que não faz nada, o app diz o
+            // que o aluno precisa fazer.
+            if (!emp.devolvido) {
                 Spacer(modifier = Modifier.height(12.dp))
                 androidx.compose.material3.HorizontalDivider(color = SigbefLine)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Renovações restantes: ${emp.renovacoesRestantes}",
+                        text = "Para renovar, leve o livro ao balcão da biblioteca.",
                         fontSize = 12.sp,
                         color = SigbefMuted
                     )
-
-                    Button(
-                        onClick = { onRequestRenewal?.invoke(emp.id) },
-                        enabled = !emp.renovacaoPendente && emp.renovacoesRestantes > 0,
-                        colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
-                        shape = RoundedCornerShape(6.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (emp.renovacaoPendente) "SOLICITADA" else "RENOVAR LIVRO",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }

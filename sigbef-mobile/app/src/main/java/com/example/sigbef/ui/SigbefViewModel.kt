@@ -45,7 +45,7 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = SigbefRepository.defaultUsuario
+            initialValue = SigbefRepository.usuarioVazio
         )
 
     val emprestimos: StateFlow<List<Emprestimo>> = repository.emprestimosFlow
@@ -104,26 +104,10 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
         navigateTo(Screen.BOOK_DETAIL)
     }
 
-    fun reservarLivro(bookId: Int) {
-        viewModelScope.launch {
-            repository.setReservaStatus(bookId, true)
-            _actionNotification.value = "Reserva realizada com sucesso! Apresente sua carteirinha no balcão."
-        }
-    }
-
-    fun cancelarReserva(bookId: Int) {
-        viewModelScope.launch {
-            repository.setReservaStatus(bookId, false)
-            _actionNotification.value = "Reserva cancelada."
-        }
-    }
-
-    fun solicitarRenovacao(emprestimoId: Int) {
-        viewModelScope.launch {
-            repository.solicitarRenovacao(emprestimoId)
-            _actionNotification.value = "Solicitação de renovação enviada para a biblioteca!"
-        }
-    }
+    // Reservar, renovar e emprestar NÃO são funções do aplicativo: a API
+    // da biblioteca é somente leitura, então qualquer botão aqui estaria
+    // mentindo para o aluno (a bibliotecária nunca receberia o pedido).
+    // As telas orientam a procurar o balcão.
 
     fun clearNotification() {
         _actionNotification.value = null

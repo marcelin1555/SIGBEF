@@ -73,10 +73,13 @@ fun SigbefApp() {
     val selectedCategory by viewModel.selectedCategory.collectAsState()
 
     var currentScreen by remember { mutableStateOf(Screen.CONNECT) }
-    var selectedBookId by remember { mutableStateOf<Int?>(livros.firstOrNull()?.id ?: 1) }
+    var selectedBookId by remember { mutableStateOf<Int?>(null) }
 
     val currentUsuario = usuario
-    val selectedBook = livros.find { it.id == selectedBookId } ?: livros.firstOrNull() ?: SigbefRepository.sampleLivros.first()
+    // Sem livro selecionado o app não inventa um: a tela de detalhe
+    // simplesmente não é montada (antes caía num Dom Casmurro fictício
+    // compilado dentro do APK).
+    val selectedBook = livros.find { it.id == selectedBookId }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -121,20 +124,19 @@ fun SigbefApp() {
                         onCategoryChange = { category -> viewModel.setSelectedCategory(category) }
                     )
 
-                    Screen.BOOK_DETAIL -> BookDetailScreen(
-                        livro = selectedBook,
-                        isOffline = isOffline,
-                        onBackClick = { currentScreen = Screen.ACERVO },
-                        onNavigate = { dest -> currentScreen = dest },
-                        onReserveClick = { bookId -> viewModel.reservarLivro(bookId) },
-                        onCancelReserveClick = { bookId -> viewModel.cancelarReserva(bookId) }
-                    )
+                    Screen.BOOK_DETAIL -> selectedBook?.let { livro ->
+                        BookDetailScreen(
+                            livro = livro,
+                            isOffline = isOffline,
+                            onBackClick = { currentScreen = Screen.ACERVO },
+                            onNavigate = { dest -> currentScreen = dest }
+                        )
+                    } ?: run { currentScreen = Screen.ACERVO }
 
                     Screen.LOANS -> LoansScreen(
                         emprestimos = emprestimos,
                         isOffline = isOffline,
-                        onNavigate = { dest -> currentScreen = dest },
-                        onRequestRenewal = { emprestimoId -> viewModel.solicitarRenovacao(emprestimoId) }
+                        onNavigate = { dest -> currentScreen = dest }
                     )
 
                     Screen.RENEW_INFO -> RenewInfoScreen(
@@ -149,14 +151,14 @@ fun SigbefApp() {
                         onNavigate = { dest -> currentScreen = dest }
                     )
 
-                    Screen.RESERVE -> BookDetailScreen(
-                        livro = selectedBook,
-                        isOffline = isOffline,
-                        onBackClick = { currentScreen = Screen.ACERVO },
-                        onNavigate = { dest -> currentScreen = dest },
-                        onReserveClick = { bookId -> viewModel.reservarLivro(bookId) },
-                        onCancelReserveClick = { bookId -> viewModel.cancelarReserva(bookId) }
-                    )
+                    Screen.RESERVE -> selectedBook?.let { livro ->
+                        BookDetailScreen(
+                            livro = livro,
+                            isOffline = isOffline,
+                            onBackClick = { currentScreen = Screen.ACERVO },
+                            onNavigate = { dest -> currentScreen = dest }
+                        )
+                    } ?: run { currentScreen = Screen.ACERVO }
                 }
             }
 
