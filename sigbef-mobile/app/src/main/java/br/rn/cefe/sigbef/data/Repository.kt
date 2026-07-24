@@ -186,14 +186,20 @@ class SigbefRepository(
         )
 
         db.emprestimoDao().clearAll()
+        val hoje = hojeIso()
         db.emprestimoDao().insertEmprestimos(
             dto.emprestimosAbertos.map { emp ->
+                val prevista = emp.dataPrevista?.take(10).orEmpty()
                 EmprestimoEntity(
                     id = emp.id,
                     livroTitulo = emp.titulo,
                     autor = "",
-                    dataDevolucao = emp.dataPrevista.orEmpty(),
-                    atrasado = emp.multa > 0.0,
+                    dataDevolucao = prevista,
+                    // Atraso vem da DATA, não da multa: a multa só é
+                    // lançada na devolução, então num empréstimo ainda
+                    // aberto ela vale sempre 0 e um livro vencido há
+                    // semanas apareceria como "Em dia".
+                    atrasado = prevista.isNotEmpty() && prevista < hoje,
                     devolvido = emp.dataDevolucao != null,
                     dataDevolvido = emp.dataDevolucao,
                     spineColorHex = corDaLombada(emp.titulo)
@@ -202,6 +208,15 @@ class SigbefRepository(
         )
         return true
     }
+
+    /**
+     * Data de hoje em ISO (yyyy-MM-dd), no mesmo formato que o SQLite
+     * devolve — assim a comparação de texto já ordena corretamente e o
+     * app não precisa de java.time (que exigiria desugaring no minSdk 24).
+     */
+    private fun hojeIso(): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
 
     companion object {
         /** Estado antes de o aluno entrar: nenhum dado inventado. */

@@ -162,7 +162,11 @@ fun HomeScreen(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "1 vence em 3 dias",
+                                            // Calculado a partir das datas reais.
+                                            // Antes era o texto fixo "1 vence em
+                                            // 3 dias", que aparecia igual mesmo
+                                            // com o livro vencendo hoje.
+                                            text = proximoVencimento(ativos),
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = SigbefWarning
@@ -170,7 +174,7 @@ fun HomeScreen(
                                     }
                                 } else {
                                     Text(
-                                        text = "Explore o acervo para reservar",
+                                        text = "Explore o acervo da biblioteca",
                                         fontSize = 13.sp,
                                         color = SigbefMuted
                                     )
@@ -330,5 +334,43 @@ private fun BentoShortcutCard(
                 lineHeight = 18.sp
             )
         }
+    }
+}
+
+/**
+ * Texto do prazo mais próximo, calculado das datas reais dos empréstimos.
+ *
+ * As datas chegam em ISO (yyyy-MM-dd), o mesmo formato do SQLite, então a
+ * comparação de texto já ordena certo e não é preciso java.time (que
+ * exigiria desugaring no minSdk 24).
+ */
+private fun proximoVencimento(ativos: List<Emprestimo>): String {
+    val hoje = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        .format(java.util.Date())
+
+    val datas = ativos.mapNotNull { it.dataDevolucao.take(10).ifBlank { null } }.sorted()
+    val proxima = datas.firstOrNull() ?: return "${ativos.size} livro(s) com você"
+
+    val dias = diasEntre(hoje, proxima)
+    val quantos = datas.count { it == proxima }
+    val quem = if (quantos > 1) "$quantos vencem" else "1 vence"
+
+    return when {
+        dias < 0 -> "$quem — prazo vencido"
+        dias == 0L -> "$quem hoje"
+        dias == 1L -> "$quem amanhã"
+        else -> "$quem em $dias dias"
+    }
+}
+
+/** Diferença em dias entre duas datas ISO; 0 se alguma não parsear. */
+private fun diasEntre(de: String, ate: String): Long {
+    val fmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+    return try {
+        val a = fmt.parse(de) ?: return 0
+        val b = fmt.parse(ate) ?: return 0
+        (b.time - a.time) / (1000L * 60 * 60 * 24)
+    } catch (e: java.text.ParseException) {
+        0
     }
 }
