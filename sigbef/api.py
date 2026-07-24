@@ -82,6 +82,47 @@ def porta_configurada() -> int:
 
 
 # ---------------------------------------------------------------------------
+# Pareamento do aplicativo móvel
+# ---------------------------------------------------------------------------
+def ip_local() -> Optional[str]:
+    """IP desta máquina na rede da escola, ou None se não houver rede.
+
+    Abre um socket UDP e pergunta ao sistema qual interface seria usada
+    para falar com um endereço da própria LAN. Nada é enviado e não
+    depende de internet — é só uma consulta à tabela de rotas.
+    """
+    import socket
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Endereço qualquer da faixa privada; não há tráfego real.
+        sock.connect(("192.168.255.255", 1))
+        ip = sock.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sock.close()
+    # Sem rede o sistema devolve o próprio loopback, que não serve ao app
+    if not ip or ip.startswith("127."):
+        return None
+    return ip
+
+
+def endereco_pareamento() -> Optional[str]:
+    """Texto que vai dentro do QR code lido pelo aplicativo.
+
+    Formato: `sigbef://IP:PORTA`. **Não carrega token de propósito**: o
+    QR fica exposto na tela do computador da biblioteca, e quem
+    fotografasse ganharia acesso aos dados de todos os leitores. A
+    identidade vem do login do próprio aluno (matrícula e senha).
+    """
+    ip = ip_local()
+    if not ip:
+        return None
+    return f"sigbef://{ip}:{porta_configurada()}"
+
+
+# ---------------------------------------------------------------------------
 # Handler HTTP
 # ---------------------------------------------------------------------------
 _ROTA_LIVRO = re.compile(r"^/api/v1/livros/(\d+)$")

@@ -1255,6 +1255,9 @@ class SecaoConfig(SecaoBase):
         ttk.Button(botoes_api, text="Copiar completo",
                     command=lambda: self._copiar_token_api("completo")
                     ).pack(side="right", padx=(0, 8))
+        ttk.Button(botoes_api, text="Parear celular",
+                    command=self._parear_celular
+                    ).pack(side="right", padx=(0, 8))
 
         # ---------------- Aparencia ----------------
         ttk.Label(body, text="Aparência",
@@ -1501,6 +1504,66 @@ class SecaoConfig(SecaoBase):
             ent.delete(0, "end")
             ent.insert(0, token or "(gerado ao ativar)")
             ent.configure(state="readonly")
+
+    def _parear_celular(self):
+        """Mostra o QR code que o aplicativo do aluno escaneia."""
+        from . import api, qr_util
+
+        endereco = api.endereco_pareamento()
+
+        janela = tk.Toplevel(self)
+        janela.title("Parear celular")
+        janela.transient(self)
+        janela.configure(bg=tema.COR_CARD)
+        icones.aplicar_icone_janela(janela)
+
+        corpo = ttk.Frame(janela, style="Card.TFrame", padding=24)
+        corpo.pack(fill="both", expand=True)
+
+        ttk.Label(corpo, text="Parear celular",
+                  style="Subtitulo.TLabel").pack(anchor="w")
+
+        if endereco is None:
+            ttk.Label(corpo, wraplength=380, style="Hint.TLabel",
+                      text=("Este computador não está conectado a nenhuma "
+                            "rede. Conecte-o ao Wi-Fi ou ao cabo da escola "
+                            "e abra esta janela de novo.")
+                      ).pack(anchor="w", pady=(8, 16))
+        else:
+            if not api.api_ativa():
+                ttk.Label(corpo, wraplength=380, style="Hint.TLabel",
+                          foreground=tema.COR_AVISO,
+                          text=("A API está desligada. Ligue a opção acima "
+                                "para que o celular consiga se conectar.")
+                          ).pack(anchor="w", pady=(8, 0))
+
+            ttk.Label(corpo, wraplength=380, style="Hint.TLabel",
+                      text=("No aplicativo do aluno, toque em Escanear QR "
+                            "code e aponte a câmera para a imagem abaixo.")
+                      ).pack(anchor="w", pady=(8, 12))
+
+            lado = qr_util.matriz(endereco)
+            modulo = 7
+            px = (len(lado) + 8) * modulo
+            canvas = tk.Canvas(corpo, width=px, height=px,
+                               highlightthickness=0, bg="#FFFFFF")
+            canvas.pack()
+            qr_util.desenhar_qr(canvas, endereco, modulo=modulo,
+                                cor=tema.COR_PRIMARIA)
+
+            ttk.Label(corpo, text="Ou digite este endereço no aplicativo:",
+                      style="Hint.TLabel").pack(anchor="w", pady=(16, 2))
+            ttk.Label(corpo, text=endereco,
+                      style="Subtitulo.TLabel").pack(anchor="w")
+            ttk.Label(corpo, wraplength=380, style="Hint.TLabel",
+                      text=("O celular precisa estar na mesma rede da "
+                            "escola. O código não contém senha: cada aluno "
+                            "entra com a própria matrícula.")
+                      ).pack(anchor="w", pady=(12, 0))
+
+        ttk.Button(corpo, text="Fechar", command=janela.destroy
+                   ).pack(anchor="e", pady=(20, 0))
+        tema.centralizar_janela(janela, 460, 620 if endereco else 240)
 
     def _refrescar_status_api(self):
         from . import api

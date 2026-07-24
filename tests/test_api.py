@@ -209,6 +209,41 @@ class TestEscopoDoToken(ApiTestCase):
         self.assertTrue(api.obter_token_consulta())
 
 
+class TestPareamento(SigbefTestCase):
+    """Endereço que vai dentro do QR code lido pelo aplicativo (R1)."""
+
+    def test_ip_local_nao_e_loopback(self):
+        ip = api.ip_local()
+        # Sem rede a função devolve None de propósito; com rede, nunca 127.x
+        if ip is not None:
+            self.assertFalse(ip.startswith("127."))
+            self.assertRegex(ip, r"^\d+\.\d+\.\d+\.\d+$")
+
+    def test_endereco_tem_esquema_ip_e_porta(self):
+        endereco = api.endereco_pareamento()
+        if endereco is None:
+            self.skipTest("máquina sem rede")
+        self.assertTrue(endereco.startswith("sigbef://"))
+        self.assertTrue(endereco.endswith(f":{api.porta_configurada()}"))
+
+    def test_endereco_nao_carrega_token(self):
+        """O QR fica exposto na tela: não pode levar credencial nenhuma."""
+        api.definir_api(True)
+        endereco = api.endereco_pareamento()
+        if endereco is None:
+            self.skipTest("máquina sem rede")
+        self.assertNotIn(api.obter_token(), endereco)
+        self.assertNotIn(api.obter_token_consulta(), endereco)
+        for suspeito in ("token", "t=", "senha", "?"):
+            self.assertNotIn(suspeito, endereco)
+
+    def test_endereco_vira_qr_legivel(self):
+        endereco = api.endereco_pareamento() or "sigbef://192.168.0.1:8765"
+        from sigbef import qr_util
+        matriz = qr_util.matriz(endereco)
+        self.assertGreaterEqual(len(matriz), 21)
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()
