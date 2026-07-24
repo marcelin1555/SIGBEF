@@ -20,12 +20,20 @@ android {
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+    // Só cria a config de release se a chave existir de fato. Assim
+    // `assembleRelease` funciona para quem clona o repositório (gera APK
+    // não assinado); a assinatura real acontece na publicação, quando a
+    // chave e as senhas são fornecidas por variável de ambiente. Antes
+    // isto era obrigatório e apontava para um my-upload-key.jks ausente,
+    // quebrando o build de release.
+    val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+    if (file(keystorePath).exists()) {
+      create("release") {
+        storeFile = file(keystorePath)
+        storePassword = System.getenv("STORE_PASSWORD")
+        keyAlias = "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+      }
     }
   }
 
@@ -34,7 +42,8 @@ android {
       isCrunchPngs = false
       isMinifyEnabled = false
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      // null quando não há chave: build sai sem assinatura, sem falhar.
+      signingConfig = signingConfigs.findByName("release")
     }
     // debug usa a chave de depuração padrão do Android SDK; a config
     // antiga apontava para um debug.keystore que nao esta no repositorio

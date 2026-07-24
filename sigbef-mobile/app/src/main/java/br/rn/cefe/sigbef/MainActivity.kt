@@ -20,11 +20,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -74,17 +72,13 @@ fun SigbefApp() {
     val carregando by viewModel.carregando.collectAsState()
     val erroLogin by viewModel.erroLogin.collectAsState()
 
-    // A tela inicial vem do ViewModel: quem já pareou e entrou não passa
-    // de novo pelo pareamento a cada abertura do app.
-    val telaAtual by viewModel.currentScreen.collectAsState()
-    var currentScreen by remember { mutableStateOf(telaAtual) }
-    var selectedBookId by remember { mutableStateOf<Int?>(null) }
+    // A tela e o livro selecionado vivem no ViewModel, que sobrevive à
+    // rotação do aparelho. Antes eram variáveis locais em `remember`, e
+    // girar o celular jogava o aluno de volta para o pareamento.
+    val currentScreen by viewModel.currentScreen.collectAsState()
+    val selectedBook by viewModel.selectedBook.collectAsState()
 
     val currentUsuario = usuario
-    // Sem livro selecionado o app não inventa um: a tela de detalhe
-    // simplesmente não é montada (antes caía num Dom Casmurro fictício
-    // compilado dentro do APK).
-    val selectedBook = livros.find { it.id == selectedBookId }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -101,7 +95,7 @@ fun SigbefApp() {
                     Screen.CONNECT -> ConnectScreen(
                         onConnected = { endereco ->
                             viewModel.parear(endereco) {
-                                currentScreen = Screen.LOGIN
+                                viewModel.navigateTo(Screen.LOGIN)
                             }
                         }
                     )
@@ -111,7 +105,7 @@ fun SigbefApp() {
                         erro = erroLogin,
                         onEntrar = { matricula, senha ->
                             viewModel.entrar(matricula, senha) {
-                                currentScreen = Screen.HOME
+                                viewModel.navigateTo(Screen.HOME)
                             }
                         }
                     )
@@ -120,58 +114,55 @@ fun SigbefApp() {
                         usuario = currentUsuario,
                         emprestimos = emprestimos,
                         isOffline = isOffline,
-                        onNavigate = { dest -> currentScreen = dest }
+                        onNavigate = viewModel::navigateTo
                     )
 
                     Screen.ACERVO -> AcervoScreen(
                         livros = livros,
                         isOffline = isOffline,
-                        onBookClick = { book ->
-                            selectedBookId = book.id
-                            currentScreen = Screen.BOOK_DETAIL
-                        },
-                        onNavigate = { dest -> currentScreen = dest },
+                        // selectBook já busca a ficha completa (tombo e
+                        // sinopse) e navega para o detalhe. Antes isto
+                        // setava só o id e a ficha nunca era carregada.
+                        onBookClick = { book -> viewModel.selectBook(book) },
+                        onNavigate = viewModel::navigateTo,
                         searchQueryParam = searchQuery,
                         selectedCategoryParam = selectedCategory,
                         onSearchQueryChange = { query -> viewModel.setSearchQuery(query) },
                         onCategoryChange = { category -> viewModel.setSelectedCategory(category) }
                     )
 
-                    Screen.BOOK_DETAIL -> selectedBook?.let { livro ->
-                        BookDetailScreen(
-                            livro = livro,
-                            isOffline = isOffline,
-                            onBackClick = { currentScreen = Screen.ACERVO },
-                            onNavigate = { dest -> currentScreen = dest }
-                        )
-                    } ?: run { currentScreen = Screen.ACERVO }
+                    Screen.BOOK_DETAIL, Screen.RESERVE -> {
+                        val livro = selectedBook
+                        if (livro != null) {
+                            BookDetailScreen(
+                                livro = livro,
+                                isOffline = isOffline,
+                                onBackClick = { viewModel.navigateTo(Screen.ACERVO) },
+                                onNavigate = viewModel::navigateTo
+                            )
+                        } else {
+                            // Chegou aqui sem livro escolhido: volta ao acervo.
+                            LaunchedEffect(Unit) { viewModel.navigateTo(Screen.ACERVO) }
+                        }
+                    }
 
                     Screen.LOANS -> LoansScreen(
                         emprestimos = emprestimos,
                         isOffline = isOffline,
-                        onNavigate = { dest -> currentScreen = dest }
+                        onNavigate = viewModel::navigateTo
                     )
 
                     Screen.RENEW_INFO -> RenewInfoScreen(
                         isOffline = isOffline,
-                        onBackClick = { currentScreen = Screen.LOANS },
-                        onNavigate = { dest -> currentScreen = dest }
+                        onBackClick = { viewModel.navigateTo(Screen.LOANS) },
+                        onNavigate = viewModel::navigateTo
                     )
 
                     Screen.CARD -> DigitalCardScreen(
                         usuario = currentUsuario,
                         isOffline = isOffline,
-                        onNavigate = { dest -> currentScreen = dest }
+                        onNavigate = viewModel::navigateTo
                     )
-
-                    Screen.RESERVE -> selectedBook?.let { livro ->
-                        BookDetailScreen(
-                            livro = livro,
-                            isOffline = isOffline,
-                            onBackClick = { currentScreen = Screen.ACERVO },
-                            onNavigate = { dest -> currentScreen = dest }
-                        )
-                    } ?: run { currentScreen = Screen.ACERVO }
                 }
             }
 
