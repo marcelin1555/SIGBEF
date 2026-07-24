@@ -22,7 +22,7 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [UsuarioEntity::class, LivroEntity::class, EmprestimoEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class SigbefDatabase : RoomDatabase() {

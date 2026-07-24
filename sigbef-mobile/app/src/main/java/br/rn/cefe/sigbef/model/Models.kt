@@ -15,6 +15,8 @@ data class Usuario(
     val escola: String = "",
     val perfil: String = "",
     val podePegar: Boolean = true,
+    // Limite de empréstimos simultâneos do perfil, vindo da biblioteca.
+    // 0 = ainda não sabido; a Home só desenha a barra quando > 0.
     val limMaxLivros: Int = 0
 ) {
     /** Ainda não há ninguém logado neste aparelho. */

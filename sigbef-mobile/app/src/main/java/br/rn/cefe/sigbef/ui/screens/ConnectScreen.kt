@@ -47,9 +47,13 @@ import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 
 @Composable
 fun ConnectScreen(
-    onConnected: (String) -> Unit
+    onConnected: (String) -> Unit,
+    carregando: Boolean = false,
+    erro: String? = null
 ) {
-    var showManualDialog by remember { mutableStateOf(false) }
+    // Abre o diálogo já com a mensagem de erro quando a última tentativa
+    // falhou, para o aluno corrigir o endereço sem se perder.
+    var showManualDialog by remember(erro) { mutableStateOf(erro != null) }
     // Sem valor de exemplo: cada escola tem o seu endereço.
     var ipInput by remember { mutableStateOf("") }
 
@@ -212,20 +216,22 @@ fun ConnectScreen(
                         onValueChange = { ipInput = it },
                         label = { Text("IP e Porta (ex: 192.168.1.100:8765)") },
                         singleLine = true,
+                        isError = erro != null,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (erro != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(erro, fontSize = 12.sp, color = Color(0xFFB3261E))
+                    }
                 }
             },
             confirmButton = {
                 Button(
-                    onClick = {
-                        showManualDialog = false
-                        onConnected(ipInput)
-                    },
-                    enabled = ipInput.isNotBlank(),
+                    onClick = { onConnected(ipInput) },
+                    enabled = ipInput.isNotBlank() && !carregando,
                     colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy)
                 ) {
-                    Text("Conectar")
+                    Text(if (carregando) "Conectando…" else "Conectar")
                 }
             },
             dismissButton = {

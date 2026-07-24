@@ -18,6 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,7 +48,9 @@ import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
 fun DigitalCardScreen(
     usuario: Usuario,
     isOffline: Boolean,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    onSair: () -> Unit = {},
+    onTrocarBiblioteca: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -192,6 +197,33 @@ fun DigitalCardScreen(
                         }
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Encerrar a sessão neste aparelho. Antes não havia como sair:
+            // o acesso do aluno ficava para sempre e, num celular
+            // compartilhado, o próximo via os dados do anterior.
+            OutlinedButton(
+                onClick = onSair,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sair da minha conta")
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            TextButton(
+                onClick = onTrocarBiblioteca,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Trocar de biblioteca", color = SigbefMuted, fontSize = 13.sp)
             }
         }
     }

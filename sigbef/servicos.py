@@ -815,6 +815,7 @@ class StatusUsuario:
     multas_em_aberto: float
     pode_pegar: bool
     motivo: str = ""
+    limite: int = 0  # quantos empréstimos simultâneos o perfil permite
 
 
 def status_usuario(usuario_id: int) -> StatusUsuario:
@@ -853,15 +854,15 @@ def status_usuario(usuario_id: int) -> StatusUsuario:
     limite = _limite_para_perfil(u["perfil"])
     if atrasados:
         return StatusUsuario(em_aberto, multa_aberta, False,
-                              f"Há {atrasados} exemplar(es) em atraso.")
+                              f"Há {atrasados} exemplar(es) em atraso.", limite)
     if multa_aberta > 0:
         return StatusUsuario(em_aberto, multa_aberta, False,
-                              f"Há multas em aberto: R$ {multa_aberta:.2f}.")
+                              f"Há multas em aberto: R$ {multa_aberta:.2f}.", limite)
     if em_aberto >= limite:
         return StatusUsuario(em_aberto, multa_aberta, False,
-                              f"Limite de {limite} empréstimos atingido.")
+                              f"Limite de {limite} empréstimos atingido.", limite)
     return StatusUsuario(em_aberto, multa_aberta, True,
-                          f"OK: {em_aberto} de {limite} empréstimos em uso.")
+                          f"OK: {em_aberto} de {limite} empréstimos em uso.", limite)
 
 
 def localizar_exemplar(termo: str) -> Optional[dict]:

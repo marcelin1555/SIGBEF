@@ -95,6 +95,7 @@ data class SituacaoLeitorResponse(
     val ativo: Boolean = true,
     @Json(name = "pode_pegar") val podePegar: Boolean = true,
     val situacao: String? = null,
+    @Json(name = "limite_emprestimos") val limiteEmprestimos: Int = 0,
     @Json(name = "multas_em_aberto") val multasEmAberto: Double = 0.0,
     @Json(name = "emprestimos_abertos") val emprestimosAbertos: List<EmprestimoDto> = emptyList(),
     @Json(name = "reservas_ativas") val reservasAtivas: List<ReservaDto> = emptyList()

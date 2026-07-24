@@ -197,27 +197,29 @@ fun HomeScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Progress Bar
-                        LinearProgressIndicator(
-                            progress = { (ativos.size.toFloat() / maxLivros.toFloat()).coerceIn(0f, 1f) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp)),
-                            color = SigbefBlue,
-                            trackColor = Color(0xFFE6E8EB)
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "${ativos.size} de $maxLivros do limite",
-                            fontSize = 12.sp,
-                            color = SigbefMuted,
-                            modifier = Modifier.align(Alignment.End)
-                        )
+                        // Barra do limite só quando a biblioteca informou
+                        // o limite (maxLivros > 0). Antes ela usava um
+                        // limite que nunca era preenchido, mostrando sempre
+                        // "X de 0 do limite".
+                        if (maxLivros > 0) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            LinearProgressIndicator(
+                                progress = { (ativos.size.toFloat() / maxLivros.toFloat()).coerceIn(0f, 1f) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(8.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                color = SigbefBlue,
+                                trackColor = Color(0xFFE6E8EB)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "${ativos.size} de $maxLivros do limite",
+                                fontSize = 12.sp,
+                                color = SigbefMuted,
+                                modifier = Modifier.align(Alignment.End)
+                            )
+                        }
                     }
                 }
 

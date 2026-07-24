@@ -71,6 +71,7 @@ fun SigbefApp() {
     val selectedCategory by viewModel.selectedCategory.collectAsState()
     val carregando by viewModel.carregando.collectAsState()
     val erroLogin by viewModel.erroLogin.collectAsState()
+    val erroConexao by viewModel.erroConexao.collectAsState()
 
     // A tela e o livro selecionado vivem no ViewModel, que sobrevive à
     // rotação do aparelho. Antes eram variáveis locais em `remember`, e
@@ -93,6 +94,8 @@ fun SigbefApp() {
                     // O endereço informado agora é guardado, em vez de
                     // descartado como acontecia antes.
                     Screen.CONNECT -> ConnectScreen(
+                        carregando = carregando,
+                        erro = erroConexao,
                         onConnected = { endereco ->
                             viewModel.parear(endereco) {
                                 viewModel.navigateTo(Screen.LOGIN)
@@ -161,7 +164,9 @@ fun SigbefApp() {
                     Screen.CARD -> DigitalCardScreen(
                         usuario = currentUsuario,
                         isOffline = isOffline,
-                        onNavigate = viewModel::navigateTo
+                        onNavigate = viewModel::navigateTo,
+                        onSair = { viewModel.sair() },
+                        onTrocarBiblioteca = { viewModel.trocarBiblioteca() }
                     )
                 }
             }

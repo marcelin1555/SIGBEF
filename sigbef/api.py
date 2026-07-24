@@ -342,6 +342,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "ativo": bool(dados["ativo"]),
                 "pode_pegar": st.pode_pegar,
                 "situacao": st.motivo,
+                "limite_emprestimos": st.limite,
                 "multas_em_aberto": st.multas_em_aberto,
                 "emprestimos_abertos": abertos,
                 "reservas_ativas": [

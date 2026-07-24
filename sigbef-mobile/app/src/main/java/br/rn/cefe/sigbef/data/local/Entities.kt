@@ -9,7 +9,8 @@ data class UsuarioEntity(
     val nome: String,
     val matricula: String,
     val turma: String,
-    val escola: String
+    val escola: String,
+    val limiteEmprestimos: Int = 0
 )
 
 @Entity(tableName = "livros")

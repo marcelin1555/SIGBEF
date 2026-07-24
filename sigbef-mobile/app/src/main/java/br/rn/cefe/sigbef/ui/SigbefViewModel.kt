@@ -45,6 +45,9 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     private val _erroLogin = MutableStateFlow<String?>(null)
     val erroLogin: StateFlow<String?> = _erroLogin.asStateFlow()
 
+    private val _erroConexao = MutableStateFlow<String?>(null)
+    val erroConexao: StateFlow<String?> = _erroConexao.asStateFlow()
+
     /** Quando o cache foi atualizado pela última vez (para o banner). */
     private val _ultimaSincronizacao = MutableStateFlow<String?>(null)
     val ultimaSincronizacao: StateFlow<String?> = _ultimaSincronizacao.asStateFlow()
@@ -82,8 +85,11 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     init {
-        if (repository.estaPareado()) {
-            verificarConexao()
+        // Ao reabrir já logado, atualiza os dados em vez de deixar o
+        // cache congelado (antes só testava a conexão sem buscar nada).
+        when {
+            repository.estaLogado() -> sincronizar()
+            repository.estaPareado() -> verificarConexao()
         }
     }
 
@@ -107,14 +113,53 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { repository.sincronizarDetalheLivro(book.id) }
     }
 
-    /** Guarda o endereço da biblioteca lido no QR (ou digitado). */
-    fun parear(endereco: String, aoConcluir: () -> Unit) {
+    /**
+     * Guarda o endereço da biblioteca e só avança se ela responder. Antes
+     * avançava sempre, e um endereço errado prendia o aluno no login sem
+     * caminho de volta.
+     */
+    fun parear(endereco: String, aoConectar: () -> Unit) {
         viewModelScope.launch {
             _carregando.value = true
-            repository.parear(endereco)
-            _isOffline.value = !repository.testarConexao()
+            _erroConexao.value = null
+
+            val recusa = repository.parear(endereco)
+            if (recusa != null) {
+                _erroConexao.value = recusa
+                _carregando.value = false
+                return@launch
+            }
+
+            val ok = repository.testarConexao()
+            _isOffline.value = !ok
             _carregando.value = false
-            aoConcluir()
+            if (ok) {
+                aoConectar()
+            } else {
+                _erroConexao.value = "Não encontrei a biblioteca nesse " +
+                    "endereço. Confira o número e se você está no Wi-Fi " +
+                    "da escola."
+            }
+        }
+    }
+
+    fun limparErroConexao() {
+        _erroConexao.value = null
+    }
+
+    /** Sai da conta, mantendo o pareamento com a escola. */
+    fun sair() {
+        viewModelScope.launch {
+            repository.sair()
+            navigateTo(Screen.LOGIN)
+        }
+    }
+
+    /** Esquece a biblioteca e volta ao pareamento (trocar de escola). */
+    fun trocarBiblioteca() {
+        viewModelScope.launch {
+            repository.desparear()
+            navigateTo(Screen.CONNECT)
         }
     }
 
@@ -133,11 +178,6 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
                 _erroLogin.value = erro
             }
         }
-    }
-
-    fun sair() {
-        repository.sair()
-        _currentScreen.value = Screen.LOGIN
     }
 
     fun limparErroLogin() {

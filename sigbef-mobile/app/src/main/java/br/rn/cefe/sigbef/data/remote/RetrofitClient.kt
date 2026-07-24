@@ -58,6 +58,37 @@ object RetrofitClient {
         currentBaseUrl = null
     }
 
+    /**
+     * Confere se o endereço é de rede local, antes de aceitar o pareamento.
+     *
+     * Como o app manda matrícula e senha em HTTP (texto puro), ele não pode
+     * conectar em qualquer host da internet: aceita só IP privado
+     * (10.x, 192.168.x, 172.16–31.x), loopback, ou nomes .local/.lan.
+     * Isso é validado sem resolução DNS — só analisando o texto do host.
+     */
+    fun eEnderecoLocal(url: String): Boolean {
+        val host = try {
+            java.net.URI(normalizar(url)).host ?: return false
+        } catch (e: Exception) {
+            return false
+        }
+
+        // Octetos de IPv4 → checa faixas privadas
+        val octetos = host.split(".")
+        if (octetos.size == 4 && octetos.all { it.toIntOrNull() in 0..255 }) {
+            val a = octetos[0].toInt()
+            val b = octetos[1].toInt()
+            return a == 10 ||
+                (a == 192 && b == 168) ||
+                (a == 172 && b in 16..31) ||
+                a == 127
+        }
+
+        // Nome de host: só os sufixos de rede local
+        val h = host.lowercase()
+        return h == "localhost" || h.endsWith(".local") || h.endsWith(".lan")
+    }
+
     private fun criar(tokenManager: TokenManager, baseUrl: String): SigbefApiService {
         val construtor = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenManager))

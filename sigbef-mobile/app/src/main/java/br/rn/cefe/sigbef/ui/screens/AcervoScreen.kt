@@ -77,7 +77,16 @@ fun AcervoScreen(
     val searchQuery = if (onSearchQueryChange != null) searchQueryParam else searchQueryLocal
     val selectedCategory = if (onCategoryChange != null) selectedCategoryParam else selectedCategoryLocal
 
-    val categories = listOf("Todos", "Literatura", "Didáticos", "HQ", "Exatas")
+    // Categorias derivadas do acervo REAL que chegou da biblioteca, não
+    // uma lista fixa inventada (antes: Literatura/Didáticos/HQ/Exatas, que
+    // podiam nem existir no acervo da escola). Só aparece o que existe.
+    val categories = remember(livros) {
+        listOf("Todos") + livros
+            .map { it.categoria }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+    }
 
     val filteredLivros = if (onSearchQueryChange != null) {
         livros

@@ -55,14 +55,45 @@ class SigbefRepository(
     }
 
     // ------------------------------------------------------ pareamento
-    fun parear(endereco: String) {
-        tokenManager.salvarServidor(RetrofitClient.normalizar(endereco))
+    /**
+     * @return null se o endereço foi aceito; uma mensagem se for recusado
+     *         por não ser um endereço de rede local.
+     */
+    fun parear(endereco: String): String? {
+        val normalizada = RetrofitClient.normalizar(endereco)
+        if (!RetrofitClient.eEnderecoLocal(normalizada)) {
+            return "Esse endereço não parece ser da rede da escola. O " +
+                "SIGBEF fica num computador da própria escola (algo como " +
+                "192.168.x.x)."
+        }
+        tokenManager.salvarServidor(normalizada)
         RetrofitClient.limpar()
+        return null
     }
 
     fun estaPareado(): Boolean = tokenManager.temServidor()
 
     fun estaLogado(): Boolean = tokenManager.estaLogado()
+
+    /** Sai da conta e apaga o cache deste aluno (nada do anterior fica). */
+    suspend fun sair() {
+        limparCache()
+        tokenManager.sair()
+        RetrofitClient.limpar()
+    }
+
+    /** Esquece também a biblioteca, para trocar de escola. */
+    suspend fun desparear() {
+        limparCache()
+        tokenManager.limparTudo()
+        RetrofitClient.limpar()
+    }
+
+    private suspend fun limparCache() {
+        db.emprestimoDao().clearAll()
+        db.livroDao().clearAll()
+        db.usuarioDao().clearAll()
+    }
 
     private fun api() = RetrofitClient.getApiService(
         tokenManager,
@@ -110,11 +141,6 @@ class SigbefRepository(
         // Traz turma e situação, que só existem nesta outra rota
         runCatching { sincronizarSituacao() }
         return null
-    }
-
-    fun sair() {
-        tokenManager.sair()
-        RetrofitClient.limpar()
     }
 
     // --------------------------------------------------- sincronizações
@@ -181,7 +207,8 @@ class SigbefRepository(
                 nome = dto.nome,
                 matricula = dto.matricula,
                 turma = dto.turma.orEmpty(),
-                escola = ""
+                escola = "",
+                limiteEmprestimos = dto.limiteEmprestimos
             )
         )
 
@@ -255,7 +282,8 @@ fun UsuarioEntity.toDomain() = Usuario(
     nome = nome,
     matricula = matricula,
     turma = turma,
-    escola = escola
+    escola = escola,
+    limMaxLivros = limiteEmprestimos
 )
 
 fun Usuario.toEntity() = UsuarioEntity(
@@ -263,7 +291,8 @@ fun Usuario.toEntity() = UsuarioEntity(
     nome = nome,
     matricula = matricula,
     turma = turma,
-    escola = escola
+    escola = escola,
+    limiteEmprestimos = limMaxLivros
 )
 
 fun LivroEntity.toDomain() = Livro(
