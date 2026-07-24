@@ -45,10 +45,14 @@ import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit
+    onEntrar: (matricula: String, senha: String) -> Unit,
+    carregando: Boolean = false,
+    erro: String? = null
 ) {
-    var matricula by remember { mutableStateOf("2026045892") }
-    var senha by remember { mutableStateOf("123456") }
+    // Campos vazios: antes vinham preenchidos com uma matrícula e senha
+    // de exemplo, e o botão só avançava de tela sem validar nada.
+    var matricula by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -169,9 +173,27 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(28.dp))
 
-                    // Login Button
+                    // Mensagem de erro devolvida pela biblioteca
+                    if (erro != null) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = Color(0xFFFDECEA),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = erro,
+                                modifier = Modifier.padding(12.dp),
+                                fontSize = 13.sp,
+                                color = Color(0xFFB3261E)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
                     Button(
-                        onClick = { onLoginSuccess() },
+                        onClick = { onEntrar(matricula, senha) },
+                        enabled = !carregando &&
+                            matricula.isNotBlank() && senha.isNotBlank(),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -179,7 +201,7 @@ fun LoginScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "Entrar",
+                            text = if (carregando) "Entrando…" else "Entrar",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

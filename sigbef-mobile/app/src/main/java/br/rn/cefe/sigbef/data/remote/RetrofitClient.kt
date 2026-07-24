@@ -1,5 +1,6 @@
 package br.rn.cefe.sigbef.data.remote
 
+import br.rn.cefe.sigbef.BuildConfig
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
@@ -8,51 +9,80 @@ import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
+/**
+ * Cria o cliente HTTP apontando para o SIGBEF da escola.
+ *
+ * **Não existe endereço padrão de propósito.** Cada escola tem o seu
+ * computador na própria rede; o endereço vem do pareamento (QR code ou
+ * digitado) e é obrigatório. Antes havia aqui um domínio inventado
+ * (`sigbef-api.cefe.edu.br`) que não existe e nunca existiria: o servidor
+ * é local e fala HTTP.
+ */
 object RetrofitClient {
 
-    private const val DEFAULT_BASE_URL = "https://sigbef-api.cefe.edu.br/"
-
-    private var currentBaseUrl = DEFAULT_BASE_URL
+    private var currentBaseUrl: String? = null
     private var apiService: SigbefApiService? = null
 
-    fun getApiService(tokenManager: TokenManager, baseUrl: String = DEFAULT_BASE_URL): SigbefApiService {
-        if (apiService == null || currentBaseUrl != baseUrl) {
-            currentBaseUrl = baseUrl
-            apiService = createApiService(tokenManager, baseUrl)
+    /**
+     * @param baseUrl endereço do servidor da escola, ex.: `http://192.168.0.10:8765/`
+     */
+    fun getApiService(tokenManager: TokenManager, baseUrl: String): SigbefApiService {
+        require(baseUrl.isNotBlank()) {
+            "Endereço da biblioteca não configurado: faça o pareamento antes."
+        }
+        val normalizada = normalizar(baseUrl)
+        if (apiService == null || currentBaseUrl != normalizada) {
+            currentBaseUrl = normalizada
+            apiService = criar(tokenManager, normalizada)
         }
         return apiService!!
     }
 
-    private fun createApiService(tokenManager: TokenManager, baseUrl: String): SigbefApiService {
-        // Logging Interceptor for debugging HTTP requests/responses
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+    /** Aceita "192.168.0.10:8765", "sigbef://ip:porta" ou a URL completa. */
+    fun normalizar(entrada: String): String {
+        var url = entrada.trim()
+        if (url.startsWith("sigbef://")) {
+            url = "http://" + url.removePrefix("sigbef://")
         }
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://$url"
+        }
+        if (!url.endsWith("/")) {
+            url += "/"
+        }
+        return url
+    }
 
-        // Custom Auth Interceptor injecting Bearer JWT Token
-        val authInterceptor = AuthInterceptor(tokenManager)
+    fun limpar() {
+        apiService = null
+        currentBaseUrl = null
+    }
 
-        // Configure OkHttpClient
-        val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(authInterceptor)
-            .addInterceptor(loggingInterceptor)
-            .connectTimeout(15, TimeUnit.SECONDS)
+    private fun criar(tokenManager: TokenManager, baseUrl: String): SigbefApiService {
+        val construtor = OkHttpClient.Builder()
+            .addInterceptor(AuthInterceptor(tokenManager))
+            .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
-            .build()
 
-        // Configure Moshi JSON Parser
+        // Log só em build de depuração, e nunca imprimindo o acesso do aluno.
+        if (BuildConfig.DEBUG) {
+            val log = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BASIC
+                redactHeader("Authorization")
+            }
+            construtor.addInterceptor(log)
+        }
+
         val moshi = Moshi.Builder()
             .addLast(KotlinJsonAdapterFactory())
             .build()
 
-        // Build Retrofit Instance
-        val retrofit = Retrofit.Builder()
+        return Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(okHttpClient)
+            .client(construtor.build())
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
-
-        return retrofit.create(SigbefApiService::class.java)
+            .create(SigbefApiService::class.java)
     }
 }

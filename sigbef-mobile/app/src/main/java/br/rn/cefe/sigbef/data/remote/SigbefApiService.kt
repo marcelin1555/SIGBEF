@@ -7,32 +7,45 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/**
+ * Rotas da API do SIGBEF desktop.
+ *
+ * Todas conferidas contra sigbef/api.py — não há nenhuma rota inventada
+ * aqui. Fora o login, a API é **somente leitura**: qualquer POST em outro
+ * caminho recebe 405 do servidor, então reservar/renovar não existem.
+ */
 interface SigbefApiService {
 
-    @POST("api/v1/auth/login")
+    /** Testa se a biblioteca está acessível. Não exige token. */
+    @GET("api/v1/ping")
+    suspend fun ping(): Response<PingResponse>
+
+    /** Único POST da API: troca matrícula e senha por um acesso do aluno. */
+    @POST("api/v1/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @GET("api/v1/aluno/perfil")
-    suspend fun getPerfil(): Response<UsuarioDto>
+    /**
+     * Busca no acervo.
+     * @param q termo livre (título, autor, ISBN); vazio lista tudo
+     * @param disponiveis "1" para trazer só o que tem exemplar livre
+     */
+    @GET("api/v1/livros")
+    suspend fun buscarLivros(
+        @Query("q") q: String = "",
+        @Query("disponiveis") disponiveis: String = "0"
+    ): Response<ListaLivrosResponse>
 
-    @GET("api/v1/acervo/livros")
-    suspend fun getLivros(
-        @Query("busca") query: String? = null,
-        @Query("categoria") categoria: String? = null
-    ): Response<List<LivroDto>>
+    /** Ficha do livro, com sinopse e os exemplares (onde mora o tombo). */
+    @GET("api/v1/livros/{id}")
+    suspend fun detalheLivro(@Path("id") id: Int): Response<LivroDetalheDto>
 
-    @GET("api/v1/acervo/livros/{id}")
-    suspend fun getLivroDetail(@Path("id") id: Int): Response<LivroDto>
-
-    @POST("api/v1/acervo/livros/{id}/reservar")
-    suspend fun reservarLivro(@Path("id") id: Int): Response<ApiResponse<Boolean>>
-
-    @POST("api/v1/acervo/livros/{id}/cancelar-reserva")
-    suspend fun cancelarReserva(@Path("id") id: Int): Response<ApiResponse<Boolean>>
-
-    @GET("api/v1/emprestimos")
-    suspend fun getEmprestimos(): Response<List<EmprestimoDto>>
-
-    @POST("api/v1/emprestimos/{id}/renovar")
-    suspend fun solicitarRenovacao(@Path("id") id: Int): Response<ApiResponse<Boolean>>
+    /**
+     * Situação do leitor: dados da carteirinha, empréstimos em aberto e
+     * reservas. O servidor só devolve se a matrícula for a do dono do
+     * acesso — pedir a de outro aluno resulta em 403.
+     */
+    @GET("api/v1/usuarios/{matricula}/emprestimos")
+    suspend fun situacaoLeitor(
+        @Path("matricula") matricula: String
+    ): Response<SituacaoLeitorResponse>
 }

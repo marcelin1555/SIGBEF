@@ -24,6 +24,10 @@ interface LivroDao {
     @Query("SELECT * FROM livros WHERE id = :id LIMIT 1")
     fun getLivroById(id: Int): Flow<LivroEntity?>
 
+    /** Leitura pontual, para completar a ficha depois de consultar a API. */
+    @Query("SELECT * FROM livros WHERE id = :id LIMIT 1")
+    suspend fun getLivroByIdOnce(id: Int): LivroEntity?
+
     @Query("""
         SELECT * FROM livros 
         WHERE (:category = 'Todos' OR categoria LIKE '%' || :category || '%')

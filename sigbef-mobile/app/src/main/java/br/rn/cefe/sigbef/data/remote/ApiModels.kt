@@ -3,62 +3,127 @@ package br.rn.cefe.sigbef.data.remote
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
+/**
+ * DTOs espelhando exatamente o JSON da API do SIGBEF desktop
+ * (ver docs/API.md e sigbef/api.py).
+ *
+ * Os nomes em snake_case seguem o servidor porque foram conferidos
+ * contra a resposta real, não deduzidos.
+ */
+
+// ---------------------------------------------------------------- login
 @JsonClass(generateAdapter = true)
 data class LoginRequest(
-    @Json(name = "matricula") val matricula: String,
-    @Json(name = "senha") val senha: String
+    val matricula: String,
+    val senha: String
 )
 
 @JsonClass(generateAdapter = true)
 data class LoginResponse(
-    @Json(name = "success") val success: Boolean,
-    @Json(name = "token") val token: String?,
-    @Json(name = "mensagem") val mensagem: String?,
-    @Json(name = "usuario") val usuario: UsuarioDto?
+    val token: String,
+    val usuario: UsuarioLoginDto
 )
 
 @JsonClass(generateAdapter = true)
-data class UsuarioDto(
-    @Json(name = "id") val id: Int,
-    @Json(name = "nome") val nome: String,
-    @Json(name = "matricula") val matricula: String,
-    @Json(name = "turma") val turma: String,
-    @Json(name = "escola") val escola: String
+data class UsuarioLoginDto(
+    val nome: String,
+    val matricula: String,
+    val perfil: String
 )
 
+// ---------------------------------------------------------------- acervo
+/** Envelope de GET /api/v1/livros — a lista vem dentro de "livros". */
 @JsonClass(generateAdapter = true)
-data class LivroDto(
-    @Json(name = "id") val id: Int,
-    @Json(name = "titulo") val titulo: String,
-    @Json(name = "autor") val autor: String,
-    @Json(name = "categoria") val categoria: String,
-    @Json(name = "ano") val ano: String,
-    @Json(name = "tombo") val tombo: String,
-    @Json(name = "isbn") val isbn: String,
-    @Json(name = "sinopse") val sinopse: String,
-    @Json(name = "disponivel") val disponivel: Boolean,
-    @Json(name = "previsaoDevolucao") val previsaoDevolucao: String? = null,
-    @Json(name = "spineColorHex") val spineColorHex: String? = "#1F4E79",
-    @Json(name = "reservadoPeloUsuario") val reservadoPeloUsuario: Boolean = false
+data class ListaLivrosResponse(
+    val total: Int = 0,
+    val livros: List<LivroResumoDto> = emptyList()
+)
+
+/**
+ * Livro na LISTAGEM. Atenção: aqui `autores` é uma String única
+ * ("George Orwell"); no detalhe é uma lista. O servidor devolve assim.
+ */
+@JsonClass(generateAdapter = true)
+data class LivroResumoDto(
+    val id: Int,
+    val titulo: String,
+    val isbn: String? = null,
+    @Json(name = "ano_publicacao") val anoPublicacao: Int? = null,
+    val edicao: String? = null,
+    val categoria: String? = null,
+    val editora: String? = null,
+    val autores: String? = null,
+    @Json(name = "total_exemplares") val totalExemplares: Int = 0,
+    val disponiveis: Int = 0
+)
+
+/** Livro no DETALHE — aqui `autores` é lista e vêm os exemplares. */
+@JsonClass(generateAdapter = true)
+data class LivroDetalheDto(
+    val id: Int,
+    val titulo: String,
+    val isbn: String? = null,
+    @Json(name = "ano_publicacao") val anoPublicacao: Int? = null,
+    val edicao: String? = null,
+    val sinopse: String? = null,
+    val editora: String? = null,
+    val categoria: String? = null,
+    val autores: List<String> = emptyList(),
+    val exemplares: List<ExemplarDto> = emptyList()
+)
+
+/** O número de tombo mora aqui, não no livro. */
+@JsonClass(generateAdapter = true)
+data class ExemplarDto(
+    @Json(name = "numero_tombo") val numeroTombo: String,
+    @Json(name = "codigo_barras") val codigoBarras: String? = null,
+    val localizacao: String? = null,
+    val status: String
+)
+
+// ----------------------------------------------------- situação do leitor
+/**
+ * GET /api/v1/usuarios/{matricula}/emprestimos devolve a situação
+ * completa do leitor, não só a lista de empréstimos.
+ */
+@JsonClass(generateAdapter = true)
+data class SituacaoLeitorResponse(
+    val nome: String,
+    val matricula: String,
+    val turma: String? = null,
+    val perfil: String,
+    val ativo: Boolean = true,
+    @Json(name = "pode_pegar") val podePegar: Boolean = true,
+    val situacao: String? = null,
+    @Json(name = "multas_em_aberto") val multasEmAberto: Double = 0.0,
+    @Json(name = "emprestimos_abertos") val emprestimosAbertos: List<EmprestimoDto> = emptyList(),
+    @Json(name = "reservas_ativas") val reservasAtivas: List<ReservaDto> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)
 data class EmprestimoDto(
-    @Json(name = "id") val id: Int,
-    @Json(name = "livroTitulo") val livroTitulo: String,
-    @Json(name = "autor") val autor: String,
-    @Json(name = "dataDevolucao") val dataDevolucao: String,
-    @Json(name = "atrasado") val atrasado: Boolean,
-    @Json(name = "devolvido") val devolvido: Boolean = false,
-    @Json(name = "dataDevolvido") val dataDevolvido: String? = null,
-    @Json(name = "spineColorHex") val spineColorHex: String? = "#1F4E79",
-    @Json(name = "renovacoesRestantes") val renovacoesRestantes: Int = 2,
-    @Json(name = "renovacaoPendente") val renovacaoPendente: Boolean = false
+    val id: Int,
+    val titulo: String,
+    @Json(name = "codigo_barras") val codigoBarras: String? = null,
+    @Json(name = "data_emprestimo") val dataEmprestimo: String? = null,
+    @Json(name = "data_prevista") val dataPrevista: String? = null,
+    @Json(name = "data_devolucao") val dataDevolucao: String? = null,
+    val multa: Double = 0.0,
+    val origem: String? = null
 )
 
 @JsonClass(generateAdapter = true)
-data class ApiResponse<T>(
-    @Json(name = "success") val success: Boolean,
-    @Json(name = "mensagem") val mensagem: String,
-    @Json(name = "data") val data: T? = null
+data class ReservaDto(
+    val titulo: String,
+    val posicao: Int = 0,
+    val separado: Boolean = false,
+    @Json(name = "retirar_ate") val retirarAte: String? = null
+)
+
+// ------------------------------------------------------------------ ping
+@JsonClass(generateAdapter = true)
+data class PingResponse(
+    val ok: Boolean = false,
+    val servico: String? = null,
+    val versao: String? = null
 )

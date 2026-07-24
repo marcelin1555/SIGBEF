@@ -71,8 +71,13 @@ fun SigbefApp() {
     val isOffline by viewModel.isOffline.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCategory by viewModel.selectedCategory.collectAsState()
+    val carregando by viewModel.carregando.collectAsState()
+    val erroLogin by viewModel.erroLogin.collectAsState()
 
-    var currentScreen by remember { mutableStateOf(Screen.CONNECT) }
+    // A tela inicial vem do ViewModel: quem já pareou e entrou não passa
+    // de novo pelo pareamento a cada abertura do app.
+    val telaAtual by viewModel.currentScreen.collectAsState()
+    var currentScreen by remember { mutableStateOf(telaAtual) }
     var selectedBookId by remember { mutableStateOf<Int?>(null) }
 
     val currentUsuario = usuario
@@ -91,15 +96,23 @@ fun SigbefApp() {
                 label = "ScreenTransition"
             ) { screen ->
                 when (screen) {
+                    // O endereço informado agora é guardado, em vez de
+                    // descartado como acontecia antes.
                     Screen.CONNECT -> ConnectScreen(
-                        onConnected = {
-                            currentScreen = Screen.LOGIN
+                        onConnected = { endereco ->
+                            viewModel.parear(endereco) {
+                                currentScreen = Screen.LOGIN
+                            }
                         }
                     )
 
                     Screen.LOGIN -> LoginScreen(
-                        onLoginSuccess = {
-                            currentScreen = Screen.HOME
+                        carregando = carregando,
+                        erro = erroLogin,
+                        onEntrar = { matricula, senha ->
+                            viewModel.entrar(matricula, senha) {
+                                currentScreen = Screen.HOME
+                            }
                         }
                     )
 
@@ -162,7 +175,10 @@ fun SigbefApp() {
                 }
             }
 
-            // Quick Offline Toggle Badge (Top Right)
+            // Estado real da conexão. Antes isto era um interruptor manual
+            // que abria marcado como "Online" sem nunca ter feito uma
+            // requisição. Agora reflete o último contato com a biblioteca,
+            // e tocar nele tenta reconectar e atualizar.
             if (currentScreen != Screen.CONNECT && currentScreen != Screen.LOGIN) {
                 Box(
                     modifier = Modifier
@@ -170,10 +186,14 @@ fun SigbefApp() {
                         .padding(top = 40.dp, end = 12.dp)
                 ) {
                     AssistChip(
-                        onClick = { viewModel.toggleOfflineMode() },
+                        onClick = { viewModel.sincronizar() },
                         label = {
                             Text(
-                                text = if (isOffline) "Modo Offline: ON" else "Online",
+                                text = when {
+                                    carregando -> "Atualizando…"
+                                    isOffline -> "Sem conexão"
+                                    else -> "Conectado"
+                                },
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isOffline) Color(0xFF604100) else SigbefNavy
@@ -182,7 +202,7 @@ fun SigbefApp() {
                         leadingIcon = {
                             Icon(
                                 imageVector = if (isOffline) Icons.Default.WifiOff else Icons.Default.Wifi,
-                                contentDescription = "Alternar Modo Offline",
+                                contentDescription = "Atualizar dados da biblioteca",
                                 tint = if (isOffline) SigbefWarning else SigbefNavy,
                                 modifier = Modifier.padding(start = 2.dp)
                             )

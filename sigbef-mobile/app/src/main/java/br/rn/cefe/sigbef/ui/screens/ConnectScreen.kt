@@ -50,7 +50,8 @@ fun ConnectScreen(
     onConnected: (String) -> Unit
 ) {
     var showManualDialog by remember { mutableStateOf(false) }
-    var ipInput by remember { mutableStateOf("192.168.1.100:8765") }
+    // Sem valor de exemplo: cada escola tem o seu endereço.
+    var ipInput by remember { mutableStateOf("") }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -127,7 +128,8 @@ fun ConnectScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Aponte a câmera para o QR code exibido no computador da biblioteca",
+                    text = "Peça à bibliotecária o endereço em Configurações → " +
+                        "Integrações → Parear celular, e digite abaixo.",
                     fontSize = 15.sp,
                     color = SigbefMuted,
                     textAlign = TextAlign.Center,
@@ -137,9 +139,11 @@ fun ConnectScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Actions
+                // A leitura do QR pela câmera ainda não foi implementada;
+                // enquanto isso o botão leva à digitação, em vez de fingir
+                // que escaneou (antes ele devolvia um IP fixo de exemplo).
                 Button(
-                    onClick = { onConnected("192.168.1.100:8765") },
+                    onClick = { showManualDialog = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -153,23 +157,9 @@ fun ConnectScreen(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
-                        text = "Escanear QR code",
+                        text = "Informar endereço da biblioteca",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                TextButton(
-                    onClick = { showManualDialog = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "Digitar endereço manualmente",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = SigbefBlue
                     )
                 }
             }
@@ -232,6 +222,7 @@ fun ConnectScreen(
                         showManualDialog = false
                         onConnected(ipInput)
                     },
+                    enabled = ipInput.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy)
                 ) {
                     Text("Conectar")
