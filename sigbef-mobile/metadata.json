@@ -1,6 +1,0 @@
-{
-  "name": "SIGBEF Mobile",
-  "description": "Aplicativo de biblioteca escolar para consulta de acervo, empréstimos e cartão digital offline.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

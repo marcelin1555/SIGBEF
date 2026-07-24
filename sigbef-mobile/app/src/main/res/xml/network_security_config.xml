@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    O SIGBEF da escola roda em HTTP na rede local (ex.: http://192.168.0.10:8765).
+    A partir do Android 9 o tráfego em texto puro é bloqueado por padrão, o
+    que impediria o app de falar com a biblioteca.
+
+    Aqui o cleartext é liberado, mas o app só se conecta ao endereço que a
+    bibliotecária forneceu no pareamento — nunca à internet aberta. Não há
+    servidor externo em nenhum fluxo do aplicativo.
+
+    Colocar HTTPS no computador da biblioteca exigiria certificado próprio
+    instalado em cada celular, inviável para a realidade de uma escola
+    pública. A proteção aqui é a rede local, não o transporte.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

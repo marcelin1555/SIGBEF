@@ -1,22 +1,69 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# SIGBEF Mobile
 
-# Run and deploy your AI Studio app
+Aplicativo Android para **alunos e professores** consultarem o acervo da
+biblioteca da escola, acompanharem os próprios empréstimos e usarem o
+cartão de biblioteca digital.
 
-This contains everything you need to run your app locally.
+Faz parte do [SIGBEF](../README.md), sistema gratuito e de código aberto de
+gestão de biblioteca escolar, em produção no CEFE (Jardim do Seridó/RN).
 
-View your app in AI Studio: https://ai.studio/apps/ce91bc0d-c3cc-4dcc-9436-3f20d51a6561
+## Como funciona
 
-## Run Locally
+O aplicativo **não tem servidor próprio e não usa nuvem**. Ele conversa
+apenas com o SIGBEF desktop, que roda no computador da biblioteca, pela
+rede local (Wi-Fi) da escola:
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+```
+[celular do aluno]  ──── Wi-Fi da escola ────►  [computador da biblioteca]
+   SIGBEF Mobile                                    SIGBEF desktop
+   cache local (Room)                               API REST :8765
+                                                    banco SQLite
+```
 
+O desktop é a fonte da verdade. O aplicativo só lê.
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
-7. If you have already published your app in AI Studio, please [request upload key reset](https://support.google.com/googleplay/android-developer/answer/9842756#zippy=%2Crequest-an-upload-key-reset) in Google Play Console.
+### Primeiro uso
+
+1. A bibliotecária abre **Configurações → Integrações → Parear celular** no
+   SIGBEF desktop, que mostra um QR code com o endereço do servidor.
+2. O aluno escaneia (ou digita o endereço) e entra com a **mesma matrícula
+   e senha** do sistema da biblioteca.
+3. Pronto. O cartão digital continua funcionando mesmo sem rede.
+
+O QR code **não contém senha nem token** de propósito: ele fica exposto na
+tela do computador, e quem o fotografasse ganharia acesso indevido. Cada
+aluno recebe um acesso próprio ao entrar, que só enxerga os dados dele.
+
+## O que o aplicativo faz
+
+- Consultar o acervo (busca por título, autor ou categoria)
+- Ver os próprios empréstimos, prazos e atrasos
+- Cartão de biblioteca digital, com código de barras, disponível offline
+- Modo offline com a última consulta em cache
+
+## O que ele **não** faz
+
+Emprestar, devolver, renovar e reservar são operações de **balcão**. A API
+da biblioteca é somente leitura, então o aplicativo não oferece esses
+botões: prometer uma ação que a bibliotecária nunca receberia seria pior
+que não ter a função.
+
+## Desenvolvimento
+
+**Requisitos:** Android Studio, JDK 17, SDK Android (minSdk 24).
+
+```bash
+./gradlew assembleDebug      # gera app/build/outputs/apk/debug/
+```
+
+- **Linguagem:** Kotlin · **Interface:** Jetpack Compose (Material 3)
+- **Arquitetura:** MVVM, com Room como cache local e Retrofit para a API
+- **Identidade visual:** ver [docs/DESIGN.md](../docs/DESIGN.md)
+- **Especificação:** ver [docs/SIGBEF_MOBILE.md](../docs/SIGBEF_MOBILE.md)
+
+### Histórico
+
+A primeira versão foi gerada no Google AI Studio e funcionava como
+demonstração autônoma, com acervo e usuária fictícios embutidos no código.
+A auditoria em [docs/AUDITORIA_MOBILE.md](../docs/AUDITORIA_MOBILE.md)
+registra o que foi encontrado e corrigido.

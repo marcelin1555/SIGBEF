@@ -16,3 +16,8 @@
 local.properties
 .env
 debug.keystore
+
+# Chaves de assinatura e config local (nunca versionar)
+*.jks
+*.keystore
+google-services.json
