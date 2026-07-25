@@ -21,6 +21,7 @@ data class LoginRequest(
 @JsonClass(generateAdapter = true)
 data class LoginResponse(
     val token: String,
+    val instituicao: String? = null,
     val usuario: UsuarioLoginDto
 )
 

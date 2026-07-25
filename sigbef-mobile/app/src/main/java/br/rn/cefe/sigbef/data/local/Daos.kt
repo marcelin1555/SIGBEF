@@ -12,6 +12,9 @@ interface UsuarioDao {
     @Query("SELECT * FROM usuarios WHERE id = 1 LIMIT 1")
     fun getUsuario(): Flow<UsuarioEntity?>
 
+    @Query("SELECT * FROM usuarios WHERE id = 1 LIMIT 1")
+    suspend fun getUsuarioOnce(): UsuarioEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUsuario(usuario: UsuarioEntity)
 

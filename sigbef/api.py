@@ -269,9 +269,13 @@ class _Handler(BaseHTTPRequestHandler):
             self._erro(401, "Matrícula ou senha incorretos.")
             return
 
+        from .database import get_config
+
         token = criar_sessao_app(sessao.id)
         self._json(200, {
             "token": token,
+            "instituicao": get_config("NOME_INSTITUICAO", "Biblioteca")
+                           or "Biblioteca",
             "usuario": {
                 "nome": sessao.nome,
                 "matricula": sessao.matricula,

@@ -135,7 +135,7 @@ class SigbefRepository(
                 nome = corpo.usuario.nome,
                 matricula = corpo.usuario.matricula,
                 turma = "",
-                escola = ""
+                escola = corpo.instituicao.orEmpty()
             )
         )
         // Traz turma e situação, que só existem nesta outra rota
@@ -201,13 +201,16 @@ class SigbefRepository(
             .getOrElse { return false }
         val dto = resposta.body()?.takeIf { resposta.isSuccessful } ?: return false
 
+        // O nome da instituição só vem no login; preserva o que já está
+        // salvo para não apagar o cabeçalho da carteirinha.
+        val escolaAtual = db.usuarioDao().getUsuarioOnce()?.escola.orEmpty()
         db.usuarioDao().insertUsuario(
             UsuarioEntity(
                 id = 1,
                 nome = dto.nome,
                 matricula = dto.matricula,
                 turma = dto.turma.orEmpty(),
-                escola = "",
+                escola = escolaAtual,
                 limiteEmprestimos = dto.limiteEmprestimos
             )
         )
