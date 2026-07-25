@@ -1,7 +1,15 @@
 # SIGBEF Mobile — especificação do MVP
 
-Status: **desenho aprovado, implementação não iniciada.**
-Última atualização: 23/07/2026.
+Status: **implementado e integrado à API; falta o teste de ponta a ponta
+no aparelho.** Última atualização: 24/07/2026.
+
+O app já compila (`./gradlew assembleDebug`), conecta na biblioteca real,
+faz login por aluno e mostra acervo, empréstimos e a carteirinha com
+código de barras real. Os 5 achados críticos e os 9 altos da auditoria
+(`docs/AUDITORIA_MOBILE.md`) foram corrigidos. O que resta é rodar num
+celular na mesma rede do desktop para validar o fluxo inteiro — e, quando
+houver créditos/tempo, a leitura do QR pela câmera (hoje o endereço é
+digitado).
 
 Aplicativo de celular para **alunos e professores** consultarem o acervo,
 acompanharem os próprios empréstimos e usarem o cartão de biblioteca

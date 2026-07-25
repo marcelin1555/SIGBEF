@@ -18,6 +18,27 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
   vez (aparelho perdido, fim de ano letivo)
 - Gerador de QR Code próprio, escrito em Python puro: o sistema continua
   sem nenhuma dependência externa para funcionar
+- A situação do leitor (`/usuarios/{matricula}/emprestimos`) passa a
+  informar o limite de empréstimos do perfil, para o app mostrar quantos
+  livros ainda cabem
+
+### Aplicativo Android (sigbef-mobile)
+
+O aplicativo, que era uma demonstração com dados fictícios, passou a
+funcionar de verdade contra a biblioteca:
+
+- Conecta na API real da escola (busca no acervo, ficha do livro com
+  tombo e sinopse, empréstimos do próprio aluno), com o Room servindo só
+  de cache para o uso offline
+- Login de verdade com matrícula e senha; o endereço da biblioteca vem do
+  pareamento e é validado como rede local antes de aceitar (o app não fala
+  com host arbitrário da internet, já que a senha trafega em rede local)
+- Cartão de biblioteca com **código de barras Code 128 real**, lido pelo
+  mesmo leitor do balcão (antes era um desenho que nenhum leitor decifrava)
+- Removidos os botões que fingiam reservar e renovar (a bibliotecária
+  nunca recebia o pedido) e todos os dados de exemplo embutidos
+- Botão de sair da conta e de trocar de biblioteca, com limpeza do que
+  ficava guardado no aparelho
 
 ### Interface
 - Ícones nos 3 cards grandes do menu principal do autoatendimento
