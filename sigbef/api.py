@@ -26,7 +26,8 @@ from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 from . import reservas, servicos
-from .database import get_config, set_config, registrar_auditoria
+from .database import db_cursor, get_config, set_config, registrar_auditoria
+from .servicos import RegraNegocioError
 
 
 # ---------------------------------------------------------------------------
@@ -127,6 +128,8 @@ def endereco_pareamento() -> Optional[str]:
 # ---------------------------------------------------------------------------
 _ROTA_LIVRO = re.compile(r"^/api/v1/livros/(\d+)$")
 _ROTA_USUARIO_EMP = re.compile(r"^/api/v1/usuarios/([^/]+)/emprestimos$")
+_ROTA_CANCELAR_RES = re.compile(r"^/api/v1/reservas/(\d+)/cancelar$")
+_ROTA_RENOVAR = re.compile(r"^/api/v1/emprestimos/(\d+)/renovar$")
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -156,6 +159,7 @@ class _Handler(BaseHTTPRequestHandler):
         que permite barrar a leitura de dados de outro leitor.
         """
         self.matricula_sessao = None
+        self.sessao_app = None
         recebido = (self.headers.get("Authorization") or "")
         if not recebido.startswith("Bearer "):
             return None
@@ -170,13 +174,24 @@ class _Handler(BaseHTTPRequestHandler):
         sessao = sessao_app_valida(tok)
         if sessao is not None:
             self.matricula_sessao = sessao.matricula
+            self.sessao_app = sessao
             return "aluno"
         return None
+
+    @staticmethod
+    def _matricula_na_rota(caminho: str) -> Optional[str]:
+        """Matrícula citada numa rota de dados pessoais, se houver.
+
+        É o que permite ao token do app ler os próprios empréstimos e as
+        próprias reservas, e só os próprios.
+        """
+        m = _ROTA_USUARIO_EMP.match(caminho)
+        return m.group(1) if m else None
 
     def _escopo_da_rota(self, caminho: str) -> str:
         """'completo' para rotas com dados de leitores; 'consulta' para o
         acervo público."""
-        if (_ROTA_USUARIO_EMP.match(caminho)
+        if (self._matricula_na_rota(caminho)
                 or caminho == "/api/v1/emprestimos/abertos"):
             return "completo"
         return "consulta"
@@ -202,12 +217,12 @@ class _Handler(BaseHTTPRequestHandler):
                             "Authorization: Bearer <token>.")
             return
         if self._escopo_da_rota(caminho) == "completo" and nivel != "completo":
-            # Token de sessão do app: pode ler os PRÓPRIOS empréstimos.
-            emp = _ROTA_USUARIO_EMP.match(caminho)
-            if nivel == "aluno" and emp:
-                if emp.group(1) != self.matricula_sessao:
+            # Token de sessão do app: pode ler os PRÓPRIOS dados.
+            dono = self._matricula_na_rota(caminho)
+            if nivel == "aluno" and dono:
+                if dono != self.matricula_sessao:
                     self._erro(403, "Você só pode consultar os seus "
-                                    "próprios empréstimos.")
+                                    "próprios dados.")
                     return
             else:
                 self._erro(403, "Este token é apenas de consulta ao acervo. "
@@ -221,39 +236,130 @@ class _Handler(BaseHTTPRequestHandler):
             self._erro(500, "Erro interno ao processar a requisição.")
 
     def do_POST(self):  # noqa: N802
-        """Só existe um POST: o login do aplicativo. O acervo segue
-        intocável — nenhuma rota altera dados da biblioteca."""
+        """As únicas gravações que a API aceita.
+
+        São três, e todas mexem apenas na fila do próprio aluno logado:
+        reservar um livro, cancelar essa reserva e renovar um empréstimo
+        que é dele. O acervo — livros, exemplares, cadastros — continua
+        intocável por aqui; quem altera isso é o balcão.
+        """
         caminho = urlparse(self.path).path.rstrip("/") or "/"
-        if caminho != "/api/v1/login":
-            self._erro(405, "Esta API é somente leitura (apenas GET).")
-            return
         if not api_ativa():
             self._erro(403, "A API está desligada nas configurações do "
                             "SIGBEF.")
             return
+
+        if caminho == "/api/v1/login":
+            try:
+                self._login()
+            except Exception:
+                self._erro(500, "Erro interno ao processar a requisição.")
+            return
+
+        acao = self._acao_de_escrita(caminho)
+        if acao is None:
+            self._erro(405, "Rota não aceita POST. Gravação só em "
+                            "/api/v1/login, /api/v1/reservas, "
+                            "/api/v1/reservas/{id}/cancelar e "
+                            "/api/v1/emprestimos/{id}/renovar.")
+            return
+
+        # Escrita exige um aluno de verdade por trás. Token de sistema não
+        # serve: ele não é ninguém, e toda ação aqui precisa de um dono.
+        if self._nivel_do_token() != "aluno":
+            self._erro(403, "Esta ação exige o login do aluno no aplicativo.")
+            return
+
         try:
-            self._login()
+            acao()
+        except RegraNegocioError as e:
+            # 409: o pedido está bem formado, mas a regra da biblioteca
+            # diz não. A frase vem pronta para aparecer na tela do aluno.
+            self._erro(409, str(e))
         except Exception:
             self._erro(500, "Erro interno ao processar a requisição.")
 
-    def _login(self) -> None:
-        from .auth import autenticar, criar_sessao_app
+    def _acao_de_escrita(self, caminho: str):
+        """Casa o caminho com a função que o executa, ou None."""
+        if caminho == "/api/v1/reservas":
+            return self._criar_reserva
+        m = _ROTA_CANCELAR_RES.match(caminho)
+        if m:
+            return lambda: self._cancelar_reserva(int(m.group(1)))
+        m = _ROTA_RENOVAR.match(caminho)
+        if m:
+            return lambda: self._renovar(int(m.group(1)))
+        return None
 
+    def _corpo_json(self) -> Optional[dict]:
+        """Lê o corpo da requisição como objeto JSON.
+
+        Devolve None e já responde o erro quando o corpo não presta.
+        """
         try:
             tamanho = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             tamanho = 0
         if tamanho <= 0 or tamanho > 4096:
             self._erro(400, "Corpo da requisição ausente ou grande demais.")
-            return
+            return None
         try:
             dados = json.loads(self.rfile.read(tamanho).decode("utf-8"))
         except (ValueError, UnicodeDecodeError):
-            self._erro(400, "Corpo inválido: envie JSON com matricula e "
-                            "senha.")
-            return
+            self._erro(400, "Corpo inválido: envie JSON.")
+            return None
         if not isinstance(dados, dict):
             self._erro(400, "Corpo inválido: envie um objeto JSON.")
+            return None
+        return dados
+
+    def _criar_reserva(self) -> None:
+        dados = self._corpo_json()
+        if dados is None:
+            return
+        try:
+            livro_id = int(dados.get("livro_id"))
+        except (TypeError, ValueError):
+            self._erro(400, "Informe livro_id (número).")
+            return
+
+        r = reservas.criar_reserva(livro_id, self.sessao_app.id)
+        self._json(201, {"reserva": r})
+
+    def _cancelar_reserva(self, reserva_id: int) -> None:
+        # usuario_id preenchido faz o próprio módulo recusar reserva
+        # que seja de outro aluno.
+        reservas.cancelar_reserva(reserva_id,
+                                  usuario_id=self.sessao_app.id)
+        self._json(200, {"ok": True})
+
+    def _renovar(self, emprestimo_id: int) -> None:
+        with db_cursor() as cur:
+            cur.execute(
+                "SELECT usuario_id FROM emprestimo "
+                "WHERE id = ? AND data_devolucao IS NULL",
+                (emprestimo_id,),
+            )
+            emp = cur.fetchone()
+        if not emp:
+            self._erro(404, "Empréstimo não encontrado.")
+            return
+        if emp["usuario_id"] != self.sessao_app.id:
+            self._erro(403, "Este empréstimo é de outro leitor.")
+            return
+
+        # validar_regras=True: sem ninguém no balcão para julgar, valem
+        # as regras (atraso, fila de espera, limite de renovações).
+        r = servicos.renovar_emprestimo(emprestimo_id,
+                                        operador_id=self.sessao_app.id,
+                                        validar_regras=True)
+        self._json(200, r)
+
+    def _login(self) -> None:
+        from .auth import autenticar, criar_sessao_app
+
+        dados = self._corpo_json()
+        if dados is None:
             return
 
         matricula = str(dados.get("matricula") or "").strip()
@@ -284,8 +390,13 @@ class _Handler(BaseHTTPRequestHandler):
         })
 
     def _somente_leitura(self):
-        """PUT/DELETE/PATCH nunca são aceitos, nem em /login."""
-        self._erro(405, "Esta API é somente leitura (apenas GET).")
+        """PUT/DELETE/PATCH nunca são aceitos, em rota nenhuma.
+
+        As poucas gravações que existem passam todas por POST, e são
+        criações — nada aqui substitui nem apaga registro.
+        """
+        self._erro(405, "Método não aceito. Use GET para consultar e POST "
+                        "nas poucas rotas que gravam.")
 
     do_PUT = do_DELETE = do_PATCH = _somente_leitura
 
@@ -338,6 +449,12 @@ class _Handler(BaseHTTPRequestHandler):
             abertos = servicos.listar_emprestimos_usuario(
                 u["id"], somente_abertos=True)
             ativas = reservas.listar_reservas_usuario(u["id"])
+            # O app precisa saber, antes de oferecer o botão, se cada
+            # livro pode mesmo ser renovado — e, quando não, por quê.
+            for e in abertos:
+                ok, motivo = servicos.pode_renovar(e["id"])
+                e["pode_renovar"] = ok
+                e["motivo_renovacao"] = motivo
             self._json(200, {
                 "nome": dados["nome"],
                 "matricula": dados["matricula"],
@@ -350,7 +467,8 @@ class _Handler(BaseHTTPRequestHandler):
                 "multas_em_aberto": st.multas_em_aberto,
                 "emprestimos_abertos": abertos,
                 "reservas_ativas": [
-                    {"titulo": r["titulo"], "posicao": r["posicao"],
+                    {"id": r["id"], "livro_id": r["livro_id"],
+                     "titulo": r["titulo"], "posicao": r["posicao"],
                      "separado": bool(r["exemplar_id"]),
                      "retirar_ate": r["disponivel_ate"]}
                     for r in ativas

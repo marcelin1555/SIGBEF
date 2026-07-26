@@ -21,14 +21,16 @@ import androidx.room.RoomDatabase
  * aparelhos que rodaram a versão anterior precisam perder os dados falsos.
  */
 @Database(
-    entities = [UsuarioEntity::class, LivroEntity::class, EmprestimoEntity::class],
-    version = 4,
+    entities = [UsuarioEntity::class, LivroEntity::class, EmprestimoEntity::class,
+                ReservaEntity::class],
+    version = 5,
     exportSchema = false
 )
 abstract class SigbefDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
     abstract fun livroDao(): LivroDao
     abstract fun emprestimoDao(): EmprestimoDao
+    abstract fun reservaDao(): ReservaDao
 
     companion object {
         @Volatile

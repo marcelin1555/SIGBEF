@@ -4,6 +4,40 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Não lançado]
 
+### Reserva e renovação pelo celular
+
+O aluno passa a resolver sozinho o que antes exigia ir ao balcão para
+pedir. São as **três únicas** gravações que a API aceita, sempre nos
+dados do próprio aluno logado — o acervo continua intocável pela rede, e
+emprestar/devolver seguem sendo do balcão porque exigem o livro na mão.
+
+- **Entrar e sair da fila de espera** pelo app, direto na ficha do livro.
+  A fila, o aviso por e-mail e a separação do exemplar já existiam no
+  desktop desde a 1.6.0; o que faltava era o aluno alcançá-los
+- **Renovar o empréstimo** pelo app, com o novo prazo aparecendo na hora
+- **Regras de renovação explícitas** (`servicos.pode_renovar`): não renova
+  livro atrasado, livro com alguém na fila, nem depois do limite de
+  renovações (`LIMITE_RENOVACOES`, padrão 2, novo). Antes não havia regra
+  nenhuma — quem julgava era a bibliotecária, olhando o caso. **No balcão
+  isso não muda**: ela continua podendo renovar em qualquer situação,
+  porque tem o aluno na frente e o contexto que o sistema não tem
+- A recusa vem do servidor já escrita para o aluno ("Outro leitor está
+  esperando por este livro"), em vez de o app inventar a explicação
+- Empréstimos passam a contar quantas vezes foram renovados
+
+### Leitura do QR pela câmera
+
+- O app lê o QR de pareamento apontando a câmera, em vez de exigir que o
+  aluno digite o IP. A permissão é pedida na hora de escanear, não na
+  abertura; a imagem é analisada em memória e descartada, nada é gravado
+  nem enviado
+- Digitar o endereço continua disponível o tempo todo — aparelho sem
+  câmera ou QR ilegível não podem deixar ninguém sem saída
+- O leitor é embarcado no APK, sem depender do Google Play Services, que
+  nem sempre está presente nos aparelhos dos alunos. Em troca ele traz um
+  motor nativo pesado, então o release passou a gerar **um APK por
+  arquitetura**: o aluno instala 19 MB em vez de 35 MB
+
 ### Aplicativo de celular (base no desktop)
 - **Parear celular**: novo botão em Configurações → Integrações que mostra
   um QR code com o endereço do servidor na rede da escola. O QR **não
@@ -35,8 +69,9 @@ funcionar de verdade contra a biblioteca:
   com host arbitrário da internet, já que a senha trafega em rede local)
 - Cartão de biblioteca com **código de barras Code 128 real**, lido pelo
   mesmo leitor do balcão (antes era um desenho que nenhum leitor decifrava)
-- Removidos os botões que fingiam reservar e renovar (a bibliotecária
-  nunca recebia o pedido) e todos os dados de exemplo embutidos
+- Removidos todos os dados de exemplo embutidos. Os botões de reservar e
+  renovar, que fingiam funcionar (a bibliotecária nunca recebia o pedido),
+  foram refeitos para valer — ver "Reserva e renovação pelo celular"
 - Botão de sair da conta e de trocar de biblioteca, com limpeza do que
   ficava guardado no aparelho
 

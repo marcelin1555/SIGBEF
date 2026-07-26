@@ -3,13 +3,16 @@ package br.rn.cefe.sigbef.data
 import android.content.Context
 import br.rn.cefe.sigbef.data.local.EmprestimoEntity
 import br.rn.cefe.sigbef.data.local.LivroEntity
+import br.rn.cefe.sigbef.data.local.ReservaEntity
 import br.rn.cefe.sigbef.data.local.SigbefDatabase
 import br.rn.cefe.sigbef.data.local.UsuarioEntity
 import br.rn.cefe.sigbef.data.remote.LoginRequest
+import br.rn.cefe.sigbef.data.remote.ReservaRequest
 import br.rn.cefe.sigbef.data.remote.RetrofitClient
 import br.rn.cefe.sigbef.data.remote.TokenManager
 import br.rn.cefe.sigbef.model.Emprestimo
 import br.rn.cefe.sigbef.model.Livro
+import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Usuario
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -39,6 +42,11 @@ class SigbefRepository(
 
     val emprestimosFlow: Flow<List<Emprestimo>> =
         db.emprestimoDao().getAllEmprestimos().map { lista ->
+            lista.map { it.toDomain() }
+        }
+
+    val reservasFlow: Flow<List<Reserva>> =
+        db.reservaDao().getAllReservas().map { lista ->
             lista.map { it.toDomain() }
         }
 
@@ -98,6 +106,7 @@ class SigbefRepository(
 
     private suspend fun limparCache() {
         db.emprestimoDao().clearAll()
+        db.reservaDao().clearAll()
         db.livroDao().clearAll()
         db.usuarioDao().clearAll()
     }
@@ -255,11 +264,97 @@ class SigbefRepository(
                     atrasado = prevista.isNotEmpty() && prevista < hoje,
                     devolvido = emp.dataDevolucao != null,
                     dataDevolvido = emp.dataDevolucao,
-                    spineColorHex = corDaLombada(emp.titulo)
+                    spineColorHex = corDaLombada(emp.titulo),
+                    renovacoes = emp.renovacoes,
+                    podeRenovar = emp.podeRenovar,
+                    motivoRenovacao = emp.motivoRenovacao.orEmpty()
+                )
+            }
+        )
+
+        db.reservaDao().clearAll()
+        db.reservaDao().insertReservas(
+            dto.reservasAtivas.map { r ->
+                ReservaEntity(
+                    id = r.id,
+                    livroId = r.livroId,
+                    titulo = r.titulo,
+                    posicao = r.posicao,
+                    separado = r.separado,
+                    retirarAte = r.retirarAte?.take(10),
+                    spineColorHex = corDaLombada(r.titulo)
                 )
             }
         )
         return true
+    }
+
+    // ------------------------------------------------- ações do aluno
+    /**
+     * Traduz uma recusa da API na frase que o aluno lê.
+     *
+     * O 409 é o caso interessante: o servidor já escreveu a explicação
+     * ("Outro leitor está esperando…"), então ela é repassada tal e qual
+     * em vez de ser substituída por um texto genérico daqui.
+     */
+    private fun mensagemDeErro(codigo: Int, corpoErro: String?): String {
+        val doServidor = corpoErro
+            ?.let { runCatching { RetrofitClient.lerErro(it) }.getOrNull() }
+            ?.takeIf { it.isNotBlank() }
+        return when {
+            doServidor != null -> doServidor
+            codigo == 401 -> "Seu acesso expirou. Entre de novo."
+            codigo == 403 -> "A biblioteca não permitiu esta ação."
+            codigo == 404 -> "A biblioteca não encontrou este registro."
+            else -> "A biblioteca recusou a ação (erro $codigo)."
+        }
+    }
+
+    private val semRede =
+        "Não consegui falar com a biblioteca. Confira se você está no " +
+            "Wi-Fi da escola."
+
+    /**
+     * Entra na fila de espera de um livro.
+     * @return null se deu certo; a explicação da biblioteca se não.
+     */
+    suspend fun reservar(livroId: Int): String? {
+        val resposta = runCatching { api().reservar(ReservaRequest(livroId)) }
+            .getOrElse { return semRede }
+        if (!resposta.isSuccessful) {
+            return mensagemDeErro(resposta.code(),
+                                  resposta.errorBody()?.string())
+        }
+        sincronizarSituacao()
+        return null
+    }
+
+    /** Desiste da fila. @return null em caso de sucesso. */
+    suspend fun cancelarReserva(reservaId: Int): String? {
+        val resposta = runCatching { api().cancelarReserva(reservaId) }
+            .getOrElse { return semRede }
+        if (!resposta.isSuccessful) {
+            return mensagemDeErro(resposta.code(),
+                                  resposta.errorBody()?.string())
+        }
+        sincronizarSituacao()
+        return null
+    }
+
+    /**
+     * Renova o próprio empréstimo. As regras (prazo vencido, fila de
+     * espera, limite) são decididas pela biblioteca, não aqui.
+     * @return null em caso de sucesso.
+     */
+    suspend fun renovar(emprestimoId: Int): String? {
+        val resposta = runCatching { api().renovar(emprestimoId) }
+            .getOrElse { return semRede }
+        if (!resposta.isSuccessful) {
+            return mensagemDeErro(resposta.code(),
+                                  resposta.errorBody()?.string())
+        }
+        sincronizarSituacao()
+        return null
     }
 
     /**
@@ -339,20 +434,6 @@ fun LivroEntity.toDomain() = Livro(
     spineColorHex = spineColorHex
 )
 
-fun Livro.toEntity() = LivroEntity(
-    id = id,
-    titulo = titulo,
-    autor = autor,
-    categoria = categoria,
-    ano = ano,
-    tombo = tombo,
-    isbn = isbn,
-    sinopse = sinopse,
-    disponivel = disponivel,
-    previsaoDevolucao = previsaoDevolucao,
-    spineColorHex = spineColorHex
-)
-
 fun EmprestimoEntity.toDomain() = Emprestimo(
     id = id,
     livroTitulo = livroTitulo,
@@ -361,16 +442,18 @@ fun EmprestimoEntity.toDomain() = Emprestimo(
     atrasado = atrasado,
     devolvido = devolvido,
     dataDevolvido = dataDevolvido,
-    spineColorHex = spineColorHex
+    spineColorHex = spineColorHex,
+    renovacoes = renovacoes,
+    podeRenovar = podeRenovar,
+    motivoRenovacao = motivoRenovacao
 )
 
-fun Emprestimo.toEntity() = EmprestimoEntity(
+fun ReservaEntity.toDomain() = Reserva(
     id = id,
-    livroTitulo = livroTitulo,
-    autor = autor,
-    dataDevolucao = dataDevolucao,
-    atrasado = atrasado,
-    devolvido = devolvido,
-    dataDevolvido = dataDevolvido,
+    livroId = livroId,
+    titulo = titulo,
+    posicao = posicao,
+    separado = separado,
+    retirarAte = retirarAte,
     spineColorHex = spineColorHex
 )

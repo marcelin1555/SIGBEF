@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import br.rn.cefe.sigbef.data.SigbefRepository
 import br.rn.cefe.sigbef.model.Emprestimo
 import br.rn.cefe.sigbef.model.Livro
+import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -70,6 +71,9 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
                  SigbefRepository.usuarioVazio)
 
     val emprestimos: StateFlow<List<Emprestimo>> = repository.emprestimosFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val reservas: StateFlow<List<Reserva>> = repository.reservasFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -212,7 +216,60 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
         _actionNotification.value = null
     }
 
-    // Reservar, renovar e emprestar NÃO são funções do aplicativo: a API
-    // da biblioteca é somente leitura, então qualquer botão aqui estaria
-    // mentindo para o aluno. As telas orientam a procurar o balcão.
+    // ------------------------------------------------- ações do aluno
+    // Reservar, cancelar e renovar são as três únicas coisas que o app
+    // grava na biblioteca, sempre nos dados do próprio aluno. Emprestar
+    // e devolver seguem sendo do balcão: exigem o livro na mão.
+
+    /** Erro da última ação; vira alerta na tela e some ao ser lido. */
+    private val _erroAcao = MutableStateFlow<String?>(null)
+    val erroAcao: StateFlow<String?> = _erroAcao.asStateFlow()
+
+    fun limparErroAcao() {
+        _erroAcao.value = null
+    }
+
+    /** Alguma ação está em andamento — trava o botão para não repetir. */
+    private val _acaoEmCurso = MutableStateFlow(false)
+    val acaoEmCurso: StateFlow<Boolean> = _acaoEmCurso.asStateFlow()
+
+    /**
+     * Roda uma ação da biblioteca cuidando do estado comum: trava o
+     * botão, guarda a recusa e avisa quando dá certo.
+     */
+    private fun executar(aviso: String, acao: suspend () -> String?) {
+        if (_acaoEmCurso.value) return
+        viewModelScope.launch {
+            _acaoEmCurso.value = true
+            _erroAcao.value = null
+            val erro = acao()
+            _acaoEmCurso.value = false
+            if (erro == null) {
+                _isOffline.value = false
+                marcarSincronizacao()
+                _actionNotification.value = aviso
+            } else {
+                _erroAcao.value = erro
+            }
+        }
+    }
+
+    fun reservar(livro: Livro) {
+        executar("Você entrou na fila de \"${livro.titulo}\". A biblioteca " +
+                 "avisa quando for a sua vez.") {
+            repository.reservar(livro.id)
+        }
+    }
+
+    fun cancelarReserva(reserva: Reserva) {
+        executar("Você saiu da fila de \"${reserva.titulo}\".") {
+            repository.cancelarReserva(reserva.id)
+        }
+    }
+
+    fun renovar(emprestimo: Emprestimo) {
+        executar("\"${emprestimo.livroTitulo}\" foi renovado.") {
+            repository.renovar(emprestimo.id)
+        }
+    }
 }

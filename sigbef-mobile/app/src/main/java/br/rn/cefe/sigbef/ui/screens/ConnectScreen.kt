@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.rn.cefe.sigbef.ui.components.LeitorQr
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
@@ -56,6 +57,32 @@ fun ConnectScreen(
     var showManualDialog by remember(erro) { mutableStateOf(erro != null) }
     // Sem valor de exemplo: cada escola tem o seu endereço.
     var ipInput by remember { mutableStateOf("") }
+    var escaneando by remember { mutableStateOf(false) }
+
+    // A câmera ocupa a tela inteira enquanto está ativa: mirar um código
+    // pequeno numa janelinha é frustrante.
+    if (escaneando) {
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+            LeitorQr(
+                modifier = Modifier.fillMaxSize(),
+                aoLer = { conteudo ->
+                    escaneando = false
+                    onConnected(conteudo)
+                },
+                aoCancelar = {
+                    escaneando = false
+                    showManualDialog = true
+                }
+            )
+            TextButton(
+                onClick = { escaneando = false },
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
+            ) {
+                Text("Cancelar", color = Color.White)
+            }
+        }
+        return
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -132,8 +159,9 @@ fun ConnectScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Peça à bibliotecária o endereço em Configurações → " +
-                        "Integrações → Parear celular, e digite abaixo.",
+                    text = "Peça à bibliotecária para abrir Configurações → " +
+                        "Integrações → Parear celular, e aponte a câmera " +
+                        "para o QR que aparecer na tela.",
                     fontSize = 15.sp,
                     color = SigbefMuted,
                     textAlign = TextAlign.Center,
@@ -143,11 +171,8 @@ fun ConnectScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // A leitura do QR pela câmera ainda não foi implementada;
-                // enquanto isso o botão leva à digitação, em vez de fingir
-                // que escaneou (antes ele devolvia um IP fixo de exemplo).
                 Button(
-                    onClick = { showManualDialog = true },
+                    onClick = { escaneando = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -161,9 +186,25 @@ fun ConnectScreen(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
-                        text = "Informar endereço da biblioteca",
+                        text = "Ler o QR da biblioteca",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Sempre disponível: aparelho sem câmera, câmera quebrada
+                // ou QR ilegível não podem deixar o aluno sem saída.
+                OutlinedButton(
+                    onClick = { showManualDialog = true },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Digitar o endereço",
+                        fontSize = 14.sp,
+                        color = SigbefNavy
                     )
                 }
             }

@@ -113,15 +113,54 @@ data class EmprestimoDto(
     @Json(name = "data_prevista") val dataPrevista: String? = null,
     @Json(name = "data_devolucao") val dataDevolucao: String? = null,
     val multa: Double = 0.0,
-    val origem: String? = null
+    val origem: String? = null,
+    val renovacoes: Int = 0,
+    // O servidor já entrega o veredito pronto, com a frase que o aluno
+    // deve ler. O app não recalcula regra de biblioteca.
+    @Json(name = "pode_renovar") val podeRenovar: Boolean = false,
+    @Json(name = "motivo_renovacao") val motivoRenovacao: String? = null
 )
 
 @JsonClass(generateAdapter = true)
 data class ReservaDto(
+    val id: Int = 0,
+    @Json(name = "livro_id") val livroId: Int = 0,
     val titulo: String,
     val posicao: Int = 0,
     val separado: Boolean = false,
     @Json(name = "retirar_ate") val retirarAte: String? = null
+)
+
+// ------------------------------------------------------- escrita (R3)
+@JsonClass(generateAdapter = true)
+data class ReservaRequest(
+    @Json(name = "livro_id") val livroId: Int
+)
+
+@JsonClass(generateAdapter = true)
+data class ReservaCriadaResponse(
+    val reserva: ReservaCriadaDto
+)
+
+@JsonClass(generateAdapter = true)
+data class ReservaCriadaDto(
+    val id: Int,
+    val titulo: String,
+    val posicao: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class RenovacaoResponse(
+    @Json(name = "data_prevista") val dataPrevista: String
+)
+
+/**
+ * Corpo de erro da API. Vem em toda recusa, e no caso do 409 a frase já
+ * está escrita para o aluno ler ("Outro leitor está esperando…").
+ */
+@JsonClass(generateAdapter = true)
+data class ErroResponse(
+    val erro: String? = null
 )
 
 // ------------------------------------------------------------------ ping

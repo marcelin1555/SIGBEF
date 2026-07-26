@@ -155,7 +155,8 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     data_prevista TEXT NOT NULL,
     data_devolucao TEXT,
     multa REAL NOT NULL DEFAULT 0,
-    origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO'))
+    origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO')),
+    renovacoes INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS reserva (
@@ -235,6 +236,7 @@ CONFIG_PADRAO = {
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
+    "LIMITE_RENOVACOES": "2",     # renovações seguidas que o aluno faz sozinho
     # E-mail de aviso de vencimento (opt-in; sistema segue 100% offline
     # com isso desligado)
     "EMAIL_AVISOS": "0",
@@ -275,6 +277,12 @@ def _migrar_schema(cur) -> None:
     colunas = {r["name"] for r in cur.fetchall()}
     if "turma" not in colunas:
         cur.execute("ALTER TABLE usuario ADD COLUMN turma TEXT")
+
+    cur.execute("PRAGMA table_info(emprestimo)")
+    colunas = {r["name"] for r in cur.fetchall()}
+    if "renovacoes" not in colunas:
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN renovacoes INTEGER NOT NULL DEFAULT 0")
 
 
 # ---------------------------------------------------------------------------

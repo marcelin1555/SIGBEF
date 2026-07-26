@@ -94,7 +94,8 @@ fun RenewInfoScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "A renovação pelo app ainda não está disponível. Para renovar, vá ao balcão da biblioteca.",
+                        text = "Você renova pelo próprio app, em \"Meus " +
+                            "empréstimos\", enquanto o prazo não vencer.",
                         fontSize = 14.sp,
                         color = Color(0xFF00497C),
                         lineHeight = 20.sp
@@ -114,10 +115,10 @@ fun RenewInfoScreen(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    StepItem(number = "1", title = "Vá ao balcão com o livro em mãos")
-                    StepItem(number = "2", title = "Apresente seu cartão digital")
-                    StepItem(number = "3", title = "Peça a renovação à bibliotecária")
-                    StepItem(number = "4", title = "Confira o novo prazo em 'Meus empréstimos'")
+                    StepItem(number = "1", title = "Conecte-se ao Wi-Fi da escola")
+                    StepItem(number = "2", title = "Abra 'Meus empréstimos'")
+                    StepItem(number = "3", title = "Toque em 'Renovar' no livro que quiser")
+                    StepItem(number = "4", title = "O novo prazo aparece ali mesmo")
                 }
             }
 
@@ -140,7 +141,10 @@ fun RenewInfoScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Não é possível renovar se o prazo já venceu ou se o livro está reservado por outro estudante.",
+                        text = "Não dá para renovar se o prazo já venceu, " +
+                            "se outro estudante está na fila de espera ou " +
+                            "se você já renovou o livro várias vezes. " +
+                            "Nesses casos, procure o balcão.",
                         fontSize = 14.sp,
                         color = Color(0xFF281900),
                         lineHeight = 20.sp
@@ -152,7 +156,7 @@ fun RenewInfoScreen(
 
             // Action Button
             Button(
-                onClick = { onNavigate(Screen.CARD) },
+                onClick = { onNavigate(Screen.LOANS) },
                 colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
@@ -166,7 +170,7 @@ fun RenewInfoScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "ABRIR CARTÃO DIGITAL",
+                    text = "IR PARA MEUS EMPRÉSTIMOS",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp

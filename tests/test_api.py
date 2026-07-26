@@ -372,6 +372,186 @@ class TestPareamento(SigbefTestCase):
         self.assertGreaterEqual(len(matriz), 21)
 
 
+class TestEscritaPeloApp(ApiTestCase):
+    """As três gravações que a API aceita (R3).
+
+    A regra que orienta todos estes testes: só o aluno logado, só nos
+    dados dele. Token de sistema não escreve nada.
+    """
+
+    def post(self, caminho, corpo=None, token=None):
+        conn = http.client.HTTPConnection("127.0.0.1", self.porta, timeout=5)
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        dados = json.dumps(corpo if corpo is not None else {}).encode("utf-8")
+        conn.request("POST", caminho, body=dados, headers=headers)
+        resp = conn.getresponse()
+        texto = resp.read().decode("utf-8") or "{}"
+        conn.close()
+        return resp.status, json.loads(texto)
+
+    def _logar(self, matricula="alu100", senha="senha123", perfil="ALUNO"):
+        servicos.cadastrar_usuario(nome="Aluno de Teste",
+                                   matricula=matricula, perfil=perfil,
+                                   senha=senha, gerar_cartao=False)
+        _, corpo = self.post("/api/v1/login",
+                             {"matricula": matricula, "senha": senha})
+        return corpo["token"]
+
+    def _livro_emprestado_para_outro(self):
+        """Livro sem exemplar livre — condição para poder reservar."""
+        outro = servicos.cadastrar_usuario(
+            nome="Quem Pegou", matricula="pegou1", perfil="ALUNO",
+            senha="senha123", gerar_cartao=False)
+        livro = servicos.cadastrar_livro(titulo="Livro Disputado",
+                                          autores=["Autora"],
+                                          quantidade_exemplares=1)
+        servicos.realizar_emprestimo(
+            codigo_exemplar=livro["exemplares"][0][1],
+            matricula_usuario=outro["matricula"])
+        return livro["livro_id"]
+
+    # ---------------- reserva ----------------
+    def test_aluno_reserva_livro_indisponivel(self):
+        livro_id = self._livro_emprestado_para_outro()
+        token = self._logar()
+        status, corpo = self.post("/api/v1/reservas", {"livro_id": livro_id},
+                                  token=token)
+        self.assertEqual(status, 201)
+        self.assertEqual(corpo["reserva"]["posicao"], 1)
+
+    def test_reservar_livro_disponivel_recusado_com_motivo(self):
+        livro = servicos.cadastrar_livro(titulo="Tem na Estante",
+                                          autores=["Autora"],
+                                          quantidade_exemplares=1)
+        token = self._logar()
+        status, corpo = self.post("/api/v1/reservas",
+                                  {"livro_id": livro["livro_id"]},
+                                  token=token)
+        self.assertEqual(status, 409)
+        self.assertIn("disponível", corpo["erro"])
+
+    def test_token_de_sistema_nao_reserva(self):
+        """O token completo é da escola, não de uma pessoa."""
+        livro_id = self._livro_emprestado_para_outro()
+        status, _ = self.post("/api/v1/reservas", {"livro_id": livro_id},
+                              token=self.token)
+        self.assertEqual(status, 403)
+
+    def test_sem_token_nao_reserva(self):
+        livro_id = self._livro_emprestado_para_outro()
+        status, _ = self.post("/api/v1/reservas", {"livro_id": livro_id})
+        self.assertEqual(status, 403)
+
+    def test_livro_id_ausente_400(self):
+        token = self._logar()
+        status, _ = self.post("/api/v1/reservas", {}, token=token)
+        self.assertEqual(status, 400)
+
+    # ---------------- cancelamento ----------------
+    def test_aluno_cancela_a_propria_reserva(self):
+        livro_id = self._livro_emprestado_para_outro()
+        token = self._logar()
+        _, corpo = self.post("/api/v1/reservas", {"livro_id": livro_id},
+                             token=token)
+        reserva_id = corpo["reserva"]["id"]
+        status, _ = self.post(f"/api/v1/reservas/{reserva_id}/cancelar",
+                              token=token)
+        self.assertEqual(status, 200)
+
+    def test_aluno_NAO_cancela_reserva_de_outro(self):
+        from sigbef import reservas
+        livro_id = self._livro_emprestado_para_outro()
+        vitima = servicos.cadastrar_usuario(
+            nome="Dono da Fila", matricula="alu200", perfil="ALUNO",
+            senha="outra123", gerar_cartao=False)
+        r = reservas.criar_reserva(livro_id, vitima["id"])
+
+        token = self._logar()
+        status, _ = self.post(f"/api/v1/reservas/{r['id']}/cancelar",
+                              token=token)
+        self.assertEqual(status, 409)
+        # E a reserva da vítima continua de pé.
+        self.assertEqual(len(reservas.listar_reservas_usuario(vitima["id"])), 1)
+
+    # ---------------- renovação ----------------
+    def _emprestimo_do_aluno(self, matricula="alu100"):
+        livro = servicos.cadastrar_livro(titulo="Livro do Aluno",
+                                          autores=["Autora"],
+                                          quantidade_exemplares=1)
+        return servicos.realizar_emprestimo(
+            codigo_exemplar=livro["exemplares"][0][1],
+            matricula_usuario=matricula)
+
+    def test_aluno_renova_o_proprio_emprestimo(self):
+        token = self._logar()
+        emp = self._emprestimo_do_aluno()
+        status, corpo = self.post(f"/api/v1/emprestimos/{emp['id']}/renovar",
+                                  token=token)
+        self.assertEqual(status, 200)
+        self.assertTrue(corpo["data_prevista"])
+
+    def test_aluno_NAO_renova_emprestimo_de_outro(self):
+        token = self._logar()
+        outro = servicos.cadastrar_usuario(
+            nome="Outro", matricula="alu200", perfil="ALUNO",
+            senha="outra123", gerar_cartao=False)
+        emp = self._emprestimo_do_aluno(outro["matricula"])
+        status, _ = self.post(f"/api/v1/emprestimos/{emp['id']}/renovar",
+                              token=token)
+        self.assertEqual(status, 403)
+
+    def test_renovar_atrasado_recusado_com_frase_do_aluno(self):
+        from sigbef.database import db_cursor
+        from datetime import date, timedelta
+        token = self._logar()
+        emp = self._emprestimo_do_aluno()
+        passada = (date.today() - timedelta(days=3)).isoformat()
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        (passada, emp["id"]))
+        status, corpo = self.post(f"/api/v1/emprestimos/{emp['id']}/renovar",
+                                  token=token)
+        self.assertEqual(status, 409)
+        self.assertIn("prazo", corpo["erro"].lower())
+
+    def test_emprestimo_inexistente_404(self):
+        token = self._logar()
+        status, _ = self.post("/api/v1/emprestimos/99999/renovar", token=token)
+        self.assertEqual(status, 404)
+
+    # ---------------- superfície de escrita ----------------
+    def test_rota_de_escrita_desconhecida_405(self):
+        token = self._logar()
+        status, _ = self.post("/api/v1/livros", {"titulo": "Hackeado"},
+                              token=token)
+        self.assertEqual(status, 405)
+
+    def test_put_e_delete_continuam_recusados(self):
+        token = self._logar()
+        for metodo in ("PUT", "DELETE", "PATCH"):
+            conn = http.client.HTTPConnection("127.0.0.1", self.porta,
+                                              timeout=5)
+            conn.request(metodo, "/api/v1/reservas", body=b"{}",
+                         headers={"Authorization": f"Bearer {token}"})
+            resp = conn.getresponse()
+            resp.read()
+            conn.close()
+            self.assertEqual(resp.status, 405, metodo)
+
+    def test_emprestimos_trazem_veredito_de_renovacao(self):
+        """O app precisa saber se pode renovar antes de mostrar o botão."""
+        token = self._logar()
+        self._emprestimo_do_aluno()
+        status, corpo = self.get("/api/v1/usuarios/alu100/emprestimos",
+                                 token=token)
+        self.assertEqual(status, 200)
+        emp = corpo["emprestimos_abertos"][0]
+        self.assertTrue(emp["pode_renovar"])
+        self.assertEqual(emp["motivo_renovacao"], "")
+
+
 if __name__ == "__main__":  # pragma: no cover
     import unittest
     unittest.main()

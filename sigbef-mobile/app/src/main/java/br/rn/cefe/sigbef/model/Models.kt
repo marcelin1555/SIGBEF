@@ -49,6 +49,21 @@ data class Emprestimo(
     val atrasado: Boolean,
     val devolvido: Boolean = false,
     val dataDevolvido: String? = null,
+    val spineColorHex: String = "#1F4E79",
+    val renovacoes: Int = 0,
+    /** A biblioteca já disse se este livro pode ser renovado. */
+    val podeRenovar: Boolean = false,
+    /** Quando não pode, a frase que explica o porquê ao aluno. */
+    val motivoRenovacao: String = ""
+)
+
+data class Reserva(
+    val id: Int,
+    val livroId: Int,
+    val titulo: String,
+    val posicao: Int = 0,
+    val separado: Boolean = false,
+    val retirarAte: String? = null,
     val spineColorHex: String = "#1F4E79"
 )
 

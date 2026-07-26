@@ -48,12 +48,12 @@ Identidade visual: seguir `docs/DESIGN.md` (cores, tipografia, ícones).
 
 ### Fora (por ora)
 
-- Emprestar/devolver pelo app — isso é do balcão e do kiosk.
-- Renovação online — a API é **somente leitura**; a tela explica como
-  renovar presencialmente.
-- Reserva — desenhada, mas **bloqueada** até a API ganhar escrita
-  (ver §5).
+- Emprestar/devolver pelo app — isso é do balcão e do kiosk, porque
+  exige o livro na mão.
 - Perfil de bibliotecário — o app é para leitores.
+
+Reserva e renovação **saíram desta lista**: foram entregues junto do R3
+(ver §5), com as regras validadas pelo servidor.
 
 ---
 
@@ -127,15 +127,15 @@ o app precisa do **token completo** (acessa dados do leitor).
 
 ## 5. O que o app exige do desktop
 
-Requisitos novos que a implementação do app cria no SIGBEF desktop.
-**Nenhum deles existe hoje.**
+Requisitos que a implementação do app criou no SIGBEF desktop. Todos
+resolvidos.
 
 | # | Requisito | Prioridade | Por quê |
 |---|---|---|---|
 | ~~R1~~ | ✅ **ENTREGUE** — QR de pareamento em Configurações → Integrações. Contém **só** endereço + porta (não leva token: o QR fica exposto na tela e seria fotografado). | — | Commit `c54386e` |
 | ~~R2~~ | ✅ **ENTREGUE** — `POST /api/v1/login` com matrícula e senha, devolvendo token de sessão preso ao aluno e com validade. | — | Ver `docs/API.md` |
-| R3 | **Escrita para reserva** (`POST /api/v1/reservas`) | Média | A tela de Reservar existe no desenho, mas fica desativada até isto. |
-| R4 | Campo de **sinopse** no acervo | Baixa | A tela de detalhes mostra sinopse; o banco atual não tem esse campo. |
+| ~~R3~~ | ✅ **ENTREGUE** — escrita restrita: `POST /api/v1/reservas`, `.../reservas/{id}/cancelar` e `.../emprestimos/{id}/renovar`, todas só com token de aluno e só nos dados dele. Renovação passou a ter regras explícitas (`pode_renovar`). | — | Ver `docs/API.md` |
+| ~~R4~~ | ✅ **JÁ EXISTIA** — a coluna `sinopse` está em `livro` (`database.py:115`) e vem em `GET /api/v1/livros/{id}`. O levantamento original errou aqui. | — | Verificado no app, com sinopse real |
 
 > ✅ **O furo de privacidade do R2 está fechado.** Antes, um token dava
 > acesso aos empréstimos de qualquer matrícula. Agora o app recebe um

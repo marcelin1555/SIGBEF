@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Emprestimo
+import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
@@ -57,7 +58,10 @@ fun LoansScreen(
     isOffline: Boolean,
     ultimaSincronizacao: String? = null,
     onNavigate: (Screen) -> Unit,
-    onRequestRenewal: ((Int) -> Unit)? = null
+    reservas: List<Reserva> = emptyList(),
+    acaoEmCurso: Boolean = false,
+    onRenovar: (Emprestimo) -> Unit = {},
+    onCancelarReserva: (Reserva) -> Unit = {}
 ) {
     val ativos = emprestimos.filter { !it.devolvido }
     val historico = emprestimos.filter { it.devolvido }
@@ -114,7 +118,10 @@ fun LoansScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            if (ativos.isEmpty()) {
+            // A fila de espera conta como "coisa acontecendo": quem só tem
+            // reserva não pode cair no estado vazio, senão some o único
+            // lugar onde ele acompanha a posição.
+            if (ativos.isEmpty() && reservas.isEmpty()) {
                 // Empty Loans State
                 Column(
                     modifier = Modifier
@@ -182,18 +189,47 @@ fun LoansScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    item {
-                        Text(
-                            text = "COM VOCÊ AGORA (${ativos.size})",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SigbefMuted,
-                            letterSpacing = 1.5.sp
-                        )
+                    if (ativos.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "COM VOCÊ AGORA (${ativos.size})",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SigbefMuted,
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        items(ativos) { emp ->
+                            ActiveLoanCard(
+                                emp = emp,
+                                isOffline = isOffline,
+                                acaoEmCurso = acaoEmCurso,
+                                onRenovar = onRenovar
+                            )
+                        }
                     }
 
-                    items(ativos) { emp ->
-                        ActiveLoanCard(emp = emp, onRequestRenewal = onRequestRenewal)
+                    if (reservas.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "NA FILA DE ESPERA (${reservas.size})",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = SigbefMuted,
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        items(reservas) { reserva ->
+                            ReservaCard(
+                                reserva = reserva,
+                                isOffline = isOffline,
+                                acaoEmCurso = acaoEmCurso,
+                                onCancelar = onCancelarReserva
+                            )
+                        }
                     }
 
                     if (historico.isNotEmpty()) {
@@ -236,7 +272,9 @@ fun LoansScreen(
 @Composable
 private fun ActiveLoanCard(
     emp: Emprestimo,
-    onRequestRenewal: ((Int) -> Unit)? = null
+    isOffline: Boolean,
+    acaoEmCurso: Boolean,
+    onRenovar: (Emprestimo) -> Unit
 ) {
     val spineColor = try {
         Color(android.graphics.Color.parseColor(emp.spineColorHex))
@@ -348,24 +386,127 @@ private fun ActiveLoanCard(
                 }
             }
 
-            // Renovar é operação de balcão: a API da biblioteca é somente
-            // leitura. Em vez de um botão que não faz nada, o app diz o
-            // que o aluno precisa fazer.
+            // O veredito sobre renovar vem pronto da biblioteca, com a
+            // frase que explica a recusa. O app não recalcula a regra.
             if (!emp.devolvido) {
                 Spacer(modifier = Modifier.height(12.dp))
                 androidx.compose.material3.HorizontalDivider(color = SigbefLine)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Para renovar, leve o livro ao balcão da biblioteca.",
+                when {
+                    emp.podeRenovar && !isOffline -> Button(
+                        onClick = { onRenovar(emp) },
+                        enabled = !acaoEmCurso,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SigbefNavy
+                        )
+                    ) {
+                        Text("Renovar por mais uma semana", fontSize = 14.sp)
+                    }
+
+                    emp.podeRenovar -> Text(
+                        text = "Conecte-se ao Wi-Fi da escola para renovar.",
                         fontSize = 12.sp,
                         color = SigbefMuted
                     )
+
+                    else -> Text(
+                        text = emp.motivoRenovacao.ifBlank {
+                            "Para renovar, leve o livro ao balcão da " +
+                                "biblioteca."
+                        },
+                        fontSize = 12.sp,
+                        color = if (emp.atrasado) SigbefError else SigbefMuted
+                    )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Um livro em que o aluno está na fila.
+ *
+ * Quando o exemplar já foi separado, o prazo de retirada é a informação
+ * mais importante do cartão — passar dele devolve o livro para a fila.
+ */
+@Composable
+private fun ReservaCard(
+    reserva: Reserva,
+    isOffline: Boolean,
+    acaoEmCurso: Boolean,
+    onCancelar: (Reserva) -> Unit
+) {
+    val spineColor = try {
+        Color(android.graphics.Color.parseColor(reserva.spineColorHex))
+    } catch (e: Exception) {
+        SigbefNavy
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        shadowElevation = 2.dp,
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (reserva.separado) 1.5.dp else 1.dp,
+            color = if (reserva.separado) SigbefGold else SigbefLine
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(72.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(spineColor)
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = reserva.titulo,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A1A1A)
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (reserva.separado)
+                            "Separado para você" +
+                                (reserva.retirarAte?.let { " — retire até $it" }
+                                    ?: "")
+                        else
+                            "Você é o ${reserva.posicao}º da fila",
+                        fontSize = 13.sp,
+                        fontWeight = if (reserva.separado) FontWeight.Bold
+                                     else FontWeight.Normal,
+                        color = if (reserva.separado) SigbefNavy else SigbefMuted
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            androidx.compose.material3.HorizontalDivider(color = SigbefLine)
+            Spacer(modifier = Modifier.height(4.dp))
+
+            TextButton(
+                onClick = { onCancelar(reserva) },
+                enabled = !isOffline && !acaoEmCurso,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (isOffline) "Sem conexão para sair da fila"
+                           else "Sair da fila",
+                    fontSize = 13.sp,
+                    color = SigbefMuted
+                )
             }
         }
     }

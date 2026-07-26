@@ -6,6 +6,20 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!--
+        A câmera serve para uma coisa só: ler o QR de pareamento que a
+        biblioteca mostra na tela do computador. Nada é gravado nem
+        enviado; a imagem só é analisada em memória. Por isso a permissão
+        é pedida na hora de escanear, e não na abertura do app.
+
+        required="false" porque o aparelho sem câmera continua servindo:
+        o endereço pode ser digitado à mão.
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <!--
         allowBackup desligado: o aparelho guarda o acesso do aluno e os
         dados da carteirinha. Não faz sentido esse conteúdo sair do
         celular numa cópia de segurança da nuvem.

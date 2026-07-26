@@ -1058,12 +1058,68 @@ def realizar_devolucao(*, codigo_exemplar: str,
     }
 
 
+def _motivo_para_nao_renovar(cur, emp) -> Optional[str]:
+    """Regras de renovação, ou None quando pode renovar.
+
+    Existe porque a renovação passou a ser feita também pelo aluno, no
+    celular, sem ninguém no balcão para julgar o caso. Recebe o cursor
+    já aberto para rodar dentro da mesma transação de quem chama.
+    """
+    if emp["data_prevista"] < date.today().isoformat():
+        return ("O prazo deste livro já venceu. Passe na biblioteca "
+                "para devolver ou renovar.")
+
+    limite = _config_int("LIMITE_RENOVACOES", 2)
+    if emp["renovacoes"] >= limite:
+        return (f"Você já renovou este livro {emp['renovacoes']}x. "
+                "Para continuar com ele, fale com a biblioteca.")
+
+    cur.execute(
+        """SELECT COUNT(*) AS n
+             FROM reserva r JOIN exemplar ex ON ex.livro_id = r.livro_id
+            WHERE ex.id = ? AND r.status = 'ATIVA'""",
+        (emp["exemplar_id"],),
+    )
+    if cur.fetchone()["n"]:
+        return ("Outro leitor está esperando por este livro na fila de "
+                "reservas, então ele não pode ser renovado.")
+    return None
+
+
+def pode_renovar(emprestimo_id: int) -> tuple[bool, str]:
+    """Diz se um empréstimo pode ser renovado e, se não, por quê.
+
+    Usada pelo app para desabilitar o botão antes de tentar, e pela API
+    para recusar com uma frase que o aluno entenda.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT e.data_prevista, e.exemplar_id, e.renovacoes
+                 FROM emprestimo e
+                WHERE e.id = ? AND e.data_devolucao IS NULL""",
+            (emprestimo_id,),
+        )
+        emp = cur.fetchone()
+        if not emp:
+            return False, "Empréstimo não encontrado."
+        motivo = _motivo_para_nao_renovar(cur, emp)
+    return (motivo is None), (motivo or "")
+
+
 def renovar_emprestimo(emprestimo_id: int,
-                       operador_id: Optional[int] = None) -> dict:
+                       operador_id: Optional[int] = None,
+                       *, validar_regras: bool = False) -> dict:
+    """Estende o prazo de um empréstimo em aberto.
+
+    No balcão (`validar_regras=False`) a bibliotecária continua podendo
+    renovar em qualquer situação: ela tem o aluno na frente e o contexto
+    que o sistema não tem. Pelo app o aluno decide sozinho, então ali as
+    regras de `pode_renovar` são obrigatórias.
+    """
     with db_cursor() as cur:
         cur.execute(
             """SELECT e.id, e.usuario_id, e.exemplar_id, e.data_prevista,
-                       u.perfil
+                       e.renovacoes, u.perfil
                FROM emprestimo e JOIN usuario u ON u.id = e.usuario_id
                WHERE e.id = ? AND e.data_devolucao IS NULL""",
             (emprestimo_id,),
@@ -1072,10 +1128,16 @@ def renovar_emprestimo(emprestimo_id: int,
         if not emp:
             raise RegraNegocioError("Empréstimo não encontrado.")
 
+        if validar_regras:
+            motivo = _motivo_para_nao_renovar(cur, emp)
+            if motivo:
+                raise RegraNegocioError(motivo)
+
         prazo = _prazo_para_perfil(emp["perfil"])
         nova_data = (date.today() + timedelta(days=prazo)).isoformat()
         cur.execute(
-            "UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+            "UPDATE emprestimo SET data_prevista = ?, "
+            "renovacoes = renovacoes + 1 WHERE id = ?",
             (nova_data, emprestimo_id),
         )
     registrar_auditoria(operador_id or emp["usuario_id"], "RENOVACAO",
@@ -1087,7 +1149,8 @@ def listar_emprestimos_usuario(usuario_id: int,
                                 somente_abertos: bool = False) -> list[dict]:
     sql = """
         SELECT e.id, l.titulo, ex.codigo_barras, e.data_emprestimo,
-               e.data_prevista, e.data_devolucao, e.multa, e.origem
+               e.data_prevista, e.data_devolucao, e.multa, e.origem,
+               e.renovacoes
         FROM emprestimo e
         JOIN exemplar ex ON ex.id = e.exemplar_id
         JOIN livro l ON l.id = ex.livro_id

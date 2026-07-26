@@ -13,8 +13,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -73,6 +75,10 @@ fun SigbefApp() {
     val erroLogin by viewModel.erroLogin.collectAsState()
     val erroConexao by viewModel.erroConexao.collectAsState()
     val ultimaSync by viewModel.ultimaSincronizacao.collectAsState()
+    val reservas by viewModel.reservas.collectAsState()
+    val acaoEmCurso by viewModel.acaoEmCurso.collectAsState()
+    val erroAcao by viewModel.erroAcao.collectAsState()
+    val aviso by viewModel.actionNotification.collectAsState()
 
     // A tela e o livro selecionado vivem no ViewModel, que sobrevive à
     // rotação do aparelho. Antes eram variáveis locais em `remember`, e
@@ -140,11 +146,20 @@ fun SigbefApp() {
                     Screen.BOOK_DETAIL, Screen.RESERVE -> {
                         val livro = selectedBook
                         if (livro != null) {
+                            val minhaReserva = reservas.firstOrNull {
+                                it.livroId == livro.id
+                            }
                             BookDetailScreen(
                                 livro = livro,
                                 isOffline = isOffline,
                                 onBackClick = { viewModel.navigateTo(Screen.ACERVO) },
-                                onNavigate = viewModel::navigateTo
+                                onNavigate = viewModel::navigateTo,
+                                reservaDoLivro = minhaReserva,
+                                acaoEmCurso = acaoEmCurso,
+                                onReservar = { viewModel.reservar(livro) },
+                                onCancelarReserva = {
+                                    minhaReserva?.let { viewModel.cancelarReserva(it) }
+                                }
                             )
                         } else {
                             // Chegou aqui sem livro escolhido: volta ao acervo.
@@ -156,7 +171,11 @@ fun SigbefApp() {
                         emprestimos = emprestimos,
                         isOffline = isOffline,
                         ultimaSincronizacao = ultimaSync,
-                        onNavigate = viewModel::navigateTo
+                        onNavigate = viewModel::navigateTo,
+                        reservas = reservas,
+                        acaoEmCurso = acaoEmCurso,
+                        onRenovar = { viewModel.renovar(it) },
+                        onCancelarReserva = { viewModel.cancelarReserva(it) }
                     )
 
                     Screen.RENEW_INFO -> RenewInfoScreen(
@@ -216,6 +235,44 @@ fun SigbefApp() {
                             borderColor = if (isOffline) SigbefWarning else SigbefNavy
                         ),
                         shape = RoundedCornerShape(16.dp)
+                    )
+                }
+            }
+
+            // Recusa da biblioteca: exige leitura, então para o aluno em
+            // vez de passar despercebida no canto da tela.
+            erroAcao?.let { mensagem ->
+                AlertDialog(
+                    onDismissRequest = { viewModel.limparErroAcao() },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.limparErroAcao() }) {
+                            Text("Entendi")
+                        }
+                    },
+                    title = { Text("Não deu certo") },
+                    text = { Text(mensagem) }
+                )
+            }
+
+            // Confirmação do que acabou de acontecer, some sozinha.
+            aviso?.let { mensagem ->
+                LaunchedEffect(mensagem) {
+                    kotlinx.coroutines.delay(4000)
+                    viewModel.clearNotification()
+                }
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 16.dp, vertical = 96.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = SigbefNavy,
+                    shadowElevation = 8.dp
+                ) {
+                    Text(
+                        text = mensagem,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }

@@ -49,6 +49,27 @@ android {
     // (e nem deve estar), quebrando o build de quem clonasse o projeto.
     debug { }
   }
+
+  /*
+   * Um APK por arquitetura, no release.
+   *
+   * O leitor de QR traz um motor nativo (libbarhopper) de ~5 MB para
+   * CADA arquitetura. Num APK único isso são ~20 MB que o aluno baixa
+   * sem usar: o celular roda só a dele. Separando, o arquivo que ele
+   * instala volta ao tamanho de antes.
+   *
+   * O universalApk continua sendo gerado para quando é preciso um
+   * arquivo só — passar o app por cabo ou por WhatsApp na escola, sem
+   * saber de antemão qual é o aparelho.
+   */
+  splits {
+    abi {
+      isEnable = true
+      reset()
+      include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+      isUniversalApk = true
+    }
+  }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
@@ -64,10 +85,11 @@ dependencies {
   implementation(platform(libs.androidx.compose.bom))
   // implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
-  // implementation(libs.androidx.camera.camera2)
-  // implementation(libs.androidx.camera.core)
-  // implementation(libs.androidx.camera.lifecycle)
-  // implementation(libs.androidx.camera.view)
+  implementation(libs.androidx.camera.camera2)
+  implementation(libs.androidx.camera.core)
+  implementation(libs.androidx.camera.lifecycle)
+  implementation(libs.androidx.camera.view)
+  implementation(libs.mlkit.barcode.scanning)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)

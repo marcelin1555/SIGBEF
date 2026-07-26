@@ -58,6 +58,21 @@ object RetrofitClient {
         currentBaseUrl = null
     }
 
+    private val moshiErro by lazy {
+        Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+            .adapter(ErroResponse::class.java)
+    }
+
+    /**
+     * Extrai a mensagem de dentro de um corpo de erro da API.
+     *
+     * Existe porque as recusas por regra de negócio (409) trazem a frase
+     * já escrita para o aluno — vale mais mostrá-la do que inventar um
+     * texto genérico no app.
+     */
+    fun lerErro(corpo: String): String =
+        runCatching { moshiErro.fromJson(corpo)?.erro }.getOrNull().orEmpty()
+
     /**
      * Confere se o endereço é de rede local, antes de aceitar o pareamento.
      *

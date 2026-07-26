@@ -67,3 +67,16 @@ interface EmprestimoDao {
     @Query("DELETE FROM emprestimos")
     suspend fun clearAll()
 }
+
+@Dao
+interface ReservaDao {
+    /** Fila do aluno: quem já tem exemplar separado aparece primeiro. */
+    @Query("SELECT * FROM reservas ORDER BY separado DESC, posicao ASC")
+    fun getAllReservas(): Flow<List<ReservaEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReservas(reservas: List<ReservaEntity>)
+
+    @Query("DELETE FROM reservas")
+    suspend fun clearAll()
+}

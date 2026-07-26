@@ -51,6 +51,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Livro
+import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
@@ -65,7 +66,12 @@ fun BookDetailScreen(
     livro: Livro,
     isOffline: Boolean,
     onBackClick: () -> Unit,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    /** Reserva ativa do aluno para ESTE livro, se já existir. */
+    reservaDoLivro: Reserva? = null,
+    acaoEmCurso: Boolean = false,
+    onReservar: () -> Unit = {},
+    onCancelarReserva: () -> Unit = {}
 ) {
     val spineColor = try {
         Color(android.graphics.Color.parseColor(livro.spineColorHex))
@@ -273,39 +279,57 @@ fun BookDetailScreen(
                 shadowElevation = 8.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Reservar e emprestar são operações de balcão: a API da
-                    // biblioteca é somente leitura, então o app não promete
-                    // uma ação que não consegue cumprir.
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
-                        color = SigbefNavy.copy(alpha = 0.06f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = null,
-                                tint = SigbefNavy,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = if (livro.disponivel)
-                                    "Anote o tombo e procure o balcão para levar este livro."
+                    when {
+                        // Emprestar continua sendo de balcão: exige o livro
+                        // na mão, e a API não faz isso de propósito.
+                        livro.disponivel -> Aviso(
+                            "Anote o tombo e procure o balcão para levar " +
+                                "este livro."
+                        )
+
+                        reservaDoLivro != null -> {
+                            Aviso(
+                                if (reservaDoLivro.separado)
+                                    "Seu exemplar está separado no balcão" +
+                                        (reservaDoLivro.retirarAte?.let {
+                                            ", retire até $it."
+                                        } ?: ".")
                                 else
-                                    "Livro emprestado. Peça no balcão para entrar na fila de espera.",
-                                fontSize = 13.sp,
-                                color = SigbefNavy
+                                    "Você é o ${reservaDoLivro.posicao}º da " +
+                                        "fila deste livro."
                             )
+                            OutlinedButton(
+                                onClick = onCancelarReserva,
+                                enabled = !isOffline && !acaoEmCurso,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Sair da fila")
+                            }
+                        }
+
+                        else -> {
+                            Aviso("Este livro está emprestado. Você pode " +
+                                      "entrar na fila e a biblioteca avisa " +
+                                      "quando chegar a sua vez.")
+                            Button(
+                                onClick = onReservar,
+                                enabled = !isOffline && !acaoEmCurso,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SigbefNavy
+                                )
+                            ) {
+                                Text(
+                                    if (isOffline) "Sem conexão para reservar"
+                                    else "Entrar na fila de espera"
+                                )
+                            }
                         }
                     }
                 }
@@ -313,6 +337,30 @@ fun BookDetailScreen(
         }
     }
 
+}
+
+/** Faixa de orientação em azul claro, acima do botão de ação. */
+@Composable
+private fun Aviso(texto: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = SigbefNavy.copy(alpha = 0.06f)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = null,
+                tint = SigbefNavy,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(text = texto, fontSize = 13.sp, color = SigbefNavy)
+        }
+    }
 }
 
 @Composable

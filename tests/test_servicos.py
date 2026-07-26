@@ -435,6 +435,77 @@ class TestRenovacao(ServicosTestCase):
         self.assertEqual(res["data_prevista"], esperada)
 
 
+class TestRegrasDeRenovacao(ServicosTestCase):
+    """Regras que valem quando o aluno renova sozinho, pelo celular.
+
+    No balcão a bibliotecária continua podendo renovar em qualquer caso
+    — ela tem o contexto que o sistema não tem. Pelo app, não há ninguém
+    para julgar, então `validar_regras=True` faz as regras valerem.
+    """
+
+    def _emprestimo(self, perfil="ALUNO"):
+        u = self.criar_usuario(perfil=perfil)
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], u["matricula"])
+        return u, livro, emp
+
+    def test_emprestimo_em_dia_pode_renovar(self):
+        _, _, emp = self._emprestimo()
+        pode, motivo = servicos.pode_renovar(emp["id"])
+        self.assertTrue(pode)
+        self.assertEqual(motivo, "")
+
+    def test_atrasado_nao_renova(self):
+        _, _, emp = self._emprestimo()
+        self.atrasar_emprestimo(emp["id"], dias=2)
+        pode, motivo = servicos.pode_renovar(emp["id"])
+        self.assertFalse(pode)
+        self.assertIn("prazo", motivo.lower())
+        with self.assertRaises(RegraNegocioError):
+            servicos.renovar_emprestimo(emp["id"], validar_regras=True)
+
+    def test_balcao_ainda_renova_atrasado(self):
+        """A bibliotecária não perde um poder que já tinha."""
+        _, _, emp = self._emprestimo()
+        self.atrasar_emprestimo(emp["id"], dias=2)
+        res = servicos.renovar_emprestimo(emp["id"])
+        self.assertEqual(res["data_prevista"],
+                          (date.today() + timedelta(days=7)).isoformat())
+
+    def test_livro_com_fila_de_reserva_nao_renova(self):
+        from sigbef import reservas
+        _, livro, emp = self._emprestimo()
+        # O único exemplar está emprestado, então o outro aluno consegue
+        # entrar na fila — e é isso que trava a renovação.
+        outro = self.criar_usuario(matricula="esperando1")
+        reservas.criar_reserva(livro["livro_id"], outro["id"])
+        pode, motivo = servicos.pode_renovar(emp["id"])
+        self.assertFalse(pode)
+        self.assertIn("esperando", motivo.lower())
+
+    def test_limite_de_renovacoes(self):
+        set_config("LIMITE_RENOVACOES", "1")
+        _, _, emp = self._emprestimo()
+        servicos.renovar_emprestimo(emp["id"], validar_regras=True)
+        pode, motivo = servicos.pode_renovar(emp["id"])
+        self.assertFalse(pode)
+        self.assertIn("renovou", motivo.lower())
+
+    def test_renovacoes_sao_contadas(self):
+        _, _, emp = self._emprestimo()
+        servicos.renovar_emprestimo(emp["id"])
+        servicos.renovar_emprestimo(emp["id"])
+        with db_cursor() as cur:
+            cur.execute("SELECT renovacoes FROM emprestimo WHERE id = ?",
+                        (emp["id"],))
+            self.assertEqual(cur.fetchone()["renovacoes"], 2)
+
+    def test_emprestimo_inexistente(self):
+        pode, motivo = servicos.pode_renovar(99999)
+        self.assertFalse(pode)
+        self.assertIn("não encontrado", motivo)
+
+
 class TestQuitarMulta(ServicosTestCase):
     """Quitação de multa."""
 

@@ -11,8 +11,9 @@ import retrofit2.http.Query
  * Rotas da API do SIGBEF desktop.
  *
  * Todas conferidas contra sigbef/api.py — não há nenhuma rota inventada
- * aqui. Fora o login, a API é **somente leitura**: qualquer POST em outro
- * caminho recebe 405 do servidor, então reservar/renovar não existem.
+ * aqui. A API grava em exatamente três lugares (reservar, cancelar a
+ * própria reserva e renovar o próprio empréstimo); o acervo em si só é
+ * lido, e qualquer outro POST recebe 405 do servidor.
  */
 interface SigbefApiService {
 
@@ -48,4 +49,24 @@ interface SigbefApiService {
     suspend fun situacaoLeitor(
         @Path("matricula") matricula: String
     ): Response<SituacaoLeitorResponse>
+
+    /**
+     * Entra na fila de espera de um livro sem exemplar livre.
+     * 409 quando a regra da biblioteca recusa (livro disponível, limite
+     * de reservas atingido, reserva repetida) — a mensagem vem pronta.
+     */
+    @POST("api/v1/reservas")
+    suspend fun reservar(@Body request: ReservaRequest): Response<ReservaCriadaResponse>
+
+    /** Desiste da fila. O servidor recusa reserva que seja de outro aluno. */
+    @POST("api/v1/reservas/{id}/cancelar")
+    suspend fun cancelarReserva(@Path("id") id: Int): Response<Unit>
+
+    /**
+     * Estende o prazo do próprio empréstimo.
+     * 409 quando venceu, quando alguém está na fila ou quando o limite de
+     * renovações acabou; 403 se o empréstimo for de outro leitor.
+     */
+    @POST("api/v1/emprestimos/{id}/renovar")
+    suspend fun renovar(@Path("id") id: Int): Response<RenovacaoResponse>
 }
