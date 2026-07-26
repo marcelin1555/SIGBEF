@@ -6,7 +6,7 @@
 
 ### Sistema Integrado de Gestão da Biblioteca do CEFE
 
-*Sistema desktop completo para gestão bibliotecária, gratuito e offline, desenvolvido por estudantes do CEFE para escolas públicas brasileiras.*
+*Sistema completo para gestão bibliotecária — desktop, aplicativo do aluno e API —, gratuito e offline, desenvolvido por estudantes do CEFE para escolas públicas brasileiras.*
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-1F4E79?style=for-the-badge)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-2E75B6?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/downloads/)
@@ -14,8 +14,8 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.4.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
-[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS-6B7280?style=flat)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.6.2-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
 [![Documentação](https://img.shields.io/badge/docs-completa-2E75B6?style=flat&logo=readthedocs&logoColor=white)](docs/SIGBEF_Documento_Requisitos.docx)
@@ -85,14 +85,18 @@
 
 ## Sobre o projeto
 
-O **SIGBEF** é um sistema desktop para automatizar a operação de uma
-biblioteca escolar, substituindo controles manuais e planilhas por uma
-plataforma única que integra:
+O **SIGBEF** é um sistema para automatizar a operação de uma biblioteca
+escolar, substituindo controles manuais e planilhas por uma plataforma
+única que integra:
 
 - **Cadastro do acervo** com geração automática de código de barras por exemplar
 - **Pesquisa** flexível por título, autor, categoria, ISBN ou tombo
 - **Empréstimos e devoluções** no balcão e em terminal de autoatendimento
+- **Reservas com fila de espera**, com separação automática do exemplar
+  na devolução e aviso por e-mail (opt-in)
 - **Gestão de usuários** com perfis distintos (Aluno, Professor, Bibliotecário, Administrador)
+- **Painel de uso do acervo** com gráficos e a lista do que nunca saiu
+  da estante
 - **Relatórios gerenciais** com exportação em CSV
 - **Auditoria** completa das operações realizadas
 
@@ -101,8 +105,17 @@ separação clara entre interface (Tkinter), regras de negócio (módulo
 `servicos`) e persistência (SQLite + módulo `database`), facilitando
 manutenção e testes.
 
-O projeto inclui também um **site de apresentação** em React + Vite,
-hospedado na Vercel: https://sigbef.vercel.app/
+Além do desktop, o projeto tem:
+
+- **Aplicativo Android** para o aluno (Kotlin + Jetpack Compose):
+  acervo, carteirinha com código de barras real, empréstimos, reserva,
+  renovação e sugestões de leitura. Funciona offline e conversa apenas
+  com o computador da biblioteca, pela rede da escola — sem nuvem. Ver
+  [`sigbef-mobile/`](sigbef-mobile/README.md)
+- **API REST** opcional, para o aplicativo e para integração com outros
+  sistemas escolares. Ver [`docs/API.md`](docs/API.md)
+- **Site de apresentação** em React + Vite, hospedado na Vercel:
+  https://sigbef.vercel.app/
 
 ---
 
@@ -120,7 +133,10 @@ hospedado na Vercel: https://sigbef.vercel.app/
 | Devolução de balcão | Cálculo automático de multa por dias de atraso |
 | Renovação | Estende o prazo conforme perfil do usuário |
 | Quitação de multa | Registro manual de multas pagas |
+| Fila de espera | Quem espera cada livro, com destaque para os exemplares já separados e o prazo de retirada |
+| Uso do acervo | Empréstimos por mês, turmas e categorias, taxa de atraso e a lista dos livros que nunca saíram |
 | Relatórios em CSV | Acervo, empréstimos abertos, usuários, livros mais emprestados |
+| Pareamento de celular | QR code para o aluno conectar o aplicativo, e controle dos aparelhos ligados |
 | Configurações *(admin)* | Ajuste de prazos, limites e valores de multa |
 
 ### Para Alunos e Professores
@@ -129,8 +145,21 @@ hospedado na Vercel: https://sigbef.vercel.app/
 |---|---|
 | Pesquisa do acervo | Busca rápida por título, autor, categoria, ISBN ou código |
 | Empréstimo direto | Selecione um livro disponível na lista e clique em "Pegar emprestado" |
+| Reserva | Entrar na fila de um livro emprestado e acompanhar a posição |
 | Histórico pessoal | Visualização dos próprios empréstimos com destaque para atrasados |
 | Status do usuário | Resumo do limite usado, multas e bloqueios em uma frase |
+
+### No celular (aplicativo Android)
+
+| Recurso | Descrição |
+|---|---|
+| Pareamento por QR | A câmera lê o código que a biblioteca mostra na tela; digitar o endereço também funciona |
+| Carteirinha digital | Código de barras Code 128 real, lido pelo mesmo leitor do balcão — e funciona sem rede |
+| Meus empréstimos | Prazos, atrasos, histórico e a fila de espera |
+| Renovar | Com as regras da biblioteca: não renova atrasado, com fila ou acima do limite |
+| Reservar | Entrar e sair da fila de espera direto da ficha do livro |
+| Minha leitura | Quanto o aluno já leu e sugestões de próximos livros, com o motivo de cada uma |
+| Offline | Tudo que já foi baixado continua acessível fora da escola |
 
 ### Terminal de Autoatendimento (kiosk)
 
@@ -146,20 +175,39 @@ hospedado na Vercel: https://sigbef.vercel.app/
 
 ## Stack tecnológica
 
+### Desktop
+
 | Camada | Tecnologia |
 |---|---|
 | Linguagem | Python 3.10+ |
 | Interface gráfica | Tkinter / ttk (biblioteca padrão) |
-| Banco de dados | SQLite 3 (embarcado) |
+| Banco de dados | SQLite 3 (embarcado, modo WAL) |
 | Hash de senha | PBKDF2-HMAC-SHA256 com sal aleatório (200 mil iterações) |
-| Código de barras | Geração de identificadores únicos + renderização em canvas Tk |
+| Código de barras | Code 128 implementado em Python puro (`barcode_util`) |
+| QR code | Implementado em Python puro (`qr_util`), para o pareamento |
+| Gráficos | Desenhados em Canvas do Tk (`ui_graficos`) |
+| API REST | `http.server` da stdlib, opt-in |
 | Relatórios | Exportação em CSV (`csv` da stdlib) |
-| Empacotamento | Compatível com PyInstaller para distribuição |
+| Empacotamento | PyInstaller + Inno Setup |
 
-> O protótipo **não exige nenhuma biblioteca externa** — usa apenas a
-> biblioteca padrão do Python. Para impressão em massa de PNGs reais de
-> código de barras, são opcionais `python-barcode` e `Pillow`
-> (ver `requirements.txt`).
+> O sistema **não exige nenhuma biblioteca externa** para funcionar —
+> usa apenas a biblioteca padrão do Python. É por isso que o Code 128, o
+> QR code e os gráficos foram escritos à mão: numa escola pública, cada
+> dependência é um problema a mais na hora de instalar. Para impressão
+> em massa de PNGs de código de barras, são opcionais `python-barcode` e
+> `Pillow` (ver `requirements.txt`).
+
+### Aplicativo Android
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Kotlin |
+| Interface | Jetpack Compose (Material 3) |
+| Arquitetura | MVVM com StateFlow |
+| Cache local | Room |
+| Rede | Retrofit + Moshi + OkHttp |
+| Leitura de QR | CameraX + ML Kit embarcado (sem depender do Play Services) |
+| minSdk | 24 (Android 7) |
 
 ---
 
@@ -479,35 +527,46 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 ## Estrutura do projeto
 
 ```
-SIGBIB/
-├── sigbef.py                          # ponto de entrada (atalho)
-├── requirements.txt                   # dependências (vazio — só std lib)
-├── README.md                          # este arquivo
-├── LICENSE                            # licença MIT
-├── VERSION                            # versão atual
-├── .gitignore
-├── build.bat                          # gera o executável (Windows)
-├── sigbef.spec                        # configuração do PyInstaller
-│
-├── sigbef/                            # código-fonte da aplicação
-│   ├── __init__.py
+├── sigbef/                            # código-fonte do desktop
 │   ├── app.py                         # bootstrap da aplicação
 │   ├── database.py                    # schema, conexão, configurações
-│   ├── auth.py                        # autenticação e hash de senha
+│   ├── auth.py                        # autenticação, hash e sessão do app
 │   ├── servicos.py                    # regras de negócio
+│   ├── reservas.py                    # fila de espera e promoção automática
+│   ├── api.py                         # API REST (opt-in)
+│   ├── notificacoes.py                # avisos por e-mail (opt-in)
+│   ├── isbn_lookup.py                 # metadados por ISBN (opt-in)
 │   ├── seed.py                        # dados de demonstração
-│   ├── barcode_util.py                # geração de código de barras
+│   ├── barcode_util.py                # Code 128 em Python puro
+│   ├── qr_util.py                     # QR code em Python puro
 │   ├── formato.py                     # formatação BR (datas, R$)
+│   ├── icones.py / icones_data.py     # ícones embutidos
 │   ├── ui_tema.py                     # tema visual e estilos ttk
+│   ├── ui_graficos.py                 # gráficos em Canvas Tk
 │   ├── ui_login.py                    # tela de login
 │   ├── ui_painel.py                   # painel principal
 │   ├── ui_dialogos.py                 # diálogos modais reutilizáveis
 │   ├── ui_selfservice.py              # terminal de autoatendimento
 │   └── ui_setup.py                    # assistente de primeira execução
 │
+├── sigbef-mobile/                     # aplicativo Android (Kotlin/Compose)
+│   └── app/src/main/java/br/rn/cefe/sigbef/
+│       ├── data/                      # Room (cache), Retrofit (API)
+│       ├── model/                     # modelos de domínio
+│       └── ui/                        # telas, componentes e tema
+│
+├── tests/                             # suíte de testes do desktop
+│
+├── site/                              # site de apresentação (React + Vite)
+│
 ├── docs/                              # documentação completa
 │   ├── MANUAL_DO_USUARIO.md           # manual do usuário final
+│   ├── TREINAMENTO.md                 # roteiro de capacitação
 │   ├── CHANGELOG.md                   # histórico de versões
+│   ├── API.md                         # referência da API REST
+│   ├── DESIGN.md                      # identidade visual (desktop, site, app)
+│   ├── SIGBEF_MOBILE.md               # especificação do aplicativo
+│   ├── AUDITORIA_MOBILE.md            # auditoria do app herdado
 │   ├── COMO_GERAR_EXECUTAVEL.md       # guia de build do desktop
 │   ├── COMO_GERAR_APK.md              # guia de build e assinatura do app
 │   ├── PUBLICAR_NO_GITHUB.md          # guia de publicação
@@ -520,9 +579,6 @@ SIGBIB/
 │   └── sebrae/                        # material do Desafio Liga Jovem
 │
 ├── assets/                            # identidade visual
-│   ├── sigbef.svg                     # logo / ícone
-│   └── sigbef.ico                     # gerado pelo build
-│
 ├── tools/                             # scripts de desenvolvimento
 │   ├── gerar_icone.py                 # gera assets/sigbef.ico
 │   ├── sigbef_installer.iss           # script Inno Setup
@@ -560,8 +616,31 @@ profissional com Inno Setup.
 ### Adicionando uma nova tabela
 
 1. Acrescente o `CREATE TABLE IF NOT EXISTS ...` em `SCHEMA_SQL` (em `database.py`)
-2. Adicione um helper na camada de serviços
-3. Construa a UI consumindo somente esse helper
+2. Se a tabela já existe em bancos instalados, trate a coluna nova em
+   `_migrar_schema()` — escola em produção não recria o banco
+3. Adicione um helper na camada de serviços
+4. Construa a UI consumindo somente esse helper
+
+### Testes
+
+```bash
+python -m unittest discover -s tests        # suíte do desktop
+```
+
+Os testes rodam contra um banco SQLite temporário, recriado a cada caso
+(`tests/base.py`), e **nunca tocam** o banco real. Regra do projeto:
+correção de bug entra com o teste que a trava.
+
+### Aplicativo Android
+
+```bash
+cd sigbef-mobile
+./gradlew testDebugUnitTest     # testes
+./gradlew assembleDebug         # APK de depuração
+```
+
+Para gerar o APK assinado que vai para os alunos, veja
+[`docs/COMO_GERAR_APK.md`](docs/COMO_GERAR_APK.md).
 
 ---
 

@@ -9,8 +9,8 @@ exercício ao fim de cada um. Faça os exercícios no sistema com os
 **dados de demonstração** carregados (Configurações → Ferramentas →
 "Carregar dados de demonstração").
 
-Duração sugerida: **1h30** (Parte 1 com a bibliotecária, ~1h; Parte 2
-com uma turma, ~30 min).
+Duração sugerida: **2h** (Parte 1 com a bibliotecária, ~1h20; Parte 2
+com uma turma, ~40 min).
 
 Logins de treino (dados de demonstração):
 
@@ -30,7 +30,8 @@ Objetivo: reconhecer as áreas do sistema.
 
 1. Abra o SIGBEF e entre com `jaqueline` / `jaqueline123`.
 2. Repare no **menu lateral** à esquerda (Painel, Livros, Usuários,
-   Empréstimos, Relatórios). O item da tela atual fica destacado.
+   Empréstimos, Fila de espera, Uso do acervo, Relatórios). O item da
+   tela atual fica destacado.
 3. Atalhos que economizam tempo: **F5** recarrega a tela, **Ctrl+F**
    pula direto para o campo de busca.
 4. O **Painel inicial** mostra os números do dia: acervo, empréstimos
@@ -96,12 +97,13 @@ escaneando: escaneia, Enter, escaneia. Sem janelinha a cada livro.
 **Exercício:** empreste o "Dom Casmurro" para o aluno `2024001`,
 depois devolva pelo duplo clique.
 
-### Módulo 5: Reservas e fila de espera (novo na v1.6)
+### Módulo 5: Reservas e fila de espera
 
 Objetivo: entender o que fazer quando um livro reservado volta.
 
-Quando todos os exemplares de um livro estão emprestados, o aluno pode
-**reservar** e entrar numa fila. O que muda para você no balcão:
+Quando todos os exemplares de um livro estão emprestados, o leitor pode
+**reservar** e entrar numa fila — no balcão com você, ou sozinho pelo
+aplicativo do celular. O que muda para você:
 
 1. Quando esse livro é **devolvido**, o SIGBEF **não** o solta de volta
    pra prateleira. Aparece um aviso: *"Separe o exemplar para Fulano,
@@ -110,12 +112,43 @@ Quando todos os exemplares de um livro estão emprestados, o aluno pode
    nome). Só o aluno da vez consegue pegá-lo emprestado.
 3. Se ele não aparecer no prazo, a reserva expira sozinha e o livro
    passa para o próximo da fila (ou volta a ficar livre).
+4. Menu **Fila de espera**: quem está esperando cada livro. As linhas
+   destacadas já têm exemplar separado — a coluna Situação mostra até
+   quando o aluno pode retirar e o número de tombo, para você achar o
+   livro na prateleira de reservados.
+
+Como o aluno entra na fila pelo celular sem falar com ninguém, esta tela
+é onde você descobre o que foi reservado sem passar por você.
 
 **Exercício:** peça a um colega logar como aluno `2024002`, reservar um
-livro esgotado; então, como bibliotecária, devolva esse livro e veja o
-aviso de separação.
+livro esgotado; então, como bibliotecária, devolva esse livro, veja o
+aviso de separação e confira a linha destacada em **Fila de espera**.
 
-### Módulo 6: Relatórios e backup
+### Módulo 6: Uso do acervo
+
+Objetivo: usar os números para decidir compra e exposição.
+
+Menu **Uso do acervo**. Diferente dos relatórios, que respondem *o que
+aconteceu*, esta tela ajuda a decidir *o que fazer*:
+
+1. Os quatro números do topo: quanto do acervo já circulou, quantos
+   livros nunca saíram, leitores nos últimos 30 dias e a taxa de atraso
+   (fica vermelha acima de 20%).
+2. **Empréstimos por mês** — mostra se a biblioteca está viva e onde
+   houve queda.
+3. **Turmas que mais leem** e **Categorias mais procuradas** — útil na
+   conversa com a coordenação e na hora de comprar livro novo.
+4. **Livros parados**: o botão abre a lista completa dos títulos que
+   nunca foram emprestados, e há exportação em CSV.
+
+O acervo parado costuma ser o achado mais útil. Livro que ninguém pega
+raramente é livro ruim — quase sempre é livro que ninguém viu. Vale
+montar exposição, indicar em sala ou rever a próxima compra.
+
+**Exercício:** abra **Uso do acervo**, veja qual turma mais lê e exporte
+a lista de livros parados.
+
+### Módulo 7: Relatórios e backup
 
 Objetivo: extrair dados e proteger o acervo.
 
@@ -131,7 +164,7 @@ backup do banco.
 
 ## Parte 2 — Aluno / Professor
 
-### Módulo 7: Pesquisar e reservar
+### Módulo 8: Pesquisar e reservar
 
 Objetivo: o aluno encontra e garante o livro que quer.
 
@@ -147,7 +180,7 @@ Objetivo: o aluno encontra e garante o livro que quer.
 **Exercício:** reserve um livro esgotado e confira sua posição em
 "Meus empréstimos".
 
-### Módulo 8: Terminal de Autoatendimento (kiosk)
+### Módulo 9: Terminal de Autoatendimento (kiosk)
 
 Objetivo: emprestar/devolver sozinho, sem a bibliotecária.
 
@@ -162,6 +195,46 @@ Objetivo: emprestar/devolver sozinho, sem a bibliotecária.
 **Exercício:** no modo kiosk, faça um empréstimo e uma devolução
 completos usando só a tela de toque/teclado.
 
+### Módulo 10: O aplicativo no celular
+
+Objetivo: o aluno acompanha a biblioteca sem precisar ir até lá.
+
+O SIGBEF tem um aplicativo Android. Ele não substitui o balcão —
+emprestar e devolver continuam exigindo o livro na mão —, mas resolve
+tudo o mais.
+
+**Para começar (uma vez só):**
+1. A bibliotecária abre **Configurações → Integrações → Parear celular**
+   no computador, e um QR code aparece na tela.
+2. O aluno abre o app, toca em **Ler o QR da biblioteca** e aponta a
+   câmera. Quem preferir pode digitar o endereço.
+3. Ele entra com a **mesma matrícula e senha** do sistema.
+
+**O que ele faz pelo celular:**
+- Consulta o acervo e vê a ficha do livro (com tombo e sinopse)
+- Vê os próprios empréstimos, prazos e o histórico de leituras
+- **Renova** um livro, quando as regras permitem
+- **Entra na fila** de um livro emprestado, e sai dela
+- Mostra o **cartão digital** com código de barras — funciona sem
+  internet, e o leitor do balcão lê da tela do celular
+- Em **Minha leitura**, vê quanto já leu e recebe sugestões
+
+**O que dizer quando perguntarem:**
+- *"Por que não renovou?"* — o app mostra o motivo na tela: prazo
+  vencido, alguém na fila esperando, ou limite de renovações atingido.
+- *"Preciso de internet?"* — só do Wi-Fi da escola, e só para atualizar.
+  O cartão funciona sempre.
+- *"Meus dados vão para a internet?"* — não. O app só fala com o
+  computador da biblioteca, na rede da escola.
+
+> Antes de treinar os alunos, confirme que o Wi-Fi da escola **não tem
+> isolamento de clientes** ligado. Com ele, o celular não enxerga o
+> computador da biblioteca e o app diz que o endereço está errado, mesmo
+> estando certo. Ver `SIGBEF_MOBILE.md` §7.
+
+**Exercício:** pareie um celular com a biblioteca, entre com um login de
+aluno e mostre o cartão digital no leitor do balcão.
+
 ---
 
 ## Checklist do multiplicador
@@ -173,7 +246,10 @@ Ao final, cada pessoa treinada deve conseguir, sem ajuda:
 - [ ] Cadastrar um usuário e imprimir o cartão
 - [ ] Fazer um empréstimo e uma devolução (inclusive por duplo clique)
 - [ ] Explicar o que fazer quando um livro reservado volta
+- [ ] Consultar a **fila de espera** e achar o exemplar separado
+- [ ] Abrir **Uso do acervo** e exportar a lista de livros parados
 - [ ] Gerar um relatório e um backup
+- [ ] Parear um celular e explicar o que o aplicativo faz
 - [ ] (Aluno) pesquisar, reservar e usar o autoatendimento
 
 ## Dúvidas comuns

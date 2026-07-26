@@ -1,4 +1,4 @@
-# Manual do Usuário — SIGBEF v1.4.0
+# Manual do Usuário — SIGBEF
 
 Sistema Integrado de Gestão da Biblioteca do CEFE.
 
@@ -19,6 +19,7 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Registrar uma devolução](#registrar-uma-devolução)
   - [Renovar um empréstimo](#renovar-um-empréstimo)
   - [Acompanhar a fila de espera](#acompanhar-a-fila-de-espera)
+  - [Ver o uso do acervo](#ver-o-uso-do-acervo)
   - [Quitar multa](#quitar-multa)
   - [Gerar relatórios](#gerar-relatórios)
 - [Para o Administrador](#para-o-administrador)
@@ -30,6 +31,7 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Pegar emprestado pelo balcão](#pegar-emprestado-pelo-balcão)
   - [Ver seus empréstimos](#ver-seus-empréstimos)
 - [Terminal de Autoatendimento](#terminal-de-autoatendimento)
+- [Aplicativo no celular](#aplicativo-no-celular)
 - [Perguntas frequentes](#perguntas-frequentes)
 
 ---
@@ -180,6 +182,30 @@ Configurações — manda a mensagem.
 3. Confirme. A multa zera e o usuário fica liberado para novos
    empréstimos.
 
+### Ver o uso do acervo
+
+Menu lateral → **Uso do acervo**. Os relatórios em CSV contam *o que
+aconteceu*; esta tela ajuda a decidir *o que fazer*.
+
+No topo, quatro números:
+
+| Número | O que significa |
+|---|---|
+| **% do acervo já emprestado** | Quanto do que está na estante já circulou alguma vez |
+| **Livros nunca emprestados** | O acervo parado — o dado mais acionável da tela |
+| **Leitores nos últimos 30 dias** | Quantas pessoas diferentes pegaram livro |
+| **% de devoluções atrasadas** | Fica vermelho a partir de 20% |
+
+Abaixo vêm os gráficos: empréstimos mês a mês (mostra se a biblioteca
+está viva e quando houve queda), turmas que mais leem e categorias mais
+procuradas.
+
+O botão **Ver livros parados** abre a lista completa dos títulos que
+nunca saíram, e **Exportar CSV** salva essa lista para levar à
+coordenação. Vale lembrar: livro que ninguém pega raramente é livro
+ruim — quase sempre é livro que ninguém viu. A lista serve para montar
+exposição, indicar em sala ou rever a próxima compra.
+
 ### Gerar relatórios
 
 1. Menu lateral → **Relatórios**.
@@ -302,6 +328,70 @@ computador com tela touch dedicado.
    passar no balcão.
 5. **Encerrar sessão:** botão vermelho no canto inferior direito, ou
    automático após **90 segundos** de inatividade.
+
+---
+
+## Aplicativo no celular
+
+O SIGBEF tem um aplicativo Android para alunos e professores. Ele não
+substitui o balcão: emprestar e devolver continuam exigindo o livro na
+mão. Serve para tudo o mais.
+
+O aplicativo **não usa internet nem nuvem**. Conversa só com o
+computador da biblioteca, pela rede Wi-Fi da escola. Nenhum dado do
+aluno sai dali.
+
+### Parear o celular (uma vez só)
+
+1. **Na biblioteca:** Configurações → Integrações → **Parear celular**.
+   Um QR code aparece na tela, junto do endereço em texto.
+2. **No celular:** abrir o app, tocar em **Ler o QR da biblioteca** e
+   apontar a câmera. Quem preferir pode digitar o endereço.
+3. Entrar com a **mesma matrícula e senha** do sistema.
+
+O QR **não contém senha nem token**, de propósito: ele fica exposto na
+tela do computador, e quem o fotografasse ganharia acesso indevido.
+
+Em Configurações → Integrações, você vê quantos celulares estão pareados
+e pode **desconectar todos** de uma vez — útil quando um aluno perde o
+aparelho ou no fim do ano letivo.
+
+### O que o aluno faz pelo app
+
+- Consulta o acervo e abre a ficha do livro (com tombo e sinopse)
+- Vê os próprios empréstimos, prazos, atrasos e o histórico
+- **Renova** um empréstimo, se as regras permitirem
+- **Entra na fila de espera** de um livro emprestado, e sai dela
+- Mostra o **cartão digital** com código de barras — funciona sem
+  internet, e o leitor do balcão lê direto da tela do celular
+- Em **Minha leitura**, vê quanto já leu e recebe sugestões de livros
+
+### Quando a renovação é recusada
+
+O app mostra o motivo na própria tela, no lugar do botão:
+
+| Motivo | Por quê |
+|---|---|
+| O prazo já venceu | Livro atrasado precisa passar pelo balcão |
+| Outro leitor está na fila | Quem espera tem prioridade sobre quem renova |
+| Limite de renovações atingido | Padrão: 2 renovações seguidas (ajustável) |
+
+No balcão essas regras não valem: você tem o aluno na frente e o
+contexto que o sistema não tem, então continua podendo renovar em
+qualquer situação.
+
+### Se o app não achar a biblioteca
+
+A causa mais comum **não** é o endereço errado: é o Wi-Fi da escola com
+**isolamento de clientes** ligado (também chamado de "AP isolation" ou
+"modo visitante"). Esse recurso impede que dois aparelhos da mesma rede
+se enxerguem — o celular acessa a internet normalmente, mas nunca acha o
+computador da biblioteca.
+
+Para confirmar: abra `http://ENDEREÇO:8765/api/v1/ping` no navegador do
+celular. Se der erro de endereço inacessível, é a rede. A solução é
+desligar essa opção na administração do roteador — peça a quem cuida da
+rede da escola.
 
 ---
 

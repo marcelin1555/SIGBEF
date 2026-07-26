@@ -40,7 +40,10 @@ Iniciar e na área de trabalho, com opção de desinstalação.
 2. Baixe o **Inno Setup**: <https://jrsoftware.org/isinfo.php>
 3. Abra o arquivo `tools\sigbef_installer.iss` no Inno Setup Compiler.
 4. Pressione **F9** (Compile).
-5. O instalador é gerado em `Output\SIGBEF_Setup_v1.4.0.exe`.
+5. O instalador é gerado em `Output\SIGBEF_Setup_v<versão>.exe` — a
+   versão sai de `MyAppVersion` no `.iss`, que acompanha o `VERSION` do
+   projeto. Para gerar com outra: `ISCC.exe /DMyAppVersion=1.7.0
+   sigbef_installer.iss`.
 
 ### O que o instalador faz
 
@@ -104,3 +107,10 @@ Para fazer **backup do banco**:
 ```
 
 Basta copiar esse arquivo. Para restaurar, sobrescreva-o.
+
+---
+
+## E o aplicativo do celular?
+
+O APK do SIGBEF Mobile tem um caminho próprio, que inclui a assinatura
+da chave: veja [`COMO_GERAR_APK.md`](COMO_GERAR_APK.md).
