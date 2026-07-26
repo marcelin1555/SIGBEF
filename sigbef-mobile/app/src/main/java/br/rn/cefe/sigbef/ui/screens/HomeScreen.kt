@@ -339,10 +339,11 @@ private fun BentoShortcutCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Altura natural (ícone + rótulo). Antes o card era quase quadrado
+    // (aspectRatio 1.1) com o rótulo empurrado para a base, o que abria
+    // um vão vazio enorme em tela de celular.
     Surface(
-        modifier = modifier
-            .aspectRatio(1.1f)
-            .clickable { onClick() },
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         shadowElevation = 1.dp,
@@ -350,9 +351,9 @@ private fun BentoShortcutCard(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Box(
