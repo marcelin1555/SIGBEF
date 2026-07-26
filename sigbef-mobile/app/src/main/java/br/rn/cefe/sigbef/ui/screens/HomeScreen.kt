@@ -54,6 +54,7 @@ fun HomeScreen(
     usuario: Usuario,
     emprestimos: List<Emprestimo> = emptyList(),
     isOffline: Boolean,
+    ultimaSincronizacao: String? = null,
     onNavigate: (Screen) -> Unit
 ) {
     val ativos = emprestimos.filter { !it.devolvido }
@@ -61,7 +62,8 @@ fun HomeScreen(
     val maxLivros = usuario.limMaxLivros
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline)
+            SigbefTopAppBar(isOffline = isOffline,
+                            ultimaSincronizacao = ultimaSincronizacao)
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -220,6 +222,36 @@ fun HomeScreen(
                                 modifier = Modifier.align(Alignment.End)
                             )
                         }
+
+                        // A biblioteca já informava quando o aluno está
+                        // impedido (multa, atraso, limite), e o app jogava
+                        // fora. Melhor saber aqui que descobrir no balcão.
+                        if (!usuario.podePegar && usuario.situacao.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFFFF3E0)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = SigbefWarning,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = usuario.situacao,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFF7A4F01)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -281,7 +313,17 @@ fun HomeScreen(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = if (!isOffline) "Conectado à ${usuario.escola}" else "Modo offline — biblioteca do CEFE",
+                    // O nome da escola vem da biblioteca; quando ainda não
+                    // se sabe, o texto é neutro (antes o modo offline
+                    // trazia "CEFE" chumbado, errado para outra escola).
+                    text = when {
+                        usuario.escola.isBlank() && !isOffline ->
+                            "Conectado à biblioteca da escola"
+                        usuario.escola.isBlank() ->
+                            "Sem conexão com a biblioteca"
+                        !isOffline -> "Conectado à ${usuario.escola}"
+                        else -> "Sem conexão — ${usuario.escola}"
+                    },
                     fontSize = 13.sp,
                     color = SigbefMuted
                 )

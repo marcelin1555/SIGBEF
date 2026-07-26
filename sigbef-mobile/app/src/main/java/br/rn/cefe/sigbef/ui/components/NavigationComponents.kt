@@ -46,7 +46,9 @@ fun SigbefTopAppBar(
     title: String = "SIGBEF",
     showBack: Boolean = false,
     onBackClick: () -> Unit = {},
-    isOffline: Boolean = false
+    isOffline: Boolean = false,
+    /** Hora da última atualização; nulo quando nunca houve nenhuma. */
+    ultimaSincronizacao: String? = null
 ) {
     Surface(
         shadowElevation = 2.dp,
@@ -121,7 +123,13 @@ fun SigbefTopAppBar(
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
-                        text = "Sem conexão com a biblioteca — mostrando última consulta (offline)",
+                        // Só fala em "última consulta" se ela existiu de
+                        // fato; antes o texto prometia dados antigos mesmo
+                        // quando nunca tinha havido sincronização nenhuma.
+                        text = if (ultimaSincronizacao != null)
+                            "Sem conexão — mostrando os dados de $ultimaSincronizacao"
+                        else
+                            "Sem conexão com a biblioteca",
                         fontSize = 12.sp,
                         color = Color(0xFF604100),
                         fontWeight = FontWeight.Medium

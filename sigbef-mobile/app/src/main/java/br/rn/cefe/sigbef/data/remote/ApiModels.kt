@@ -76,7 +76,9 @@ data class LivroDetalheDto(
 /** O número de tombo mora aqui, não no livro. */
 @JsonClass(generateAdapter = true)
 data class ExemplarDto(
-    @Json(name = "numero_tombo") val numeroTombo: String,
+    // Nulável: a coluna aceita NULL no banco do desktop, e um campo
+    // não-nulo recebendo null quebraria o parse inteiro da ficha.
+    @Json(name = "numero_tombo") val numeroTombo: String? = null,
     @Json(name = "codigo_barras") val codigoBarras: String? = null,
     val localizacao: String? = null,
     val status: String

@@ -64,6 +64,7 @@ import br.rn.cefe.sigbef.ui.theme.SigbefWarning
 fun AcervoScreen(
     livros: List<Livro>,
     isOffline: Boolean,
+    ultimaSincronizacao: String? = null,
     onBookClick: (Livro) -> Unit,
     onNavigate: (Screen) -> Unit,
     searchQueryParam: String = "",
@@ -106,7 +107,8 @@ fun AcervoScreen(
 
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline)
+            SigbefTopAppBar(isOffline = isOffline,
+                            ultimaSincronizacao = ultimaSincronizacao)
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -173,7 +175,9 @@ fun AcervoScreen(
                         }
                     },
                     singleLine = true,
-                    enabled = !isOffline,
+                    // A busca roda no que já foi baixado (SQL no Room), então
+                    // funciona sem rede. Antes o campo era desabilitado
+                    // offline, sem motivo.
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(

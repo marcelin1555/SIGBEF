@@ -72,6 +72,7 @@ fun SigbefApp() {
     val carregando by viewModel.carregando.collectAsState()
     val erroLogin by viewModel.erroLogin.collectAsState()
     val erroConexao by viewModel.erroConexao.collectAsState()
+    val ultimaSync by viewModel.ultimaSincronizacao.collectAsState()
 
     // A tela e o livro selecionado vivem no ViewModel, que sobrevive à
     // rotação do aparelho. Antes eram variáveis locais em `remember`, e
@@ -117,12 +118,14 @@ fun SigbefApp() {
                         usuario = currentUsuario,
                         emprestimos = emprestimos,
                         isOffline = isOffline,
+                        ultimaSincronizacao = ultimaSync,
                         onNavigate = viewModel::navigateTo
                     )
 
                     Screen.ACERVO -> AcervoScreen(
                         livros = livros,
                         isOffline = isOffline,
+                        ultimaSincronizacao = ultimaSync,
                         // selectBook já busca a ficha completa (tombo e
                         // sinopse) e navega para o detalhe. Antes isto
                         // setava só o id e a ficha nunca era carregada.
@@ -152,6 +155,7 @@ fun SigbefApp() {
                     Screen.LOANS -> LoansScreen(
                         emprestimos = emprestimos,
                         isOffline = isOffline,
+                        ultimaSincronizacao = ultimaSync,
                         onNavigate = viewModel::navigateTo
                     )
 
@@ -164,6 +168,7 @@ fun SigbefApp() {
                     Screen.CARD -> DigitalCardScreen(
                         usuario = currentUsuario,
                         isOffline = isOffline,
+                        ultimaSincronizacao = ultimaSync,
                         onNavigate = viewModel::navigateTo,
                         onSair = { viewModel.sair() },
                         onTrocarBiblioteca = { viewModel.trocarBiblioteca() }

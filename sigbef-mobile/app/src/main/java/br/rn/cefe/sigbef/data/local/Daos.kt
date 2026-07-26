@@ -34,6 +34,10 @@ interface LivroDao {
     @Query("SELECT * FROM livros WHERE id = :id LIMIT 1")
     suspend fun getLivroByIdOnce(id: Int): LivroEntity?
 
+    /** Usado ao ressincronizar, para preservar sinopse e tombo já baixados. */
+    @Query("SELECT * FROM livros")
+    suspend fun listarTodosUmaVez(): List<LivroEntity>
+
     @Query("""
         SELECT * FROM livros 
         WHERE (:category = 'Todos' OR categoria LIKE '%' || :category || '%')

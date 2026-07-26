@@ -4,9 +4,11 @@
     A partir do Android 9 o tráfego em texto puro é bloqueado por padrão, o
     que impediria o app de falar com a biblioteca.
 
-    Aqui o cleartext é liberado, mas o app só se conecta ao endereço que a
-    bibliotecária forneceu no pareamento — nunca à internet aberta. Não há
-    servidor externo em nenhum fluxo do aplicativo.
+    Este arquivo libera HTTP para qualquer host — o Android não permite
+    restringir por faixa de IP aqui. Quem faz a restrição de verdade é
+    RetrofitClient.eEnderecoLocal (testada em EnderecoBibliotecaTest):
+    o pareamento recusa endereço que não seja de rede privada, loopback
+    ou .local/.lan, então o app nunca fala com a internet aberta.
 
     Colocar HTTPS no computador da biblioteca exigiria certificado próprio
     instalado em cada celular, inviável para a realidade de uma escola

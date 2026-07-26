@@ -55,6 +55,7 @@ import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
 fun LoansScreen(
     emprestimos: List<Emprestimo>,
     isOffline: Boolean,
+    ultimaSincronizacao: String? = null,
     onNavigate: (Screen) -> Unit,
     onRequestRenewal: ((Int) -> Unit)? = null
 ) {
@@ -63,7 +64,8 @@ fun LoansScreen(
 
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline)
+            SigbefTopAppBar(isOffline = isOffline,
+                            ultimaSincronizacao = ultimaSincronizacao)
         },
         bottomBar = {
             SigbefBottomNavigation(

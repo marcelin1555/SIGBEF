@@ -59,12 +59,19 @@ class SigbefRepository(
      * @return null se o endereço foi aceito; uma mensagem se for recusado
      *         por não ser um endereço de rede local.
      */
-    fun parear(endereco: String): String? {
+    suspend fun parear(endereco: String): String? {
         val normalizada = RetrofitClient.normalizar(endereco)
         if (!RetrofitClient.eEnderecoLocal(normalizada)) {
             return "Esse endereço não parece ser da rede da escola. O " +
                 "SIGBEF fica num computador da própria escola (algo como " +
                 "192.168.x.x)."
+        }
+        // Trocar de biblioteca encerra a sessão: o acesso é emitido por um
+        // servidor e não vale no outro — mandá-lo para lá seria entregar o
+        // token do aluno a quem não o emitiu.
+        if (tokenManager.obterServidor() != normalizada) {
+            limparCache()
+            tokenManager.sair()
         }
         tokenManager.salvarServidor(normalizada)
         RetrofitClient.limpar()
@@ -145,15 +152,29 @@ class SigbefRepository(
 
     // --------------------------------------------------- sincronizações
     /** Busca no acervo e guarda o resultado como cache. */
-    suspend fun sincronizarAcervo(termo: String = ""): Boolean {
-        val resposta = runCatching { api().buscarLivros(q = termo) }
+    /**
+     * Baixa o acervo inteiro para o cache.
+     *
+     * Sempre sem termo de busca: o filtro da tela é local (o DAO faz o
+     * LIKE), então sincronizar com a busca ativa substituiria todo o
+     * acervo guardado pelos poucos resultados daquela palavra — o aluno
+     * ficaria sem catálogo offline.
+     */
+    suspend fun sincronizarAcervo(): Boolean {
+        val resposta = runCatching { api().buscarLivros(q = "") }
             .getOrElse { return false }
         if (!resposta.isSuccessful) return false
         val livros = resposta.body()?.livros ?: return false
 
+        // Guarda o que já foi baixado da ficha completa para não perder
+        // sinopse e tombo a cada sincronização.
+        val jaBaixados = db.livroDao().listarTodosUmaVez()
+            .associateBy { it.id }
+
         db.livroDao().clearAll()
         db.livroDao().insertLivros(
             livros.map { dto ->
+                val anterior = jaBaixados[dto.id]
                 LivroEntity(
                     id = dto.id,
                     titulo = dto.titulo,
@@ -161,9 +182,9 @@ class SigbefRepository(
                     categoria = dto.categoria.orEmpty(),
                     ano = dto.anoPublicacao?.toString().orEmpty(),
                     // O tombo pertence ao exemplar; só vem no detalhe.
-                    tombo = "",
+                    tombo = anterior?.tombo.orEmpty(),
                     isbn = dto.isbn.orEmpty(),
-                    sinopse = "",
+                    sinopse = anterior?.sinopse.orEmpty(),
                     disponivel = dto.disponiveis > 0,
                     previsaoDevolucao = null,
                     spineColorHex = corDaLombada(dto.titulo)
@@ -211,7 +232,9 @@ class SigbefRepository(
                 matricula = dto.matricula,
                 turma = dto.turma.orEmpty(),
                 escola = escolaAtual,
-                limiteEmprestimos = dto.limiteEmprestimos
+                limiteEmprestimos = dto.limiteEmprestimos,
+                podePegar = dto.podePegar,
+                situacao = dto.situacao.orEmpty()
             )
         )
 
@@ -286,6 +309,8 @@ fun UsuarioEntity.toDomain() = Usuario(
     matricula = matricula,
     turma = turma,
     escola = escola,
+    podePegar = podePegar,
+    situacao = situacao,
     limMaxLivros = limiteEmprestimos
 )
 
@@ -295,6 +320,8 @@ fun Usuario.toEntity() = UsuarioEntity(
     matricula = matricula,
     turma = turma,
     escola = escola,
+    podePegar = podePegar,
+    situacao = situacao,
     limiteEmprestimos = limMaxLivros
 )
 

@@ -194,7 +194,7 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     fun sincronizar() {
         viewModelScope.launch {
             _carregando.value = true
-            val acervo = repository.sincronizarAcervo(_searchQuery.value)
+            val acervo = repository.sincronizarAcervo()
             val situacao = repository.sincronizarSituacao()
             _isOffline.value = !(acervo || situacao)
             if (acervo || situacao) marcarSincronizacao()

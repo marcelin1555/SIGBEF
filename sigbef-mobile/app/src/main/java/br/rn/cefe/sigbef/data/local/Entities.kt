@@ -10,7 +10,12 @@ data class UsuarioEntity(
     val matricula: String,
     val turma: String,
     val escola: String,
-    val limiteEmprestimos: Int = 0
+    val limiteEmprestimos: Int = 0,
+    // Situação vinda da biblioteca ("OK: 1 de 3 empréstimos em uso",
+    // "Há multas em aberto..."). Serve para avisar o aluno antes de ele
+    // ir ao balcão e descobrir que está impedido.
+    val podePegar: Boolean = true,
+    val situacao: String = ""
 )
 
 @Entity(tableName = "livros")

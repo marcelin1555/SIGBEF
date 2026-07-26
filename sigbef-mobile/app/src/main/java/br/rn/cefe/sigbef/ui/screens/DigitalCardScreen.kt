@@ -48,13 +48,15 @@ import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
 fun DigitalCardScreen(
     usuario: Usuario,
     isOffline: Boolean,
+    ultimaSincronizacao: String? = null,
     onNavigate: (Screen) -> Unit,
     onSair: () -> Unit = {},
     onTrocarBiblioteca: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline)
+            SigbefTopAppBar(isOffline = isOffline,
+                            ultimaSincronizacao = ultimaSincronizacao)
         },
         bottomBar = {
             SigbefBottomNavigation(
