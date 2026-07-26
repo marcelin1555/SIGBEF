@@ -1232,6 +1232,151 @@ def relatorio_circulacao(top: int = 10) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Estatísticas de uso — o que a escola precisa enxergar
+#
+# Os relatórios em CSV respondem "o que aconteceu". Estas consultas
+# respondem "o que fazer": qual turma parou de ler, qual categoria está
+# encalhada, quais livros nunca saíram da estante. Todas devolvem lista
+# de dicts prontos para desenhar, sem cálculo do lado da tela.
+# ---------------------------------------------------------------------------
+def emprestimos_por_mes(meses: int = 12) -> list[dict]:
+    """Movimento mês a mês, do mais antigo ao mais recente.
+
+    Meses sem empréstimo nenhum entram com zero: um buraco no gráfico
+    conta uma história (férias, greve, biblioteca fechada) que a linha
+    pulando o mês esconderia.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT strftime('%Y-%m', data_emprestimo) AS mes,
+                       COUNT(*) AS emprestimos
+                 FROM emprestimo
+                WHERE data_emprestimo >= date('now','localtime',?)
+                GROUP BY mes ORDER BY mes""",
+            (f"-{int(meses)} months",),
+        )
+        achados = {r["mes"]: r["emprestimos"] for r in cur.fetchall()}
+
+        # Série completa, para o eixo não ter furo.
+        cur.execute(
+            """WITH RECURSIVE seq(n) AS (
+                   SELECT 0 UNION ALL SELECT n + 1 FROM seq WHERE n < ?
+               )
+               SELECT strftime('%Y-%m',
+                               date('now','localtime', '-' || (? - n) || ' months')
+                      ) AS mes FROM seq""",
+            (int(meses) - 1, int(meses) - 1),
+        )
+        return [{"mes": r["mes"], "emprestimos": achados.get(r["mes"], 0)}
+                for r in cur.fetchall()]
+
+
+def emprestimos_por_turma(top: int = 10) -> list[dict]:
+    """Quais turmas leem mais. Só alunos: professor não tem turma."""
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT COALESCE(NULLIF(TRIM(u.turma), ''), 'Sem turma') AS turma,
+                       COUNT(*) AS emprestimos,
+                       COUNT(DISTINCT u.id) AS leitores
+                 FROM emprestimo e JOIN usuario u ON u.id = e.usuario_id
+                WHERE u.perfil = 'ALUNO'
+                GROUP BY turma
+                ORDER BY emprestimos DESC LIMIT ?""",
+            (int(top),),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+def emprestimos_por_categoria(top: int = 8) -> list[dict]:
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT COALESCE(NULLIF(TRIM(c.nome), ''), 'Sem categoria')
+                         AS categoria,
+                       COUNT(*) AS emprestimos
+                 FROM emprestimo e
+                 JOIN exemplar ex ON ex.id = e.exemplar_id
+                 JOIN livro l ON l.id = ex.livro_id
+                 LEFT JOIN categoria c ON c.id = l.categoria_id
+                GROUP BY categoria
+                ORDER BY emprestimos DESC LIMIT ?""",
+            (int(top),),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+def livros_nunca_emprestados(limite: int = 200) -> list[dict]:
+    """Acervo parado: livro ativo que nunca saiu.
+
+    É a consulta mais acionável do painel — dá para levar esses títulos
+    para a sala de aula, montar exposição ou concluir que a compra não
+    acertou o gosto de ninguém.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT l.id, l.titulo,
+                       COALESCE(NULLIF(TRIM(c.nome), ''), '') AS categoria,
+                       l.ano_publicacao,
+                       COUNT(ex.id) AS exemplares
+                 FROM livro l
+                 LEFT JOIN categoria c ON c.id = l.categoria_id
+                 LEFT JOIN exemplar ex ON ex.livro_id = l.id
+                WHERE l.ativo = 1
+                  AND NOT EXISTS (
+                      SELECT 1 FROM emprestimo e
+                       JOIN exemplar e2 ON e2.id = e.exemplar_id
+                      WHERE e2.livro_id = l.id)
+                GROUP BY l.id
+                ORDER BY l.titulo LIMIT ?""",
+            (int(limite),),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
+def resumo_de_uso() -> dict:
+    """Números que o painel mostra em destaque.
+
+    `taxa_atraso` considera só o que já foi devolvido: empréstimo em
+    aberto ainda pode voltar no prazo, e contá-lo como atraso inflaria
+    o número — a bibliotecária perceberia e pararia de confiar na tela.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT COUNT(*) AS devolvidos,
+                       SUM(CASE WHEN date(data_devolucao) > date(data_prevista)
+                                THEN 1 ELSE 0 END) AS com_atraso
+                 FROM emprestimo WHERE data_devolucao IS NOT NULL""")
+        r = cur.fetchone()
+        devolvidos = r["devolvidos"] or 0
+        com_atraso = r["com_atraso"] or 0
+
+        cur.execute("SELECT COUNT(*) AS n FROM livro WHERE ativo = 1")
+        acervo = cur.fetchone()["n"] or 0
+
+        cur.execute(
+            """SELECT COUNT(DISTINCT l.id) AS n
+                 FROM livro l
+                 JOIN exemplar ex ON ex.livro_id = l.id
+                 JOIN emprestimo e ON e.exemplar_id = ex.id
+                WHERE l.ativo = 1""")
+        ja_sairam = cur.fetchone()["n"] or 0
+
+        cur.execute(
+            """SELECT COUNT(DISTINCT usuario_id) AS n FROM emprestimo
+                WHERE data_emprestimo >= date('now','localtime','-30 days')""")
+        leitores_mes = cur.fetchone()["n"] or 0
+
+    return {
+        "acervo": acervo,
+        "ja_sairam": ja_sairam,
+        "nunca_sairam": max(acervo - ja_sairam, 0),
+        "cobertura": round(100 * ja_sairam / acervo, 1) if acervo else 0.0,
+        "devolvidos": devolvidos,
+        "taxa_atraso": round(100 * com_atraso / devolvidos, 1) if devolvidos else 0.0,
+        "leitores_30_dias": leitores_mes,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Integração opcional: busca de metadados por ISBN (online, opt-in)
 # ---------------------------------------------------------------------------
 def isbn_lookup_ativo() -> bool:

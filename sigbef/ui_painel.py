@@ -15,6 +15,7 @@ from tkinter import ttk, messagebox, filedialog
 from . import barcode_util
 from . import icones
 from . import servicos
+from . import ui_graficos as graficos
 from . import ui_tema as tema
 from .auth import Sessao
 from .formato import data_br, data_hora_br, reais
@@ -115,6 +116,7 @@ class PainelPrincipal(tk.Tk):
                 ("usuarios", "Usuários", "usuarios"),
                 ("emprestimos", "Empréstimos abertos", "troca"),
                 ("reservas", "Fila de espera", "leitor"),
+                ("uso", "Uso do acervo", "grafico"),
                 ("relatorios", "Relatórios", "grafico"),
             ]
         if self.sessao.is_admin:
@@ -154,6 +156,8 @@ class PainelPrincipal(tk.Tk):
             self._secoes[chave] = SecaoEmprestimos(self._principal, self)
         elif chave == "reservas":
             self._secoes[chave] = SecaoReservas(self._principal, self)
+        elif chave == "uso":
+            self._secoes[chave] = SecaoUso(self._principal, self)
         elif chave == "relatorios":
             self._secoes[chave] = SecaoRelatorios(self._principal, self)
         elif chave == "config":
@@ -889,6 +893,187 @@ def _neutralizar_celula_csv(valor):
     if texto and texto[0] in _CARACTERES_FORMULA_CSV:
         return "'" + texto
     return valor
+
+
+class SecaoUso(SecaoBase):
+    """Painel de uso do acervo — o que os relatórios em CSV não mostram.
+
+    O CSV responde "o que aconteceu"; esta tela responde "o que fazer".
+    Daí a escolha dos quatro recortes: o movimento ao longo do ano (a
+    biblioteca está viva?), turmas e categorias (quem lê o quê) e, o
+    mais acionável de todos, o acervo que nunca saiu da estante.
+
+    Os gráficos são desenhados à mão em Canvas (`ui_graficos`) porque o
+    sistema não carrega dependência externa — a mesma regra que fez o
+    código de barras e o QR nascerem em Python puro.
+    """
+
+    def __init__(self, parent, painel):
+        super().__init__(parent, painel)
+        ttk.Label(self, text="Uso do acervo",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(self,
+                  text=("Como a biblioteca está sendo usada. Serve para "
+                        "planejar compra, montar exposição e mostrar "
+                        "resultado à direção."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        # ------ Números em destaque ------
+        cartoes = tk.Frame(self, bg=tema.COR_FUNDO)
+        cartoes.pack(fill="x", pady=(0, 16))
+        self.cartoes = {}
+        for chave, titulo in [
+                ("cobertura", "do acervo já foi emprestado"),
+                ("parados", "livros nunca emprestados"),
+                ("leitores", "leitores nos últimos 30 dias"),
+                ("atraso", "das devoluções vieram atrasadas")]:
+            c = graficos.CartaoNumero(cartoes, titulo)
+            c.pack(side="left", fill="both", expand=True, padx=(0, 10))
+            self.cartoes[chave] = c
+
+        # ------ Acervo parado (rodapé) ------
+        # Empacotado ANTES do resto, com side="bottom": assim ele reserva
+        # o próprio espaço e não é espremido para fora da janela quando o
+        # conteúdo acima cresce (foi o que aconteceu na primeira versão).
+        rodape = ttk.Frame(self)
+        rodape.pack(side="bottom", fill="x", pady=(12, 0))
+        self.lbl_parados = ttk.Label(rodape, text="", style="Hint.TLabel")
+        self.lbl_parados.pack(side="left")
+        ttk.Button(rodape, text="Ver livros parados",
+                    command=self._ver_parados).pack(side="right", padx=(8, 0))
+        ttk.Button(rodape, text="Exportar CSV",
+                    command=self._exportar_parados).pack(side="right")
+
+        # ------ Movimento mês a mês ------
+        ttk.Label(self, text="Empréstimos por mês",
+                  style="Subtitulo.TLabel").pack(anchor="w")
+        self.g_meses = graficos.GraficoLinha(self, altura=150)
+        self.g_meses.pack(fill="x", pady=(4, 14))
+
+        # ------ Turmas e categorias, lado a lado ------
+        colunas = tk.Frame(self, bg=tema.COR_FUNDO)
+        colunas.pack(fill="both", expand=True)
+
+        esq = tk.Frame(colunas, bg=tema.COR_FUNDO)
+        esq.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        ttk.Label(esq, text="Turmas que mais leem",
+                  style="Subtitulo.TLabel").pack(anchor="w")
+        self.g_turmas = graficos.GraficoBarras(esq, largura_rotulo=110)
+        self.g_turmas.pack(fill="x", pady=(4, 0))
+
+        dir_ = tk.Frame(colunas, bg=tema.COR_FUNDO)
+        dir_.pack(side="left", fill="both", expand=True)
+        ttk.Label(dir_, text="Categorias mais procuradas",
+                  style="Subtitulo.TLabel").pack(anchor="w")
+        self.g_categorias = graficos.GraficoBarras(dir_, largura_rotulo=130)
+        self.g_categorias.pack(fill="x", pady=(4, 0))
+
+    # ------------------------------------------------------------------
+    def atualizar(self) -> None:
+        try:
+            resumo = servicos.resumo_de_uso()
+            meses = servicos.emprestimos_por_mes(12)
+            turmas = servicos.emprestimos_por_turma(8)
+            categorias = servicos.emprestimos_por_categoria(8)
+        except Exception:
+            self.lbl_parados.configure(
+                text="Não foi possível calcular as estatísticas.")
+            return
+
+        self.cartoes["cobertura"].atualizar(
+            f"{resumo['cobertura']:g}%",
+            f"{resumo['ja_sairam']} de {resumo['acervo']} títulos")
+        self.cartoes["parados"].atualizar(
+            f"{resumo['nunca_sairam']}",
+            "nunca saíram da estante",
+            cor=tema.COR_AVISO if resumo["nunca_sairam"] else None)
+        self.cartoes["leitores"].atualizar(f"{resumo['leitores_30_dias']}")
+        # Atraso alto é problema de operação, não de leitura: destaca em
+        # vermelho a partir de 20% para virar assunto na reunião.
+        self.cartoes["atraso"].atualizar(
+            f"{resumo['taxa_atraso']:g}%",
+            f"de {resumo['devolvidos']} devoluções",
+            cor=tema.COR_ERRO if resumo["taxa_atraso"] >= 20 else None)
+
+        self.g_meses.mostrar([(m["mes"], m["emprestimos"]) for m in meses])
+        self.g_turmas.mostrar(
+            [(t["turma"], t["emprestimos"]) for t in turmas])
+        self.g_categorias.mostrar(
+            [(c["categoria"], c["emprestimos"]) for c in categorias],
+            cor=tema.COR_PRIMARIA_ESCURA)
+
+        n = resumo["nunca_sairam"]
+        self.lbl_parados.configure(
+            text=("Todo o acervo já foi emprestado ao menos uma vez."
+                  if not n else
+                  f"{n} livro{'s' if n > 1 else ''} nunca "
+                  f"{'saíram' if n > 1 else 'saiu'} da estante."))
+
+    # ------------------------------------------------------------------
+    def _ver_parados(self) -> None:
+        parados = servicos.livros_nunca_emprestados()
+        if not parados:
+            messagebox.showinfo(
+                "Acervo em movimento",
+                "Todo o acervo já foi emprestado ao menos uma vez.",
+                parent=self.painel)
+            return
+
+        janela = tk.Toplevel(self.painel)
+        janela.title("Livros que nunca foram emprestados")
+        janela.configure(bg=tema.COR_FUNDO)
+        icones.aplicar_icone_janela(janela)
+        tema.centralizar_janela(janela, 760, 520)
+        janela.transient(self.painel)
+
+        ttk.Label(janela,
+                  text=f"{len(parados)} títulos sem nenhum empréstimo",
+                  style="Subtitulo.TLabel").pack(anchor="w", padx=16,
+                                                  pady=(16, 4))
+        ttk.Label(janela,
+                  text=("Candidatos a exposição, indicação em sala ou "
+                        "revisão da próxima compra."),
+                  style="Hint.TLabel").pack(anchor="w", padx=16, pady=(0, 10))
+
+        cols = ("titulo", "categoria", "ano", "exemplares")
+        tree = ttk.Treeview(janela, columns=cols, show="headings")
+        for c, t, w in [("titulo", "Título", 330),
+                        ("categoria", "Categoria", 190),
+                        ("ano", "Ano", 70),
+                        ("exemplares", "Exemplares", 90)]:
+            tree.heading(c, text=t)
+            tree.column(c, width=w, anchor="w")
+        for liv in parados:
+            tree.insert("", "end", values=(liv["titulo"], liv["categoria"],
+                                            liv["ano_publicacao"] or "",
+                                            liv["exemplares"]))
+        tree.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+        ttk.Button(janela, text="Fechar",
+                    command=janela.destroy).pack(pady=(0, 16))
+
+    def _exportar_parados(self) -> None:
+        parados = servicos.livros_nunca_emprestados()
+        if not parados:
+            messagebox.showinfo(
+                "Nada a exportar",
+                "Todo o acervo já foi emprestado ao menos uma vez.",
+                parent=self.painel)
+            return
+        nome = filedialog.asksaveasfilename(
+            parent=self.painel,
+            initialfile=f"acervo_parado_{datetime.now():%Y%m%d}.csv",
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not nome:
+            return
+        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.writer(f, delimiter=";")
+            w.writerow(["ID", "Título", "Categoria", "Ano", "Exemplares"])
+            w.writerows([[_neutralizar_celula_csv(v) for v in
+                          (l["id"], l["titulo"], l["categoria"],
+                           l["ano_publicacao"] or "", l["exemplares"])]
+                         for l in parados])
+        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
+                              parent=self.painel)
 
 
 class SecaoReservas(SecaoBase):
