@@ -131,8 +131,27 @@ def endereco_pareamento() -> Optional[str]:
 # recentes — mandar tudo seria payload grande sem ninguém ler.
 HISTORICO_MAX = 20
 
+
+def _inteiro(valores, padrao: int, minimo: int, maximo: int) -> int:
+    """Lê um parâmetro numérico da query, preso a uma faixa.
+
+    Cliente que pede `?limite=99999` recebe o teto, não um erro: a
+    requisição é razoável e travar por causa dela só atrapalharia quem
+    está integrando.
+    """
+    try:
+        n = int((valores or [padrao])[0])
+    except (TypeError, ValueError):
+        return padrao
+    return max(minimo, min(n, maximo))
+
 _ROTA_LIVRO = re.compile(r"^/api/v1/livros/(\d+)$")
 _ROTA_USUARIO_EMP = re.compile(r"^/api/v1/usuarios/([^/]+)/emprestimos$")
+# Rota separada de propósito: o app ressincroniza a situação do leitor a
+# cada reserva e renovação, e a recomendação é consulta cara (o passo
+# colaborativo cruza o histórico de vários leitores). Junto, ela seria
+# recalculada em toda ação sem ninguém estar olhando.
+_ROTA_USUARIO_LEITURA = re.compile(r"^/api/v1/usuarios/([^/]+)/leitura$")
 _ROTA_CANCELAR_RES = re.compile(r"^/api/v1/reservas/(\d+)/cancelar$")
 _ROTA_RENOVAR = re.compile(r"^/api/v1/emprestimos/(\d+)/renovar$")
 
@@ -190,8 +209,11 @@ class _Handler(BaseHTTPRequestHandler):
         É o que permite ao token do app ler os próprios empréstimos e as
         próprias reservas, e só os próprios.
         """
-        m = _ROTA_USUARIO_EMP.match(caminho)
-        return m.group(1) if m else None
+        for padrao in (_ROTA_USUARIO_EMP, _ROTA_USUARIO_LEITURA):
+            m = padrao.match(caminho)
+            if m:
+                return m.group(1)
+        return None
 
     def _escopo_da_rota(self, caminho: str) -> str:
         """'completo' para rotas com dados de leitores; 'consulta' para o
@@ -486,6 +508,21 @@ class _Handler(BaseHTTPRequestHandler):
             })
             return
 
+        m = _ROTA_USUARIO_LEITURA.match(caminho)
+        if m:
+            u = servicos.localizar_usuario(m.group(1))
+            if not u:
+                self._erro(404, "Usuário não encontrado.")
+                return
+            estatisticas = servicos.estatisticas_do_leitor(u["id"])
+            sugestoes = servicos.recomendacoes_para(
+                u["id"], _inteiro(query.get("limite"), 6, 1, 20))
+            self._json(200, {
+                "estatisticas": estatisticas,
+                "recomendacoes": sugestoes,
+            })
+            return
+
         if caminho == "/api/v1/emprestimos/abertos":
             emprestimos = servicos.listar_emprestimos_em_aberto()
             self._json(200, {"total": len(emprestimos),
@@ -496,6 +533,7 @@ class _Handler(BaseHTTPRequestHandler):
                         "/api/v1/estatisticas, /api/v1/livros, "
                         "/api/v1/livros/{id}, "
                         "/api/v1/usuarios/{matricula}/emprestimos, "
+                        "/api/v1/usuarios/{matricula}/leitura, "
                         "/api/v1/emprestimos/abertos.")
 
 

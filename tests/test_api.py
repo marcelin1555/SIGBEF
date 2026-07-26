@@ -540,6 +540,65 @@ class TestEscritaPeloApp(ApiTestCase):
             conn.close()
             self.assertEqual(resp.status, 405, metodo)
 
+    def test_leitura_traz_estatistica_e_recomendacao(self):
+        token = self._logar()
+        emp = self._emprestimo_do_aluno()
+        with __import__("sigbef").database.db_cursor() as cur:
+            cur.execute("SELECT ex.codigo_barras FROM emprestimo e "
+                        "JOIN exemplar ex ON ex.id = e.exemplar_id "
+                        "WHERE e.id = ?", (emp["id"],))
+            codigo = cur.fetchone()["codigo_barras"]
+        servicos.realizar_devolucao(codigo_exemplar=codigo)
+        # Um segundo livro, para haver o que recomendar.
+        servicos.cadastrar_livro(titulo="Outro Livro", autores=["Autora"],
+                                  quantidade_exemplares=1)
+
+        status, corpo = self.get("/api/v1/usuarios/alu100/leitura",
+                                 token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["estatisticas"]["total_lidos"], 1)
+        self.assertTrue(corpo["recomendacoes"])
+        self.assertTrue(corpo["recomendacoes"][0]["motivo"])
+
+    def test_aluno_NAO_le_a_leitura_de_outro(self):
+        """Mesmo isolamento das outras rotas de dados pessoais."""
+        token = self._logar()
+        servicos.cadastrar_usuario(nome="Outro", matricula="alu200",
+                                   perfil="ALUNO", senha="outra123",
+                                   gerar_cartao=False)
+        status, _ = self.get("/api/v1/usuarios/alu200/leitura", token=token)
+        self.assertEqual(status, 403)
+
+    def test_leitura_exige_token(self):
+        status, _ = self.get("/api/v1/usuarios/alu100/leitura", token=None)
+        self.assertEqual(status, 401)
+
+    def test_limite_da_recomendacao_fica_na_faixa(self):
+        """Pedido absurdo recebe o teto, não um erro."""
+        token = self._logar()
+        for i in range(9):
+            servicos.cadastrar_livro(titulo=f"Livro {i}", autores=["A"],
+                                      quantidade_exemplares=1)
+        _, corpo = self.get(
+            "/api/v1/usuarios/alu100/leitura?limite=3", token=token)
+        self.assertEqual(len(corpo["recomendacoes"]), 3)
+
+        _, corpo = self.get(
+            "/api/v1/usuarios/alu100/leitura?limite=99999", token=token)
+        self.assertLessEqual(len(corpo["recomendacoes"]), 20)
+
+        _, corpo = self.get(
+            "/api/v1/usuarios/alu100/leitura?limite=abc", token=token)
+        self.assertLessEqual(len(corpo["recomendacoes"]), 6)
+
+    def test_leitor_novo_recebe_estrutura_vazia_sem_erro(self):
+        token = self._logar()
+        status, corpo = self.get("/api/v1/usuarios/alu100/leitura",
+                                 token=token)
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["estatisticas"]["total_lidos"], 0)
+        self.assertEqual(corpo["recomendacoes"], [])
+
     def test_historico_traz_o_que_ja_foi_devolvido(self):
         """A tela do app tem a seção; faltava o dado vir."""
         token = self._logar()

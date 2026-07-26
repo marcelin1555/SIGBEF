@@ -123,6 +123,45 @@ com que frase explicar.
 curl -H "Authorization: Bearer $TOKEN" http://IP:8765/api/v1/usuarios/2024001/emprestimos
 ```
 
+### `GET /api/v1/usuarios/{matricula}/leitura?limite=6`
+
+Retrato da leitura da pessoa e sugestões de próximos livros. Mesmo
+isolamento das outras rotas pessoais: o token de aluno só lê a própria
+matrícula, e pedir a de outro devolve **403**.
+
+```json
+{
+  "estatisticas": {
+    "total_lidos": 7, "lidos_no_ano": 3, "dias_medios": 6.4,
+    "leitor_desde": "2025-03-11",
+    "categoria_favorita": "Literatura Brasileira", "lidos_na_favorita": 4
+  },
+  "recomendacoes": [
+    {"id": 42, "titulo": "São Bernardo", "categoria": "Literatura Brasileira",
+     "motivo": "Quem leu \"Vidas Secas\" também leu"}
+  ]
+}
+```
+
+`total_lidos` conta só o que foi **devolvido** — livro em mãos ainda não
+foi lido.
+
+As sugestões saem em cascata, porque biblioteca de escola tem pouco dado
+e um algoritmo colaborativo puro devolveria lista vazia quase sempre:
+quem leu os mesmos livros → categoria favorita → mais lidos da escola →
+o que ninguém pegou ainda. Cada item traz o `motivo`, para a tela
+explicar a sugestão em vez de mostrar uma lista sem contexto.
+
+O passo colaborativo lê o histórico de outros leitores **em agregado**:
+a resposta nunca diz quem leu o quê.
+
+Rota separada da de empréstimos de propósito — o aplicativo
+ressincroniza a situação do leitor a cada reserva e renovação, e
+recalcular a recomendação em toda ação seria desperdício.
+
+`limite` aceita de 1 a 20 (padrão 6). Valor fora da faixa ou inválido é
+ajustado, não recusado.
+
 ### `GET /api/v1/emprestimos/abertos` — exige token completo
 
 Circulação atual completa, com flag de atraso por item.
