@@ -34,7 +34,19 @@ private val LightColorScheme =
     surfaceVariant = SigbefSurfaceContainerLow,
     onSurfaceVariant = SigbefMuted,
     outline = SigbefLine,
-    error = SigbefError
+    error = SigbefError,
+    errorContainer = SigbefErrorFundo,
+    onErrorContainer = SigbefError,
+    // Os tons de superfície que os diálogos e menus usam. Sem eles o
+    // Material inventa um lilás (visto no diálogo de pareamento), que
+    // não existe em lugar nenhum da marca.
+    surfaceContainerLowest = SigbefSurface,
+    surfaceContainerLow = SigbefSurface,
+    surfaceContainer = SigbefSurface,
+    surfaceContainerHigh = SigbefSurface,
+    surfaceContainerHighest = SigbefSurfaceContainerLow,
+    inverseSurface = SigbefNavy,
+    inverseOnSurface = Color.White
   )
 
 @Composable

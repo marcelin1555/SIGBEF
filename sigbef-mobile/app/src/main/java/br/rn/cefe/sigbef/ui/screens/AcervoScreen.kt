@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Livro
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.BookSpineView
+import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
 import br.rn.cefe.sigbef.ui.theme.SigbefBackground
@@ -430,7 +431,9 @@ private fun BookCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Dev: ${livro.previsaoDevolucao ?: "Indisponível"}",
+                                text = livro.previsaoDevolucao
+                                    ?.let { "Volta em ${dataParaLer(it)}" }
+                                    ?: "Emprestado",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = SigbefWarning

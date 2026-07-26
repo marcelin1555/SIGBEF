@@ -42,6 +42,26 @@ import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 val GradienteMarca = Brush.linearGradient(listOf(SigbefNavy, SigbefBlue))
 
 /**
+ * Data para ler, a partir do ISO que a biblioteca devolve.
+ *
+ * O servidor fala `2026-08-02` porque é o formato do SQLite e ordena
+ * sozinho; ninguém no Brasil lê uma data assim. A conversão é textual de
+ * propósito — `java.time` exigiria desugaring no minSdk 24.
+ *
+ * Devolve a entrada intacta se ela não estiver no formato esperado, para
+ * nunca esconder do aluno um dado que existe.
+ */
+fun dataParaLer(iso: String?): String {
+    val texto = iso?.take(10).orEmpty()
+    val partes = texto.split("-")
+    if (partes.size != 3 || partes.any { it.isEmpty() }) return iso.orEmpty()
+    val (ano, mes, dia) = partes
+    if (ano.length != 4 || mes.length != 2 || dia.length != 2) return iso.orEmpty()
+    if (!texto.replace("-", "").all { it.isDigit() }) return iso.orEmpty()
+    return "$dia/$mes/$ano"
+}
+
+/**
  * Cabeçalho de tela: gradiente da marca fechado pela faixa dourada.
  *
  * A faixa é o único dourado da tela — é assim que o guia manda usá-lo,

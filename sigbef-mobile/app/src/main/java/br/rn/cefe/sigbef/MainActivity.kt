@@ -234,7 +234,11 @@ fun SigbefApp() {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(horizontal = 16.dp, vertical = 96.dp),
+                        // Alto o bastante para passar da barra de navegação
+                        // e da barra de ação do detalhe do livro — era ali
+                        // que ele cobria justamente o botão recém-usado.
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 180.dp),
                     shape = RoundedCornerShape(12.dp),
                     color = SigbefNavy,
                     shadowElevation = 8.dp

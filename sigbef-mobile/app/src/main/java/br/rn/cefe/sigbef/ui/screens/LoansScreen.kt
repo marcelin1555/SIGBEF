@@ -43,6 +43,7 @@ import br.rn.cefe.sigbef.model.Emprestimo
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.PilulaStatus
+import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
 import br.rn.cefe.sigbef.ui.theme.SigbefBackground
@@ -322,7 +323,7 @@ private fun ActiveLoanCard(
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
-                        text = "Devolução em ${emp.dataDevolucao}",
+                        text = "Devolução em ${dataParaLer(emp.dataDevolucao)}",
                         fontSize = 13.sp,
                         color = SigbefMuted,
                         textDecoration = if (emp.atrasado) TextDecoration.LineThrough else TextDecoration.None
@@ -442,7 +443,7 @@ private fun ReservaCard(
                     Text(
                         text = if (reserva.separado)
                             "Separado para você" +
-                                (reserva.retirarAte?.let { " — retire até $it" }
+                                (reserva.retirarAte?.let { " — retire até ${dataParaLer(it)}" }
                                     ?: "")
                         else
                             "Você é o ${reserva.posicao}º da fila",
@@ -498,7 +499,7 @@ private fun HistoryLoanCard(emp: Emprestimo) {
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Devolvido em ${emp.dataDevolvido ?: emp.dataDevolucao}",
+                    text = "Devolvido em ${dataParaLer(emp.dataDevolvido ?: emp.dataDevolucao)}",
                     fontSize = 12.sp,
                     color = SigbefMuted
                 )

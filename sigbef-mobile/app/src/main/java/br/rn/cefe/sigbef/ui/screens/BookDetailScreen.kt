@@ -55,6 +55,7 @@ import br.rn.cefe.sigbef.model.Livro
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.PilulaStatus
+import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
 import br.rn.cefe.sigbef.ui.theme.SigbefBackground
@@ -226,6 +227,10 @@ fun BookDetailScreen(
                     )
                 }
 
+                // Boa parte do acervo de uma escola não tem sinopse
+                // cadastrada. Sem esta guarda, a seção aparecia com um
+                // cartão em branco, que parece defeito do app.
+                if (livro.sinopse.isNotBlank()) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 // Synopsis Card
@@ -267,6 +272,7 @@ fun BookDetailScreen(
                         )
                     }
                 }
+                }
             }
 
             // Fixed Action Bottom Bar
@@ -294,8 +300,8 @@ fun BookDetailScreen(
                             Aviso(
                                 if (reservaDoLivro.separado)
                                     "Seu exemplar está separado no balcão" +
-                                        (reservaDoLivro.retirarAte?.let {
-                                            ", retire até $it."
+                                        (reservaDoLivro.retirarAte?.let { prazo ->
+                                            ", retire até ${dataParaLer(prazo)}."
                                         } ?: ".")
                                 else
                                     "Você é o ${reservaDoLivro.posicao}º da " +
