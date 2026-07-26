@@ -755,7 +755,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.4.0** — Julho/2026
+**SIGBEF v1.6.2** — Julho/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 
