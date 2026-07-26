@@ -114,6 +114,7 @@ class PainelPrincipal(tk.Tk):
                 ("livros", "Livros e exemplares", "livro"),
                 ("usuarios", "Usuários", "usuarios"),
                 ("emprestimos", "Empréstimos abertos", "troca"),
+                ("reservas", "Fila de espera", "leitor"),
                 ("relatorios", "Relatórios", "grafico"),
             ]
         if self.sessao.is_admin:
@@ -151,6 +152,8 @@ class PainelPrincipal(tk.Tk):
             self._secoes[chave] = SecaoUsuarios(self._principal, self)
         elif chave == "emprestimos":
             self._secoes[chave] = SecaoEmprestimos(self._principal, self)
+        elif chave == "reservas":
+            self._secoes[chave] = SecaoReservas(self._principal, self)
         elif chave == "relatorios":
             self._secoes[chave] = SecaoRelatorios(self._principal, self)
         elif chave == "config":
@@ -886,6 +889,144 @@ def _neutralizar_celula_csv(valor):
     if texto and texto[0] in _CARACTERES_FORMULA_CSV:
         return "'" + texto
     return valor
+
+
+class SecaoReservas(SecaoBase):
+    """Fila de espera da biblioteca inteira.
+
+    Antes, toda reserva nascia no balcão: a bibliotecária sabia da fila
+    porque ela mesma a criava. Com o aplicativo, o aluno entra na fila
+    sozinho, do celular, e ela ficaria sem saber quem está esperando o
+    quê. Esta tela é a resposta a isso.
+
+    O topo mostra os exemplares já separados, que são os que correm
+    prazo: passado o prazo de retirada, o livro volta para a fila ou
+    para a estante — e é o único caso aqui que exige ação de alguém.
+    """
+
+    def __init__(self, parent, painel):
+        super().__init__(parent, painel)
+        ttk.Label(self, text="Fila de espera",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(self,
+                  text=("Quem está esperando cada livro. As reservas "
+                        "chegam do balcão e também do aplicativo dos "
+                        "alunos."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        self.lbl_resumo = ttk.Label(self, text="", style="Subtitulo.TLabel")
+        self.lbl_resumo.pack(anchor="w", pady=(0, 6))
+
+        # Sem coluna de ID: é número interno, não diz nada a quem atende.
+        # O id da reserva vive no iid da linha, que é o que o cancelamento
+        # usa. Isso libera a largura para a Situação, que é o que importa.
+        cols = ("titulo", "usuario", "matricula", "turma",
+                "posicao", "desde", "situacao")
+        self.tree = ttk.Treeview(self, columns=cols, show="headings",
+                                  height=12)
+        for c, t, w in [("titulo", "Livro", 200),
+                        ("usuario", "Quem espera", 150),
+                        ("matricula", "Matrícula", 85),
+                        ("turma", "Série / Turma", 100),
+                        ("posicao", "Posição", 72),
+                        ("desde", "Na fila desde", 95),
+                        ("situacao", "Situação", 263)]:
+            self.tree.heading(c, text=t)
+            self.tree.column(c, width=w, anchor="w")
+        # Separado = tem exemplar guardado esperando o aluno aparecer.
+        self.tree.tag_configure("separado",
+                                  background=tema.COR_PRIMARIA_SUAVE)
+        self.tree.pack(fill="both", expand=True)
+
+        op = ttk.Frame(self)
+        op.pack(fill="x", pady=(8, 0))
+        ttk.Button(op, text="Cancelar reserva selecionada",
+                    command=self._cancelar).pack(side="left", padx=(0, 8))
+        ttk.Button(op, text="Atualizar",
+                    command=self.atualizar).pack(side="left")
+        ttk.Label(op,
+                  text=("Dica: quem aparece destacado já tem o exemplar "
+                        "separado no balcão."),
+                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
+
+    def atualizar(self) -> None:
+        from . import reservas
+
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+
+        try:
+            fila = reservas.listar_reservas_ativas()
+        except Exception:
+            self.lbl_resumo.configure(
+                text="Não foi possível ler a fila de espera.")
+            return
+
+        separados = 0
+        for r in fila:
+            if r["exemplar_id"]:
+                separados += 1
+                # Sem a palavra "separado": o destaque da linha e a dica
+                # do rodapé já dizem isso, e ela roubava a largura do
+                # tombo — que é o que faz achar o livro na prateleira.
+                prazo = data_br(str(r["disponivel_ate"])[:10])
+                codigo = r["numero_tombo"] or r["codigo_barras"] or ""
+                situacao = f"Retirar até {prazo}"
+                if codigo:
+                    situacao += f" · {codigo}"
+                tags = ("separado",)
+            else:
+                situacao = "Aguardando devolução"
+                tags = ()
+            self.tree.insert(
+                "", "end", iid=str(r["id"]),
+                # criado_em vem com hora; aqui basta o dia, e a hora
+                # roubaria espaço da coluna de situação.
+                values=(r["titulo"], r["usuario"], r["matricula"],
+                        r["turma"] or "", r["posicao"],
+                        data_br(str(r["criado_em"])[:10]), situacao),
+                tags=tags)
+
+        if not fila:
+            self.lbl_resumo.configure(
+                text="Ninguém na fila de espera no momento.")
+        elif separados:
+            self.lbl_resumo.configure(
+                text=(f"{len(fila)} na fila — {separados} com exemplar "
+                      f"separado aguardando retirada."))
+        else:
+            self.lbl_resumo.configure(
+                text=f"{len(fila)} na fila, nenhum exemplar separado ainda.")
+
+    def _cancelar(self) -> None:
+        from . import reservas
+
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo(
+                "Selecione uma reserva",
+                "Clique numa linha da tabela antes de cancelar.",
+                parent=self.painel)
+            return
+        reserva_id = sel[0]          # o iid da linha é o id da reserva
+        v = self.tree.item(sel[0])["values"]
+        titulo, quem = v[0], v[1]
+        if not messagebox.askyesno(
+                "Cancelar reserva",
+                f"Tirar {quem} da fila de \"{titulo}\"?",
+                parent=self.painel):
+            return
+        try:
+            # Sem usuario_id: é a bibliotecária cancelando a reserva de
+            # outra pessoa, o que o módulo só permite quando quem executa
+            # não é o dono. executor_id deixa isso registrado na auditoria.
+            reservas.cancelar_reserva(int(reserva_id),
+                                       executor_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showerror("Não foi possível cancelar", str(e),
+                                  parent=self.painel)
+            return
+        self.atualizar()
 
 
 class SecaoRelatorios(SecaoBase):

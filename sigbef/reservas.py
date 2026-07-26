@@ -204,6 +204,40 @@ def listar_reservas_usuario(usuario_id: int,
         return [dict(r) for r in cur.fetchall()]
 
 
+def listar_reservas_ativas() -> list[dict]:
+    """Toda a fila de espera da biblioteca, para o balcão enxergar.
+
+    Existe porque o aluno passou a entrar na fila sozinho, pelo celular:
+    antes toda reserva nascia no balcão e a bibliotecária sabia dela
+    porque ela mesma a criava. Agora precisa de uma tela para consultar.
+
+    Ordem: primeiro quem já tem exemplar separado (é o que vence prazo e
+    precisa de ação), depois a ordem de chegada.
+    """
+    with db_cursor() as cur:
+        _expirar_vencidas_cur(cur)
+        cur.execute(
+            """SELECT r.id, r.livro_id, r.criado_em, r.disponivel_ate,
+                       r.exemplar_id, l.titulo,
+                       u.nome AS usuario, u.matricula, u.turma,
+                       ex.codigo_barras, ex.numero_tombo,
+                       (SELECT COUNT(*) FROM reserva r2
+                         WHERE r2.livro_id = r.livro_id
+                           AND r2.status = 'ATIVA'
+                           AND (r2.criado_em < r.criado_em
+                                OR (r2.criado_em = r.criado_em
+                                    AND r2.id <= r.id))
+                       ) AS posicao
+                 FROM reserva r
+                 JOIN livro l ON l.id = r.livro_id
+                 JOIN usuario u ON u.id = r.usuario_id
+                 LEFT JOIN exemplar ex ON ex.id = r.exemplar_id
+                WHERE r.status = 'ATIVA'
+                ORDER BY r.exemplar_id IS NULL, r.criado_em, r.id""",
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+
 def fila_do_livro(livro_id: int) -> list[dict]:
     """Fila de reservas ativas de um livro, na ordem de atendimento."""
     with db_cursor() as cur:

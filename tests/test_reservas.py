@@ -183,6 +183,64 @@ class TestConsultas(ReservasTestCase):
         self.assertEqual([f["nome"] for f in fila], ["Beto B", "Caio C"])
 
 
+class TestFilaDaBiblioteca(ReservasTestCase):
+    """`listar_reservas_ativas`: o que o balcão vê.
+
+    Existe porque o aluno passou a entrar na fila pelo celular, sem
+    passar por ninguém — a bibliotecária precisa de uma forma de
+    consultar o que foi criado sem ela.
+    """
+
+    def test_traz_quem_espera_e_qual_livro(self):
+        reservas.criar_reserva(self.livro_id, self.ub["id"])
+        fila = reservas.listar_reservas_ativas()
+        self.assertEqual(len(fila), 1)
+        r = fila[0]
+        self.assertEqual(r["titulo"], "Único Exemplar")
+        self.assertEqual(r["usuario"], "Beto B")
+        self.assertEqual(r["matricula"], "ub")
+        self.assertEqual(r["posicao"], 1)
+
+    def test_vazia_quando_ninguem_espera(self):
+        self.assertEqual(reservas.listar_reservas_ativas(), [])
+
+    def test_posicao_segue_a_ordem_de_chegada(self):
+        reservas.criar_reserva(self.livro_id, self.ub["id"])
+        reservas.criar_reserva(self.livro_id, self.uc["id"])
+        fila = reservas.listar_reservas_ativas()
+        self.assertEqual([(r["usuario"], r["posicao"]) for r in fila],
+                          [("Beto B", 1), ("Caio C", 2)])
+
+    def test_exemplar_separado_vem_primeiro(self):
+        """É a linha que corre prazo, então precisa saltar aos olhos."""
+        reservas.criar_reserva(self.livro_id, self.ub["id"])
+        outro = self.criar_livro(titulo="Outro Livro", exemplares=1)
+        servicos.realizar_emprestimo(
+            codigo_exemplar=outro["exemplares"][0][1], matricula_usuario="ua")
+        reservas.criar_reserva(outro["livro_id"], self.uc["id"])
+
+        # Devolver o primeiro promove Beto: ele ganha exemplar separado.
+        servicos.realizar_devolucao(codigo_exemplar=self.codigo)
+
+        fila = reservas.listar_reservas_ativas()
+        self.assertEqual(fila[0]["usuario"], "Beto B")
+        self.assertIsNotNone(fila[0]["exemplar_id"])
+        self.assertTrue(fila[0]["disponivel_ate"])
+        self.assertIsNone(fila[1]["exemplar_id"])
+
+    def test_cancelada_some_da_lista(self):
+        r = reservas.criar_reserva(self.livro_id, self.ub["id"])
+        reservas.cancelar_reserva(r["id"], executor_id=self.ua["id"])
+        self.assertEqual(reservas.listar_reservas_ativas(), [])
+
+    def test_reserva_vencida_nao_aparece(self):
+        """A consulta expira as vencidas antes de listar."""
+        r = reservas.criar_reserva(self.livro_id, self.ub["id"])
+        servicos.realizar_devolucao(codigo_exemplar=self.codigo)
+        self.vencer_prazo(r["id"])
+        self.assertEqual(reservas.listar_reservas_ativas(), [])
+
+
 class TestExemplarNovoAtendeFila(ReservasTestCase):
     def test_adicionar_exemplar_separa_pra_fila(self):
         r = reservas.criar_reserva(self.livro_id, self.ub["id"])

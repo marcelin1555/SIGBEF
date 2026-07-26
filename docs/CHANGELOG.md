@@ -24,6 +24,13 @@ emprestar/devolver seguem sendo do balcão porque exigem o livro na mão.
 - A recusa vem do servidor já escrita para o aluno ("Outro leitor está
   esperando por este livro"), em vez de o app inventar a explicação
 - Empréstimos passam a contar quantas vezes foram renovados
+- **Fila de espera no painel** (Bibliotecário → Fila de espera): quem
+  está esperando cada livro, a posição de cada um e quais exemplares já
+  estão separados aguardando retirada, com o prazo e o tombo. É a
+  contrapartida da reserva pelo celular: enquanto reservar exigia ir ao
+  balcão, a bibliotecária sabia da fila porque ela mesma a criava; agora
+  o aluno entra sozinho, e ela precisava de onde consultar. Dá para
+  cancelar uma reserva por ali, com registro em auditoria
 
 ### Leitura do QR pela câmera
 

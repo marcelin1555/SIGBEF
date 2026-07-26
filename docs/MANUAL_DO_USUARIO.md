@@ -18,6 +18,7 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Realizar um empréstimo](#realizar-um-empréstimo)
   - [Registrar uma devolução](#registrar-uma-devolução)
   - [Renovar um empréstimo](#renovar-um-empréstimo)
+  - [Acompanhar a fila de espera](#acompanhar-a-fila-de-espera)
   - [Quitar multa](#quitar-multa)
   - [Gerar relatórios](#gerar-relatórios)
 - [Para o Administrador](#para-o-administrador)
@@ -151,6 +152,26 @@ caixa de confirmação.
 1. Em **Empréstimos abertos**, selecione a linha desejada.
 2. Clique em **Renovar selecionado**.
 3. A data prevista é estendida pelo prazo padrão do perfil.
+
+### Acompanhar a fila de espera
+
+Quando um livro está todo emprestado, o leitor pode entrar na fila —
+pelo balcão ou pelo aplicativo, sem falar com ninguém. Esta tela mostra
+tudo o que está na fila.
+
+1. Menu lateral → **Fila de espera**.
+2. As linhas **destacadas** são as que pedem atenção: o exemplar já foi
+   separado e está esperando o aluno aparecer. A coluna **Situação**
+   traz até quando ele pode retirar e o número de tombo, para você achar
+   o livro na prateleira de reservados.
+3. Passado o prazo de retirada, o sistema libera o exemplar sozinho: ele
+   vai para o próximo da fila ou volta para a estante.
+4. Para tirar alguém da fila, selecione a linha e clique em **Cancelar
+   reserva selecionada**.
+
+Você não precisa avisar o aluno manualmente: quando o livro é devolvido,
+o sistema separa o exemplar e — se o aviso por e-mail estiver ligado em
+Configurações — manda a mensagem.
 
 ### Quitar multa
 
