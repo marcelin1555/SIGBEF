@@ -570,7 +570,8 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 │   ├── COMO_GERAR_EXECUTAVEL.md       # guia de build do desktop
 │   ├── COMO_GERAR_APK.md              # guia de build e assinatura do app
 │   ├── PUBLICAR_NO_GITHUB.md          # guia de publicação
-│   ├── SIGBEF_Documento_Requisitos.docx  # documento de requisitos
+│   ├── SIGBEF_Documento_Requisitos.docx  # requisitos v2.0, com status de cada um
+│   ├── SIGBEF_Documento_Requisitos_v1.0_abril2026.docx  # planejamento original
 │   └── screenshots/                   # mockups SVG das telas
 │
 ├── apresentacao/                      # material institucional / pitch
@@ -745,7 +746,10 @@ Desenvolvido por estudantes do **CEFE** (Centro Educacional Felinto Elísio), es
 | **Maria Laura Aparecida Silva de Medeiros** | Modelo de negócio e análise financeira |
 | **Pedro Jonath Silva de Oliveira** | Orientação técnica (Professor de BD e POO) |
 
-Documento de requisitos completo: [`docs/SIGBEF_Documento_Requisitos.docx`](docs/SIGBEF_Documento_Requisitos.docx)
+Documento de requisitos (v2.0, com a situação de cada requisito):
+[`docs/SIGBEF_Documento_Requisitos.docx`](docs/SIGBEF_Documento_Requisitos.docx).
+O planejamento original de abril está preservado em
+[`..._v1.0_abril2026.docx`](docs/SIGBEF_Documento_Requisitos_v1.0_abril2026.docx).
 
 ---
 

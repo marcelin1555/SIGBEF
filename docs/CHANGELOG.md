@@ -68,6 +68,23 @@ emprestar/devolver seguem sendo do balcão porque exigem o livro na mão.
 - Build de release com a chave presente mas sem as senhas agora falha
   dizendo exatamente o que falta, em vez de quebrar lá na frente
 
+### Documentação revisada de ponta a ponta
+
+- **Documento de Requisitos v2.0**: a versão 1.0 (abril) era um plano —
+  propunha duas pilhas tecnológicas, listava o aplicativo móvel como fora
+  de escopo e trazia um cronograma em fases. A nova versão registra o que
+  existe, com a **situação de cada um dos 40 requisitos** conferida
+  contra o código, e a comparação entre o que foi proposto e o que foi
+  implementado em tecnologia. O planejamento original ficou preservado
+  como `SIGBEF_Documento_Requisitos_v1.0_abril2026.docx`
+- Dois requisitos da v1.0 continuam **em aberto**, e agora estão
+  registrados como tal: RF-052 (relatório de inadimplência) e RNF-10
+  (internacionalização)
+- README, manual do usuário, roteiro de treinamento e README do
+  aplicativo atualizados: badge de versão, funcionalidades novas, árvore
+  do projeto, como rodar os testes, e as telas de fila de espera e uso do
+  acervo, que não estavam documentadas em lugar nenhum
+
 ### Requisito de rede para implantar
 
 O teste em celular revelou algo que vale conferir em **cada escola**
