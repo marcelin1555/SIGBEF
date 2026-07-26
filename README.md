@@ -569,17 +569,11 @@ profissional com Inno Setup.
 
 Funcionalidades planejadas para versões futuras:
 
-### Próxima versão — v1.5.0 (prioridade alta)
+### Próxima versão
 
-- [ ] Notificações por e-mail automáticas quando o prazo de devolução se aproxima
-- [ ] Reservas online com fila de espera
-
-### Médio prazo — v2.0.0
-
-- [ ] API REST — permite integração com outros sistemas escolares (diários, portais do aluno)
-- [ ] Aplicativo móvel (Android/iOS) para consulta do acervo e renovação remota
-- [ ] Camada de engajamento de leitura: estatísticas pessoais, recomendações por categoria, conquistas opcionais para alunos
-- [ ] Painel de BI com dashboards interativos e gráficos de uso
+- [ ] Camada de engajamento de leitura: estatísticas pessoais,
+      recomendações por categoria, conquistas opcionais para alunos
+- [ ] Painel com gráficos de uso do acervo (hoje os relatórios saem em CSV)
 
 ### Aproximação de normas de biblioteconomia
 
@@ -609,6 +603,16 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Aplicativo Android** para o aluno: acervo, carteirinha com código
+      de barras real, empréstimos, reserva e renovação; funciona offline e
+      pareia lendo um QR code (v1.6.2)
+- [x] **API REST** para integração, com login por aluno e escrita restrita
+      aos próprios dados (v1.6.0 / v1.6.2)
+- [x] **Reservas com fila de espera**, promoção automática na devolução e
+      painel da fila para o balcão (v1.6.0)
+- [x] Aviso por e-mail de prazo de devolução e de reserva disponível,
+      opt-in (v1.5.0 / v1.6.1)
+- [x] Busca avançada no acervo (v1.5.0)
 - [x] Importação de acervo em massa via planilha CSV, com modelo pronto e proteção contra ISBN duplicado (v1.4.0)
 - [x] Impressão de etiquetas em massa e de cartão de biblioteca com código de barras (v1.4.0)
 - [x] Exclusão e edição de livros/usuários, com proteções contra perda de histórico (v1.4.0)
