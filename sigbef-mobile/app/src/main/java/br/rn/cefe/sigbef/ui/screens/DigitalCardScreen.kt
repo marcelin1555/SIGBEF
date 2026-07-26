@@ -74,8 +74,7 @@ fun DigitalCardScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.CARD,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground

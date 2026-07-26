@@ -127,8 +127,7 @@ fun AcervoScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.ACERVO,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground

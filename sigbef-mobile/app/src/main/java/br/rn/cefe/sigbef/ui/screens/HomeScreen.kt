@@ -89,8 +89,7 @@ fun HomeScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.HOME,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground

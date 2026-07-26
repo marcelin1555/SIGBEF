@@ -99,8 +99,7 @@ fun BookDetailScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.BOOK_DETAIL,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground

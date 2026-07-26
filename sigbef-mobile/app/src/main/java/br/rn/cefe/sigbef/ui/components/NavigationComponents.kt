@@ -193,24 +193,34 @@ fun SigbefTopAppBar(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(SigbefWarningFundo)
-                        .padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    // Top, e não Center: o texto quebra em duas linhas em
+                    // tela estreita, e centralizado o ícone flutuaria no
+                    // meio delas.
+                    verticalAlignment = Alignment.Top
                 ) {
                     Icon(
                         imageVector = Icons.Default.WifiOff,
                         contentDescription = "Modo Offline",
                         tint = SigbefWarning,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier
+                            .size(16.dp)
+                            .padding(top = 1.dp)
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         // Só fala em "última consulta" se ela existiu de
                         // fato; antes o texto prometia dados antigos mesmo
                         // quando nunca tinha havido sincronização nenhuma.
+                        //
+                        // A segunda frase é o que o aluno precisa saber no
+                        // balcão: sem sinal, o cartão continua valendo.
                         text = if (ultimaSincronizacao != null)
-                            "Sem conexão — mostrando os dados de $ultimaSincronizacao"
+                            "Sem conexão — dados de $ultimaSincronizacao. " +
+                                "Seu cartão continua funcionando."
                         else
-                            "Sem conexão com a biblioteca",
+                            "Sem conexão com a biblioteca. Seu cartão " +
+                                "continua funcionando.",
                         fontSize = 12.sp,
                         color = SigbefWarningInk,
                         fontWeight = FontWeight.Medium
@@ -221,11 +231,17 @@ fun SigbefTopAppBar(
     }
 }
 
+/**
+ * Barra de navegação.
+ *
+ * Não recebe mais `isOffline`: o estado da conexão é dito uma vez só, na
+ * tarja do topo. Repeti-lo aqui embaixo virava ruído — e era o que
+ * empurrava um selo cortado para cima do "Cartão".
+ */
 @Composable
 fun SigbefBottomNavigation(
     currentScreen: Screen,
-    onNavigate: (Screen) -> Unit,
-    isOffline: Boolean = false
+    onNavigate: (Screen) -> Unit
 ) {
     Surface(
         color = SigbefSurface,
@@ -264,31 +280,18 @@ fun SigbefBottomNavigation(
                 onClick = { onNavigate(Screen.LOANS) }
             )
 
-            Box {
-                NavItem(
-                    label = "Cartão",
-                    selected = currentScreen == Screen.CARD,
-                    selectedIcon = Icons.Default.Badge,
-                    unselectedIcon = Icons.Outlined.Badge,
-                    onClick = { onNavigate(Screen.CARD) }
-                )
-                if (isOffline) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(SigbefSuccess)
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = "OFFLINE OK",
-                            fontSize = 7.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                }
-            }
+            // Havia aqui um selo verde "OFFLINE OK" sobre o Cartão. Saiu:
+            // ficava colado na borda da tela e cortado, tinha 7sp (nem
+            // dava para ler), e um "OK" verde contradizia a tarja âmbar
+            // de "sem conexão" logo acima. O mesmo recado agora está na
+            // tarja do topo, que tem largura para dizê-lo por extenso.
+            NavItem(
+                label = "Cartão",
+                selected = currentScreen == Screen.CARD,
+                selectedIcon = Icons.Default.Badge,
+                unselectedIcon = Icons.Outlined.Badge,
+                onClick = { onNavigate(Screen.CARD) }
+            )
         }
     }
 }

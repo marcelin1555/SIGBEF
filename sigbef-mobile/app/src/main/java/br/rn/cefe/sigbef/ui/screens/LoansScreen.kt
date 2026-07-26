@@ -90,8 +90,7 @@ fun LoansScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.LOANS,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground

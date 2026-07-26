@@ -67,8 +67,7 @@ fun RenewInfoScreen(
         bottomBar = {
             SigbefBottomNavigation(
                 currentScreen = Screen.RENEW_INFO,
-                onNavigate = onNavigate,
-                isOffline = isOffline
+                onNavigate = onNavigate
             )
         },
         containerColor = SigbefBackground
