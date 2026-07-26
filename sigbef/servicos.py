@@ -417,6 +417,37 @@ def _normalizar_cabecalho(nome: str) -> str:
     return s.replace(" ", "_")
 
 
+# Texto que era número inteiro e a planilha transformou em decimal.
+# Acontece com título ("1984" vira "1984.0"), tombo e ISBN: o Excel
+# reconhece a célula como número e grava o ponto flutuante ao exportar.
+_NUMERO_DE_PLANILHA = re.compile(r"^(\d+)\.0+$")
+
+# ISBN de 13 dígitos que o Excel converteu para notação científica
+# ("9788535914849" vira "9,78854E+12"). Aqui não há o que recuperar: os
+# dígitos do meio se perderam de verdade.
+_NOTACAO_CIENTIFICA = re.compile(r"^\d[.,]?\d*[Ee][+-]?\d+$")
+
+
+def _corrigir_numero_de_planilha(valor: str) -> tuple[str, Optional[str]]:
+    """Desfaz o estrago do Excel em campos que eram números inteiros.
+
+    Devolve `(valor_corrigido, aviso)`. O aviso não é vazio quando algo
+    mudou ou quando o dado é irrecuperável, para a importação mostrar à
+    bibliotecária em vez de alterar o acervo em silêncio.
+    """
+    texto = (valor or "").strip()
+    m = _NUMERO_DE_PLANILHA.match(texto)
+    if m:
+        return m.group(1), f"{texto!r} lido como número pela planilha"
+    if _NOTACAO_CIENTIFICA.match(texto):
+        # Não dá para reconstruir: "9,78854E+12" perdeu os dígitos do
+        # meio. Melhor guardar vazio do que guardar um código falso que
+        # ninguém vai conseguir usar na busca.
+        return "", (f"{texto!r} está em notação científica e não pode ser "
+                    "recuperado — formate a coluna como Texto na planilha")
+    return texto, None
+
+
 def importar_acervo_csv(caminho: str,
                         usuario_id: Optional[int] = None) -> dict:
     """Importa acervo em massa de um arquivo CSV, em transação única.
@@ -436,8 +467,14 @@ def importar_acervo_csv(caminho: str,
     no banco) viram erro de linha, pois o empréstimo aceita o tombo
     como identificador do exemplar.
 
+    Título, ISBN e tombo passam por uma correção antes de entrar: quando
+    a planilha reconheceu a célula como número, "1984" chega como
+    "1984.0" e o acervo ficaria com esse título. O que for corrigido vem
+    em `ajustes`, para a bibliotecária ver o que mudou — nada é alterado
+    em silêncio.
+
     Retorna {"livros", "exemplares", "pulados": [(linha, motivo)],
-    "erros": [(linha, motivo)]}.
+    "erros": [(linha, motivo)], "ajustes": [(linha, o que mudou)]}.
     """
     bruto = Path(caminho).read_bytes()
     try:
@@ -471,12 +508,24 @@ def importar_acervo_csv(caminho: str,
         tombos_existentes = {r["numero_tombo"] for r in cur.fetchall()}
 
     # Fase 1 — validar todas as linhas (nada é gravado ainda)
-    validas, erros, pulados = [], [], []
+    validas, erros, pulados, ajustes = [], [], [], []
     for num, linha in enumerate(leitor, start=2):
         dados = {mapa[k]: (v or "").strip()
                  for k, v in linha.items() if k in mapa}
         if not any(dados.values()):
             continue  # linha totalmente em branco
+
+        # Campos que costumam sair estragados quando a planilha os
+        # reconhece como número. Título "1984" chegando como "1984.0" é
+        # o caso mais comum, e passava direto para o acervo.
+        for campo in ("titulo", "isbn", "tombo"):
+            if not dados.get(campo):
+                continue
+            corrigido, aviso = _corrigir_numero_de_planilha(dados[campo])
+            if aviso:
+                dados[campo] = corrigido
+                ajustes.append((num, f"{campo}: {aviso}"))
+
         titulo = dados.get("titulo", "")
         if not titulo:
             erros.append((num, "título em branco"))
@@ -547,7 +596,7 @@ def importar_acervo_csv(caminho: str,
                          f"livros={livros}; exemplares={exemplares}; "
                          f"pulados={len(pulados)}; erros={len(erros)}")
     return {"livros": livros, "exemplares": exemplares,
-            "pulados": pulados, "erros": erros}
+            "pulados": pulados, "erros": erros, "ajustes": ajustes}
 
 
 def listar_exemplares_para_etiquetas(termo: str = "") -> list[dict]:

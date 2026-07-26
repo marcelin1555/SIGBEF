@@ -617,6 +617,67 @@ class TestBrasaoInstituicao(ServicosTestCase):
 # ---------------------------------------------------------------------------
 # Importação de acervo via CSV
 # ---------------------------------------------------------------------------
+class TestImportacaoEstragoDePlanilha(ServicosTestCase):
+    """Campos que a planilha converteu em número.
+
+    Encontrado no acervo real do CEFE: seis livros ("1808", "1889",
+    "1984"…) tinham virado "1808.0" no banco. O Excel reconhece a célula
+    como número e grava o ponto flutuante ao exportar; a importação
+    aceitava o texto como veio.
+    """
+
+    def test_titulo_numerico_perde_o_ponto_zero(self):
+        caminho = self.csv_temporario(
+            "titulo;autores\n1984.0;George Orwell\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["livros"], 1)
+        self.assertEqual(servicos.listar_livros()[0]["titulo"], "1984")
+
+    def test_a_correcao_e_avisada_nunca_silenciosa(self):
+        caminho = self.csv_temporario(
+            "titulo;autores\n1808.0;Laurentino Gomes\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(len(res["ajustes"]), 1)
+        linha, texto = res["ajustes"][0]
+        self.assertEqual(linha, 2)
+        self.assertIn("1808.0", texto)
+        self.assertIn("titulo", texto)
+
+    def test_titulo_normal_com_ponto_nao_e_tocado(self):
+        """'Web 2.0' é o título, não um número estragado."""
+        caminho = self.csv_temporario(
+            "titulo;autores\nWeb 2.0;Autor\nO Senhor dos Anéis;Tolkien\n")
+        res = servicos.importar_acervo_csv(caminho)
+        titulos = sorted(l["titulo"] for l in servicos.listar_livros())
+        self.assertIn("Web 2.0", titulos)
+        self.assertEqual(res["ajustes"], [])
+
+    def test_isbn_em_notacao_cientifica_nao_entra(self):
+        """Não dá para recuperar: os dígitos do meio se perderam.
+
+        Guardar '9,78854E+12' como ISBN seria pior que deixar vazio —
+        ninguém acharia o livro por esse código.
+        """
+        caminho = self.csv_temporario(
+            "titulo;autores;isbn\nLivro;Autor;9,78854E+12\n")
+        res = servicos.importar_acervo_csv(caminho)
+        self.assertEqual(res["livros"], 1)
+        self.assertFalse(servicos.listar_livros()[0]["isbn"])
+        self.assertIn("notação científica", res["ajustes"][0][1])
+
+    def test_tombo_numerico_tambem_e_corrigido(self):
+        caminho = self.csv_temporario(
+            "titulo;autores;tombo\nLivro;Autor;04839.0\n")
+        servicos.importar_acervo_csv(caminho)
+        det = servicos.detalhes_livro(servicos.listar_livros()[0]["id"])
+        self.assertEqual(det["exemplares"][0]["numero_tombo"], "04839")
+
+    def test_importacao_limpa_nao_produz_ajuste(self):
+        caminho = self.csv_temporario(
+            "titulo;autores\nDom Casmurro;Machado de Assis\n")
+        self.assertEqual(servicos.importar_acervo_csv(caminho)["ajustes"], [])
+
+
 class TestImportacaoCSV(ServicosTestCase):
     """Importação em massa de acervo."""
 

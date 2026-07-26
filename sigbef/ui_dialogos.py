@@ -597,6 +597,16 @@ class DialogoImportarCSV(tk.Toplevel):
             linhas += [f"  linha {n}: {m}" for n, m in res["erros"][:10]]
             if len(res["erros"]) > 10:
                 linhas.append(f"  ... e mais {len(res['erros']) - 10}")
+        # Correções feitas no caminho. Mostradas para a bibliotecária
+        # saber o que mudou — importar não deve alterar em silêncio.
+        if res.get("ajustes"):
+            linhas.append(f"\nCorrigidos automaticamente "
+                          f"({len(res['ajustes'])}):")
+            linhas += [f"  linha {n}: {m}" for n, m in res["ajustes"][:10]]
+            if len(res["ajustes"]) > 10:
+                linhas.append(f"  ... e mais {len(res['ajustes']) - 10}")
+            linhas.append("  Dica: formate essas colunas como Texto na "
+                          "planilha antes de exportar.")
         if not res["livros"] and not res["erros"] and not res["pulados"]:
             linhas.append("Nenhuma linha de dados encontrada no arquivo.")
         self._log(linhas)
