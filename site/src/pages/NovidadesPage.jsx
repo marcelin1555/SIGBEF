@@ -21,9 +21,25 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.7.0',
+    data: '26 de julho de 2026',
+    destaque: true,
+    categorias: ['Multiplataforma', 'API', 'Acervo', 'Interface'],
+    itens: [
+      { cat: 'Multiplataforma', texto: 'Aplicativo Android do aluno (v0.1): carteirinha digital com código de barras real, acervo, empréstimos e prazos no bolso — funcionando offline depois da primeira sincronização' },
+      { cat: 'Multiplataforma', texto: 'Para conectar o celular, basta apontar a câmera para o QR code que a biblioteca mostra na tela' },
+      { cat: 'Acervo', texto: 'Reserva e renovação pelo celular: o aluno entra na fila de um livro emprestado e renova o que está com ele, sem ir ao balcão' },
+      { cat: 'Acervo', texto: 'Regras de renovação explícitas: não renova livro atrasado, com alguém na fila ou acima do limite. No balcão a bibliotecária continua podendo renovar em qualquer situação' },
+      { cat: 'Interface', texto: 'Fila de espera no painel: quem espera cada livro, a posição de cada um e quais exemplares já estão separados aguardando retirada' },
+      { cat: 'Interface', texto: 'Painel Uso do acervo: empréstimos por mês, por turma e por categoria, taxa de atraso e a lista dos livros que nunca saíram da estante' },
+      { cat: 'Interface', texto: 'Relatório de pendências dos leitores: quem está com livro atrasado ou multa em aberto, com turma e e-mail para a cobrança' },
+      { cat: 'Multiplataforma', texto: 'Minha leitura no app: quanto o aluno já leu, a categoria preferida dele e sugestões de próximos livros com o motivo de cada uma' },
+      { cat: 'API', texto: 'A API passa a aceitar três gravações — entrar na fila, sair da fila e renovar —, sempre nos dados do próprio aluno logado. O acervo segue intocável pela rede' },
+    ],
+  },
+  {
     numero: '1.6.2',
     data: '19 de julho de 2026',
-    destaque: true,
     categorias: ['Interface'],
     itens: [
       { cat: 'Interface', texto: 'Identidade visual completa: logo do SIGBEF no login, no autoatendimento e no assistente inicial, e como ícone das janelas' },

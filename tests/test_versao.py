@@ -49,6 +49,39 @@ class TestVersaoCoerente(unittest.TestCase):
         self.assertIsNotNone(m, "VERSAO não encontrada em site/src/versao.js")
         self.assertEqual(m.group(1), _versao_do_pacote())
 
+    def test_empacotadores_batem_com_o_pacote(self):
+        """Instalador e bundle carimbam a versão no que o usuário instala.
+
+        Errados, dizem a versão anterior no "Adicionar ou remover
+        programas" — e o suporte passa a diagnosticar a versão errada.
+        """
+        for caminho, padrao in (
+                ("sigbef.spec",
+                 r"CFBundleShortVersionString['\"]:\s*['\"]([^'\"]+)"),
+                ("tools/sigbef_installer.iss",
+                 r"#define\s+MyAppVersion\s+\"([^\"]+)\"")):
+            with self.subTest(arquivo=caminho):
+                arquivo = RAIZ / caminho
+                if not arquivo.exists():
+                    self.skipTest(f"{caminho} não está presente nesta cópia")
+                m = re.search(padrao, arquivo.read_text(encoding="utf-8"))
+                self.assertIsNotNone(m, f"versão não encontrada em {caminho}")
+                self.assertEqual(m.group(1), _versao_do_pacote())
+
+    def test_readme_e_api_batem_com_o_pacote(self):
+        """O que a pessoa lê antes de instalar, e o exemplo do /health."""
+        readme = (RAIZ / "README.md").read_text(encoding="utf-8")
+        m = re.search(r"vers%C3%A3o-([\d.]+)-", readme)
+        self.assertIsNotNone(m, "badge de versão não encontrado no README")
+        self.assertEqual(m.group(1), _versao_do_pacote())
+
+        api = RAIZ / "docs" / "API.md"
+        if api.exists():
+            m = re.search(r'"versao":\s*"([^"]+)"',
+                          api.read_text(encoding="utf-8"))
+            if m:
+                self.assertEqual(m.group(1), _versao_do_pacote())
+
     def test_changelog_tem_a_versao_atual(self):
         """Versão lançada sem entrada no changelog é versão sem história."""
         texto = (RAIZ / "docs" / "CHANGELOG.md").read_text(encoding="utf-8")

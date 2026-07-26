@@ -2,7 +2,15 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado]
+## [1.7.0] — 2026-07-26
+
+A biblioteca sai do computador da bibliotecária. Até aqui o aluno só
+tinha o balcão e o terminal de autoatendimento; agora ele resolve no
+próprio celular o que antes exigia pedir para alguém — e ela ganha as
+telas para enxergar o que passou a acontecer sem a mão dela.
+
+O aplicativo estreia com numeração própria, **0.1**: ele evolui em
+ritmo diferente do desktop e não faz sentido amarrar os dois.
 
 ### Pendências dos leitores (RF-052)
 
