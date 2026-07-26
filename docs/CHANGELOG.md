@@ -48,6 +48,26 @@ emprestar/devolver seguem sendo do balcão porque exigem o livro na mão.
   verdade: ler o QR, parear, entrar, consultar os 2.867 livros, reservar
   e renovar
 
+### Histórico de empréstimos no app
+
+- A rota do leitor passa a devolver `historico` com os empréstimos já
+  devolvidos (os 20 mais recentes — quem estuda há anos acumula
+  centenas, e a tela mostra só os últimos). A tela do app já tinha a
+  seção pronta e um botão "Ver todo o histórico" que **não fazia nada**:
+  o dado nunca chegava. O botão saiu; o histórico chegou
+
+### Empacotamento do app
+
+- `docs/COMO_GERAR_APK.md`: como gerar a chave, assinar e qual dos APKs
+  entregar. A chave e as senhas ficam fora do repositório, em variável
+  de ambiente
+- `.gitignore` do app passa a barrar `*.jks`, `*.keystore` e
+  `keystore.properties`. Uma chave versionada por acidente permitiria a
+  qualquer um publicar atualização no lugar da escola — e chave vazada
+  não se revoga, só se troca, obrigando todo aluno a reinstalar
+- Build de release com a chave presente mas sem as senhas agora falha
+  dizendo exatamente o que falta, em vez de quebrar lá na frente
+
 ### Requisito de rede para implantar
 
 O teste em celular revelou algo que vale conferir em **cada escola**

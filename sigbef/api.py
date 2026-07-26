@@ -126,6 +126,11 @@ def endereco_pareamento() -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Handler HTTP
 # ---------------------------------------------------------------------------
+# Quantos empréstimos já devolvidos a rota do leitor devolve. Quem
+# estuda há anos acumula centenas, e a tela do app mostra só os
+# recentes — mandar tudo seria payload grande sem ninguém ler.
+HISTORICO_MAX = 20
+
 _ROTA_LIVRO = re.compile(r"^/api/v1/livros/(\d+)$")
 _ROTA_USUARIO_EMP = re.compile(r"^/api/v1/usuarios/([^/]+)/emprestimos$")
 _ROTA_CANCELAR_RES = re.compile(r"^/api/v1/reservas/(\d+)/cancelar$")
@@ -446,8 +451,12 @@ class _Handler(BaseHTTPRequestHandler):
                 return
             dados = servicos.obter_usuario(u["id"])
             st = servicos.status_usuario(u["id"])
-            abertos = servicos.listar_emprestimos_usuario(
-                u["id"], somente_abertos=True)
+            todos = servicos.listar_emprestimos_usuario(u["id"])
+            abertos = [e for e in todos if not e["data_devolucao"]]
+            # Últimos devolvidos, para o aluno rever o que já leu. Vem
+            # limitado porque quem estuda há anos acumula centenas, e a
+            # tela mostra só os recentes de qualquer forma.
+            historico = [e for e in todos if e["data_devolucao"]][:HISTORICO_MAX]
             ativas = reservas.listar_reservas_usuario(u["id"])
             # O app precisa saber, antes de oferecer o botão, se cada
             # livro pode mesmo ser renovado — e, quando não, por quê.
@@ -466,6 +475,7 @@ class _Handler(BaseHTTPRequestHandler):
                 "limite_emprestimos": st.limite,
                 "multas_em_aberto": st.multas_em_aberto,
                 "emprestimos_abertos": abertos,
+                "historico": historico,
                 "reservas_ativas": [
                     {"id": r["id"], "livro_id": r["livro_id"],
                      "titulo": r["titulo"], "posicao": r["posicao"],

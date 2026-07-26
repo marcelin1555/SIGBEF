@@ -27,11 +27,22 @@ android {
     // quebrando o build de release.
     val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
     if (file(keystorePath).exists()) {
+      val senhaStore = System.getenv("STORE_PASSWORD")
+      val senhaChave = System.getenv("KEY_PASSWORD")
+      if (senhaStore.isNullOrBlank() || senhaChave.isNullOrBlank()) {
+        // Falha cedo e explicando. Sem isto, o build seguia e só quebrava
+        // lá na frente com um erro do Gradle que não diz o que fazer.
+        throw GradleException(
+          "A chave de assinatura foi encontrada em $keystorePath, mas as " +
+            "senhas não estão no ambiente. Defina STORE_PASSWORD e " +
+            "KEY_PASSWORD antes de rodar o build. Ver docs/COMO_GERAR_APK.md."
+        )
+      }
       create("release") {
         storeFile = file(keystorePath)
-        storePassword = System.getenv("STORE_PASSWORD")
-        keyAlias = "upload"
-        keyPassword = System.getenv("KEY_PASSWORD")
+        storePassword = senhaStore
+        keyAlias = System.getenv("KEY_ALIAS") ?: "upload"
+        keyPassword = senhaChave
       }
     }
   }

@@ -540,6 +540,54 @@ class TestEscritaPeloApp(ApiTestCase):
             conn.close()
             self.assertEqual(resp.status, 405, metodo)
 
+    def test_historico_traz_o_que_ja_foi_devolvido(self):
+        """A tela do app tem a seção; faltava o dado vir."""
+        token = self._logar()
+        emp = self._emprestimo_do_aluno()
+        _, antes = self.get("/api/v1/usuarios/alu100/emprestimos",
+                            token=token)
+        self.assertEqual(antes["historico"], [])
+
+        with __import__("sigbef").database.db_cursor() as cur:
+            cur.execute("SELECT ex.codigo_barras FROM emprestimo e "
+                        "JOIN exemplar ex ON ex.id = e.exemplar_id "
+                        "WHERE e.id = ?", (emp["id"],))
+            codigo = cur.fetchone()["codigo_barras"]
+        servicos.realizar_devolucao(codigo_exemplar=codigo)
+
+        _, depois = self.get("/api/v1/usuarios/alu100/emprestimos",
+                             token=token)
+        self.assertEqual(depois["emprestimos_abertos"], [])
+        self.assertEqual(len(depois["historico"]), 1)
+        self.assertEqual(depois["historico"][0]["titulo"], "Livro do Aluno")
+        self.assertTrue(depois["historico"][0]["data_devolucao"])
+
+    def test_historico_vem_limitado(self):
+        """Quem estuda há anos acumula centenas; a resposta não cresce."""
+        from sigbef import api as api_mod
+        token = self._logar()
+        for i in range(api_mod.HISTORICO_MAX + 3):
+            livro = servicos.cadastrar_livro(titulo=f"Livro {i}",
+                                              autores=["Autora"],
+                                              quantidade_exemplares=1)
+            codigo = livro["exemplares"][0][1]
+            servicos.realizar_emprestimo(codigo_exemplar=codigo,
+                                         matricula_usuario="alu100")
+            servicos.realizar_devolucao(codigo_exemplar=codigo)
+
+        _, corpo = self.get("/api/v1/usuarios/alu100/emprestimos",
+                            token=token)
+        self.assertEqual(len(corpo["historico"]), api_mod.HISTORICO_MAX)
+
+    def test_aluno_NAO_le_historico_de_outro(self):
+        token = self._logar()
+        servicos.cadastrar_usuario(nome="Outro", matricula="alu200",
+                                   perfil="ALUNO", senha="outra123",
+                                   gerar_cartao=False)
+        status, _ = self.get("/api/v1/usuarios/alu200/emprestimos",
+                             token=token)
+        self.assertEqual(status, 403)
+
     def test_emprestimos_trazem_veredito_de_renovacao(self):
         """O app precisa saber se pode renovar antes de mostrar o botão."""
         token = self._logar()

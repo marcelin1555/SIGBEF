@@ -246,20 +246,11 @@ fun LoansScreen(
                             HistoryLoanCard(emp = emp)
                         }
 
-                        item {
-                            TextButton(
-                                onClick = { },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "Ver todo o histórico",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SigbefBlue,
-                                    textDecoration = TextDecoration.Underline
-                                )
-                            }
-                        }
+                        // Havia aqui um "Ver todo o histórico" que não
+                        // fazia nada — onClick vazio. O que a biblioteca
+                        // manda já são os mais recentes, e é o histórico
+                        // inteiro para quase todo aluno; um botão que
+                        // promete mais e não entrega é pior que nenhum.
                     }
                 }
             }
@@ -482,32 +473,27 @@ private fun HistoryLoanCard(emp: Emprestimo) {
         color = Color.White,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
     ) {
-        Row(
+        // Sem seta ">" à direita: ela prometia abrir alguma coisa, e o
+        // cartão não é clicável — não há tela de detalhe do empréstimo.
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Column {
-                Text(
-                    text = "${emp.livroTitulo} (${emp.autor})",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefInk
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "Devolvido em ${dataParaLer(emp.dataDevolvido ?: emp.dataDevolucao)}",
-                    fontSize = 12.sp,
-                    color = SigbefMuted
-                )
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = SigbefMuted
+            Text(
+                // Sem "(autor)": o empréstimo não carrega autor (é outra
+                // tabela, N:N), então saía "Título ()".
+                text = emp.livroTitulo,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = SigbefInk
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Devolvido em " +
+                    dataParaLer(emp.dataDevolvido ?: emp.dataDevolucao),
+                fontSize = 12.sp,
+                color = SigbefMuted
             )
         }
     }

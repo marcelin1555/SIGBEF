@@ -189,6 +189,7 @@ Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 ### Gerar o executável a partir do código
 
 Veja o guia completo: [`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md)
+Para o aplicativo Android: [`docs/COMO_GERAR_APK.md`](docs/COMO_GERAR_APK.md)
 
 **Resumo:**
 
@@ -507,7 +508,8 @@ SIGBIB/
 ├── docs/                              # documentação completa
 │   ├── MANUAL_DO_USUARIO.md           # manual do usuário final
 │   ├── CHANGELOG.md                   # histórico de versões
-│   ├── COMO_GERAR_EXECUTAVEL.md       # guia de build
+│   ├── COMO_GERAR_EXECUTAVEL.md       # guia de build do desktop
+│   ├── COMO_GERAR_APK.md              # guia de build e assinatura do app
 │   ├── PUBLICAR_NO_GITHUB.md          # guia de publicação
 │   ├── SIGBEF_Documento_Requisitos.docx  # documento de requisitos
 │   └── screenshots/                   # mockups SVG das telas

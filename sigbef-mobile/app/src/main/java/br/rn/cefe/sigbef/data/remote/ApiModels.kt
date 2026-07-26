@@ -101,6 +101,8 @@ data class SituacaoLeitorResponse(
     @Json(name = "limite_emprestimos") val limiteEmprestimos: Int = 0,
     @Json(name = "multas_em_aberto") val multasEmAberto: Double = 0.0,
     @Json(name = "emprestimos_abertos") val emprestimosAbertos: List<EmprestimoDto> = emptyList(),
+    /** Já devolvidos, os mais recentes primeiro. Vem limitado pelo servidor. */
+    val historico: List<EmprestimoDto> = emptyList(),
     @Json(name = "reservas_ativas") val reservasAtivas: List<ReservaDto> = emptyList()
 )
 

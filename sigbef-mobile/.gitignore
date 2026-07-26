@@ -21,3 +21,11 @@ debug.keystore
 *.jks
 *.keystore
 google-services.json
+
+# Chave de assinatura do APK e suas senhas. NUNCA versionar: quem tem a
+# chave publica atualizações no lugar da escola, e uma chave vazada não
+# se revoga — só se troca, e trocar obriga todo mundo a desinstalar e
+# reinstalar o app.
+*.jks
+*.keystore
+keystore.properties

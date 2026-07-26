@@ -249,9 +249,12 @@ class SigbefRepository(
 
         db.emprestimoDao().clearAll()
         val hoje = hojeIso()
+        // Abertos e já devolvidos convivem na mesma tabela; o campo
+        // `devolvido` é o que a tela usa para separar as duas seções.
         db.emprestimoDao().insertEmprestimos(
-            dto.emprestimosAbertos.map { emp ->
+            (dto.emprestimosAbertos + dto.historico).map { emp ->
                 val prevista = emp.dataPrevista?.take(10).orEmpty()
+                val devolvido = emp.dataDevolucao != null
                 EmprestimoEntity(
                     id = emp.id,
                     livroTitulo = emp.titulo,
@@ -260,9 +263,11 @@ class SigbefRepository(
                     // Atraso vem da DATA, não da multa: a multa só é
                     // lançada na devolução, então num empréstimo ainda
                     // aberto ela vale sempre 0 e um livro vencido há
-                    // semanas apareceria como "Em dia".
-                    atrasado = prevista.isNotEmpty() && prevista < hoje,
-                    devolvido = emp.dataDevolucao != null,
+                    // semanas apareceria como "Em dia". Já devolvido
+                    // nunca é "atrasado": aquilo é passado.
+                    atrasado = !devolvido && prevista.isNotEmpty()
+                                && prevista < hoje,
+                    devolvido = devolvido,
                     dataDevolvido = emp.dataDevolucao,
                     spineColorHex = corDaLombada(emp.titulo),
                     renovacoes = emp.renovacoes,
