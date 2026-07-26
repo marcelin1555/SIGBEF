@@ -43,11 +43,19 @@ import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
+import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefError
+import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
+import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
 import br.rn.cefe.sigbef.ui.theme.SigbefWarning
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
 
 @Composable
 fun HomeScreen(
@@ -55,15 +63,28 @@ fun HomeScreen(
     emprestimos: List<Emprestimo> = emptyList(),
     isOffline: Boolean,
     ultimaSincronizacao: String? = null,
-    onNavigate: (Screen) -> Unit
+    onNavigate: (Screen) -> Unit,
+    /** Buscar dados novos na biblioteca. */
+    onAtualizar: (() -> Unit)? = null,
+    carregando: Boolean = false
 ) {
     val ativos = emprestimos.filter { !it.devolvido }
     val atrasados = ativos.filter { it.atrasado }
     val maxLivros = usuario.limMaxLivros
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline,
-                            ultimaSincronizacao = ultimaSincronizacao)
+            // A saudação vive dentro do gradiente: é o que identifica a
+            // tela, e repeti-la no corpo gastava duas faixas de altura
+            // com a mesma informação.
+            SigbefTopAppBar(
+                title = if (usuario.vazio) "SIGBEF"
+                        else "Olá, ${usuario.nome.split(" ").first()}!",
+                subtitle = usuario.turma.ifBlank { null },
+                isOffline = isOffline,
+                ultimaSincronizacao = ultimaSincronizacao,
+                onAtualizar = onAtualizar,
+                carregando = carregando
+            )
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -72,7 +93,7 @@ fun HomeScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -82,24 +103,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                // Header Greeting
-                Text(
-                    text = "Olá, ${usuario.nome.split(" ").first()}!",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = usuario.turma,
-                    fontSize = 14.sp,
-                    color = SigbefMuted
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
                 // Main Status Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -121,7 +124,7 @@ fun HomeScreen(
                                     text = if (ativos.isEmpty()) "Nenhum livro emprestado" else "${ativos.size} ${if (ativos.size == 1) "livro com você" else "livros com você"}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF1A1A1A)
+                                    color = SigbefInk
                                 )
 
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -130,14 +133,14 @@ fun HomeScreen(
                                     Row(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFFFFDAD6))
+                                            .background(SigbefErrorFundo)
                                             .padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Schedule,
                                             contentDescription = null,
-                                            tint = Color(0xFFB71C1C),
+                                            tint = SigbefError,
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -145,14 +148,14 @@ fun HomeScreen(
                                             text = "${atrasados.size} com devolução em atraso",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.SemiBold,
-                                            color = Color(0xFFB71C1C)
+                                            color = SigbefError
                                         )
                                     }
                                 } else if (ativos.isNotEmpty()) {
                                     Row(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFFEF6C00).copy(alpha = 0.1f))
+                                            .background(SigbefWarningFundo)
                                             .padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -187,7 +190,7 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFFD1E4FF)),
+                                    .background(SigbefBlueFundo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -212,7 +215,7 @@ fun HomeScreen(
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
                                 color = SigbefBlue,
-                                trackColor = Color(0xFFE6E8EB)
+                                trackColor = SigbefLine
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
@@ -231,7 +234,7 @@ fun HomeScreen(
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFFFFF3E0)
+                                color = SigbefWarningFundo
                             ) {
                                 Row(
                                     modifier = Modifier.padding(10.dp),
@@ -247,7 +250,7 @@ fun HomeScreen(
                                     Text(
                                         text = usuario.situacao,
                                         fontSize = 12.sp,
-                                        color = Color(0xFF7A4F01)
+                                        color = SigbefWarningInk
                                     )
                                 }
                             }
@@ -309,7 +312,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(if (!isOffline) Color(0xFF2E7D32) else SigbefWarning)
+                        .background(if (!isOffline) SigbefSuccess else SigbefWarning)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -360,7 +363,7 @@ private fun BentoShortcutCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color(0xFFD1E4FF)),
+                    .background(SigbefBlueFundo),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -375,7 +378,7 @@ private fun BentoShortcutCard(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF1A1A1A),
+                color = SigbefInk,
                 lineHeight = 18.sp
             )
         }

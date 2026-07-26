@@ -39,9 +39,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
+import br.rn.cefe.sigbef.ui.theme.SigbefError
+import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
+import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
 
 @Composable
 fun LoginScreen(
@@ -56,7 +60,7 @@ fun LoginScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF7F9FC)
+        color = SigbefBackground
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -177,14 +181,14 @@ fun LoginScreen(
                     if (erro != null) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            color = Color(0xFFFDECEA),
+                            color = SigbefErrorFundo,
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
                                 text = erro,
                                 modifier = Modifier.padding(12.dp),
                                 fontSize = 13.sp,
-                                color = Color(0xFFB3261E)
+                                color = SigbefError
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -213,7 +217,7 @@ fun LoginScreen(
                     // Warning Text Box
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFF2F4F7),
+                        color = SigbefSurfaceContainerLow,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(

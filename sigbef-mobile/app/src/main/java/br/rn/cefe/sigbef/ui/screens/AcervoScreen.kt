@@ -54,11 +54,16 @@ import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.BookSpineView
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
+import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
 import br.rn.cefe.sigbef.ui.theme.SigbefWarning
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
 
 @Composable
 fun AcervoScreen(
@@ -70,7 +75,10 @@ fun AcervoScreen(
     searchQueryParam: String = "",
     selectedCategoryParam: String = "Todos",
     onSearchQueryChange: ((String) -> Unit)? = null,
-    onCategoryChange: ((String) -> Unit)? = null
+    onCategoryChange: ((String) -> Unit)? = null,
+    /** Buscar dados novos na biblioteca. */
+    onAtualizar: (() -> Unit)? = null,
+    carregando: Boolean = false
 ) {
     var searchQueryLocal by remember { mutableStateOf(searchQueryParam) }
     var selectedCategoryLocal by remember { mutableStateOf(selectedCategoryParam) }
@@ -107,8 +115,13 @@ fun AcervoScreen(
 
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline,
-                            ultimaSincronizacao = ultimaSincronizacao)
+            SigbefTopAppBar(
+                title = "Acervo",
+                isOffline = isOffline,
+                ultimaSincronizacao = ultimaSincronizacao,
+                onAtualizar = onAtualizar,
+                carregando = carregando
+            )
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -117,7 +130,7 @@ fun AcervoScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -136,7 +149,9 @@ fun AcervoScreen(
                         searchQueryLocal = newQuery
                         onSearchQueryChange?.invoke(newQuery)
                     },
-                    placeholder = { Text("Buscar por título, autor ou categoria") },
+                    // Os campos aqui são os mesmos do LIKE em LivroDao:
+                    // categoria não entra, ela é o filtro de chips abaixo.
+                    placeholder = { Text("Título, autor, ISBN ou tombo") },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -183,7 +198,7 @@ fun AcervoScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
-                        disabledContainerColor = Color(0xFFECEEF1),
+                        disabledContainerColor = SigbefSurfaceContainerLow,
                         focusedBorderColor = SigbefNavy,
                         unfocusedBorderColor = SigbefLine
                     )
@@ -209,7 +224,7 @@ fun AcervoScreen(
                                 selectedContainerColor = SigbefNavy,
                                 selectedLabelColor = Color.White,
                                 containerColor = Color.White,
-                                labelColor = Color(0xFF1A1A1A)
+                                labelColor = SigbefInk
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
@@ -252,7 +267,7 @@ fun AcervoScreen(
                         text = "Nenhum livro encontrado para '$searchQuery'",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A),
+                        color = SigbefInk,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
@@ -347,7 +362,7 @@ private fun BookCard(
                         text = livro.titulo,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A),
+                        color = SigbefInk,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -381,7 +396,7 @@ private fun BookCard(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF2E7D32).copy(alpha = 0.1f))
+                                .background(SigbefSuccessFundo)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -403,7 +418,7 @@ private fun BookCard(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFFEF6C00).copy(alpha = 0.1f))
+                                .background(SigbefWarningFundo)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -45,7 +47,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,13 +54,19 @@ import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Livro
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
+import br.rn.cefe.sigbef.ui.components.PilulaStatus
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefGold
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
+import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
 
 @Composable
 fun BookDetailScreen(
@@ -95,7 +102,7 @@ fun BookDetailScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -139,33 +146,23 @@ fun BookDetailScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Status do exemplar, como veio da biblioteca
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        SigbefSuccess.copy(alpha = 0.3f)
+                // Status do exemplar, como veio da biblioteca. Antes o
+                // livro emprestado também aparecia em verde e com ícone
+                // de confirmação — o desenho dizia o contrário do texto.
+                if (livro.disponivel) {
+                    PilulaStatus(
+                        texto = "Disponível",
+                        cor = SigbefSuccess,
+                        fundo = SigbefSuccessFundo,
+                        icone = Icons.Default.CheckCircle
                     )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = SigbefSuccess,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (livro.disponivel) "DISPONÍVEL" else "EMPRESTADO",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SigbefSuccess
-                        )
-                    }
+                } else {
+                    PilulaStatus(
+                        texto = "Emprestado",
+                        cor = SigbefWarningInk,
+                        fundo = SigbefWarningFundo,
+                        icone = Icons.Default.Schedule
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -175,7 +172,7 @@ fun BookDetailScreen(
                     text = livro.titulo,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A),
+                    color = SigbefInk,
                     textAlign = TextAlign.Center
                 )
 
@@ -249,7 +246,7 @@ fun BookDetailScreen(
                             text = "Sinopse",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A)
+                            color = SigbefInk
                         )
                     }
 
@@ -264,7 +261,7 @@ fun BookDetailScreen(
                         Text(
                             text = livro.sinopse,
                             fontSize = 14.sp,
-                            color = Color(0xFF42474F),
+                            color = SigbefInk,
                             lineHeight = 22.sp,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -402,7 +399,7 @@ private fun DetailCard(
                 text = value,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A)
+                color = SigbefInk
             )
         }
     }

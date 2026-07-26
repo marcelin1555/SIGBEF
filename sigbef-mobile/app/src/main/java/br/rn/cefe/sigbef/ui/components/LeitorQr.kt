@@ -52,9 +52,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import br.rn.cefe.sigbef.ui.theme.SigbefGold
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
 

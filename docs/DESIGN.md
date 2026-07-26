@@ -1,8 +1,10 @@
 # Guia de design do SIGBEF
 
-Referência única de identidade visual do projeto — desktop, site e futuro
-app mobile. Os valores aqui **espelham o código** (`sigbef/ui_tema.py` e
-`site/tailwind.config.js`); se mudar lá, atualize aqui.
+Referência única de identidade visual do projeto — desktop, site e app
+Android. Os valores aqui **espelham o código** (`sigbef/ui_tema.py`,
+`site/tailwind.config.js` e
+`sigbef-mobile/app/src/main/java/br/rn/cefe/sigbef/ui/theme/Color.kt`);
+se mudar num, atualize os outros e este arquivo.
 
 Kit de marca completo (logo em variações, fontes .woff2, guia navegável):
 pasta `SIGBEF_kit_marca` gerada em 21/07/2026 (Downloads do Marcello) e
@@ -109,6 +111,34 @@ com `tracking-widest`; números tabulares onde há colunas de dígitos.
 5. **CTA primário**: amarelo com texto navy; secundário: contorno.
 6. **Mockup do app no hero**: HTML/CSS puro (não imagem) — nítido em
    qualquer tela e mostra a versão atual via `versao.js`.
+
+## 5.1. Padrões do app Android (Compose)
+
+O app usa a **mesma assinatura visual do site**, adaptada ao celular.
+
+- Tokens em `ui/theme/Color.kt`; `ui/components/Marca.kt` guarda o que é
+  identidade (gradiente, pílula, rótulo de seção). **Nenhuma tela escreve
+  `Color(0xFF…)` na mão** — se faltar um tom, ele nasce no tema, com nome.
+- **Barra do topo** (`SigbefTopAppBar`): gradiente
+  `SigbefNavy → SigbefBlue` fechado por faixa dourada de 4dp, com o título
+  da tela e um subtítulo opcional. É o equivalente do cabeçalho de página
+  interna do site (item 1 acima).
+- A barra também carrega o botão de **atualizar** e o estado da conexão.
+  Antes isso era um chip flutuando sobre o conteúdo.
+- **Pílula de status** (`PilulaStatus`): totalmente arredondada, fundo
+  lavado da cor de estado, com ícone e texto. Igual à do site
+  ("✓ ok" / "atrasado"). Nunca depende só da cor — sempre tem texto.
+- Fundos de pílula são cores **chapadas** (`SigbefSuccessFundo` etc.), não
+  alpha: as mesmas pílulas aparecem sobre cartão branco e sobre o fundo
+  cinza, e com alpha mudariam de tom conforme o lugar.
+- Barra de status do sistema em ícones claros
+  (`SystemBarStyle.dark`), porque o gradiente navy passa por baixo dela.
+
+> **Cuidado ao gerar tema Material 3 automaticamente.** Os `*Container`
+> do gerador (`D1E4FF`, `7CBAFF`, `001D35`, `004A7D`) são azuis parecidos
+> com os nossos, mas de outra família — e como os componentes do Material
+> os usam por padrão, aquela paleta reaparecia nas telas sem ninguém ter
+> escolhido. Hoje eles derivam do navy e do azul de verdade.
 
 ## 6. Padrões do desktop (Tkinter)
 

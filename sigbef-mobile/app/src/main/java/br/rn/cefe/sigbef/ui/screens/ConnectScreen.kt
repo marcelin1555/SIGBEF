@@ -41,10 +41,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.ui.components.LeitorQr
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
+import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefError
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
+import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
 
 @Composable
 fun ConnectScreen(
@@ -86,7 +91,7 @@ fun ConnectScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF7F9FC)
+        color = SigbefBackground
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -134,7 +139,7 @@ fun ConnectScreen(
                     modifier = Modifier
                         .size(180.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFD1E4FF).copy(alpha = 0.5f))
+                        .background(SigbefBlueFundo)
                         .border(1.dp, SigbefLine, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
@@ -152,7 +157,7 @@ fun ConnectScreen(
                     text = "Conectar à biblioteca da escola",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A),
+                    color = SigbefInk,
                     textAlign = TextAlign.Center
                 )
 
@@ -211,7 +216,7 @@ fun ConnectScreen(
 
             // Footer Privacy Notice
             Surface(
-                color = Color(0xFFECEEF1),
+                color = SigbefSurfaceContainerLow,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -262,7 +267,7 @@ fun ConnectScreen(
                     )
                     if (erro != null) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(erro, fontSize = 12.sp, color = Color(0xFFB3261E))
+                        Text(erro, fontSize = 12.sp, color = SigbefError)
                     }
                 }
             },

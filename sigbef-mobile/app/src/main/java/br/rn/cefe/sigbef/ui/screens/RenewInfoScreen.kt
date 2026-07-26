@@ -38,10 +38,16 @@ import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
+import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefGold
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import br.rn.cefe.sigbef.ui.theme.SigbefWarning
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
 
 @Composable
 fun RenewInfoScreen(
@@ -65,7 +71,7 @@ fun RenewInfoScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -79,8 +85,8 @@ fun RenewInfoScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFD1E4FF),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF9ECAFF))
+                color = SigbefBlueFundo,
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefBlue)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -97,7 +103,7 @@ fun RenewInfoScreen(
                         text = "Você renova pelo próprio app, em \"Meus " +
                             "empréstimos\", enquanto o prazo não vencer.",
                         fontSize = 14.sp,
-                        color = Color(0xFF00497C),
+                        color = SigbefNavy,
                         lineHeight = 20.sp
                     )
                 }
@@ -126,8 +132,8 @@ fun RenewInfoScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFFFDEAD),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFBA3B))
+                color = SigbefWarningFundo,
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefGold)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -146,7 +152,7 @@ fun RenewInfoScreen(
                             "se você já renovou o livro várias vezes. " +
                             "Nesses casos, procure o balcão.",
                         fontSize = 14.sp,
-                        color = Color(0xFF281900),
+                        color = SigbefWarningInk,
                         lineHeight = 20.sp
                     )
                 }
@@ -204,7 +210,7 @@ private fun StepItem(number: String, title: String) {
             text = title,
             fontSize = 15.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF1A1A1A)
+            color = SigbefInk
         )
     }
 }

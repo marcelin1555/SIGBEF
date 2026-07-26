@@ -2,6 +2,7 @@ package br.rn.cefe.sigbef
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
@@ -11,16 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,7 +49,12 @@ import br.rn.cefe.sigbef.ui.theme.SigbefWarning
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // Ícones da barra de status em branco: ela fica sobre o cabeçalho
+        // em gradiente navy, e no padrão claro o relógio e a bateria
+        // sumiriam no azul escuro.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+        )
         setContent {
             MyApplicationTheme {
                 SigbefApp()
@@ -125,7 +127,9 @@ fun SigbefApp() {
                         emprestimos = emprestimos,
                         isOffline = isOffline,
                         ultimaSincronizacao = ultimaSync,
-                        onNavigate = viewModel::navigateTo
+                        onNavigate = viewModel::navigateTo,
+                        carregando = carregando,
+                        onAtualizar = { viewModel.sincronizar() }
                     )
 
                     Screen.ACERVO -> AcervoScreen(
@@ -140,7 +144,9 @@ fun SigbefApp() {
                         searchQueryParam = searchQuery,
                         selectedCategoryParam = selectedCategory,
                         onSearchQueryChange = { query -> viewModel.setSearchQuery(query) },
-                        onCategoryChange = { category -> viewModel.setSelectedCategory(category) }
+                        onCategoryChange = { category -> viewModel.setSelectedCategory(category) },
+                        carregando = carregando,
+                        onAtualizar = { viewModel.sincronizar() }
                     )
 
                     Screen.BOOK_DETAIL, Screen.RESERVE -> {
@@ -175,7 +181,9 @@ fun SigbefApp() {
                         reservas = reservas,
                         acaoEmCurso = acaoEmCurso,
                         onRenovar = { viewModel.renovar(it) },
-                        onCancelarReserva = { viewModel.cancelarReserva(it) }
+                        onCancelarReserva = { viewModel.cancelarReserva(it) },
+                        carregando = carregando,
+                        onAtualizar = { viewModel.sincronizar() }
                     )
 
                     Screen.RENEW_INFO -> RenewInfoScreen(
@@ -190,54 +198,17 @@ fun SigbefApp() {
                         ultimaSincronizacao = ultimaSync,
                         onNavigate = viewModel::navigateTo,
                         onSair = { viewModel.sair() },
-                        onTrocarBiblioteca = { viewModel.trocarBiblioteca() }
+                        onTrocarBiblioteca = { viewModel.trocarBiblioteca() },
+                        carregando = carregando,
+                        onAtualizar = { viewModel.sincronizar() }
                     )
                 }
             }
 
-            // Estado real da conexão. Antes isto era um interruptor manual
-            // que abria marcado como "Online" sem nunca ter feito uma
-            // requisição. Agora reflete o último contato com a biblioteca,
-            // e tocar nele tenta reconectar e atualizar.
-            if (currentScreen != Screen.CONNECT && currentScreen != Screen.LOGIN) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(top = 40.dp, end = 12.dp)
-                ) {
-                    AssistChip(
-                        onClick = { viewModel.sincronizar() },
-                        label = {
-                            Text(
-                                text = when {
-                                    carregando -> "Atualizando…"
-                                    isOffline -> "Sem conexão"
-                                    else -> "Conectado"
-                                },
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isOffline) Color(0xFF604100) else SigbefNavy
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = if (isOffline) Icons.Default.WifiOff else Icons.Default.Wifi,
-                                contentDescription = "Atualizar dados da biblioteca",
-                                tint = if (isOffline) SigbefWarning else SigbefNavy,
-                                modifier = Modifier.padding(start = 2.dp)
-                            )
-                        },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (isOffline) Color(0xFFFFDEAD) else Color(0xFFD1E4FF)
-                        ),
-                        border = AssistChipDefaults.assistChipBorder(
-                            enabled = true,
-                            borderColor = if (isOffline) SigbefWarning else SigbefNavy
-                        ),
-                        shape = RoundedCornerShape(16.dp)
-                    )
-                }
-            }
+            // O estado da conexão e o botão de atualizar agora vivem na
+            // barra do topo de cada tela. Antes era um chip solto
+            // flutuando sobre o conteúdo, que com o cabeçalho em
+            // gradiente passaria a cobrir o título.
 
             // Recusa da biblioteca: exige leitura, então para o aluno em
             // vez de passar despercebida no canto da tela.

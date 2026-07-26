@@ -16,14 +16,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,11 +38,15 @@ import br.rn.cefe.sigbef.model.Usuario
 import br.rn.cefe.sigbef.ui.components.BarcodeView
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefGold
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
+import br.rn.cefe.sigbef.ui.theme.SigbefSurface
+import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
 
 @Composable
 fun DigitalCardScreen(
@@ -51,12 +55,21 @@ fun DigitalCardScreen(
     ultimaSincronizacao: String? = null,
     onNavigate: (Screen) -> Unit,
     onSair: () -> Unit = {},
-    onTrocarBiblioteca: () -> Unit = {}
+    onTrocarBiblioteca: () -> Unit = {},
+    /** Buscar dados novos na biblioteca. */
+    onAtualizar: (() -> Unit)? = null,
+    carregando: Boolean = false
 ) {
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline,
-                            ultimaSincronizacao = ultimaSincronizacao)
+            SigbefTopAppBar(
+                title = "Cartão digital",
+                subtitle = "Apresente este código no balcão",
+                isOffline = isOffline,
+                ultimaSincronizacao = ultimaSincronizacao,
+                onAtualizar = onAtualizar,
+                carregando = carregando
+            )
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -65,7 +78,7 @@ fun DigitalCardScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -75,23 +88,6 @@ fun DigitalCardScreen(
                 .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "Cartão digital",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Apresente este código no balcão",
-                fontSize = 14.sp,
-                color = SigbefMuted
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
             // Digital Card Container
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -137,7 +133,7 @@ fun DigitalCardScreen(
                             text = usuario.nome,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A),
+                            color = SigbefInk,
                             textAlign = TextAlign.Center
                         )
 
@@ -164,7 +160,7 @@ fun DigitalCardScreen(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            color = Color(0xFFFFFFFF),
+                            color = SigbefSurface,
                             border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
                         ) {
                             BarcodeView(code = usuario.matricula)
@@ -173,7 +169,7 @@ fun DigitalCardScreen(
 
                     // Footer Note
                     Surface(
-                        color = Color(0xFFF2F4F7),
+                        color = SigbefSurfaceContainerLow,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -193,7 +189,7 @@ fun DigitalCardScreen(
                             Text(
                                 text = "Funciona mesmo sem internet.",
                                 fontSize = 13.sp,
-                                color = Color(0xFF42474F),
+                                color = SigbefInk,
                                 fontWeight = FontWeight.Medium
                             )
                         }

@@ -6,16 +6,25 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+/**
+ * Só cores da marca.
+ *
+ * Os *container* vinham do gerador de tema do Material 3 (D1E4FF,
+ * 7CBAFF, 001D35, 004A7D): azuis parecidos com os nossos, mas de outra
+ * família. Como os componentes do Material os usam por padrão, aquela
+ * paleta reaparecia nas telas sem ninguém ter escolhido. Agora derivam
+ * do navy e do azul de verdade.
+ */
 private val LightColorScheme =
   lightColorScheme(
     primary = SigbefNavy,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD1E4FF),
-    onPrimaryContainer = Color(0xFF001D35),
+    primaryContainer = SigbefBlueFundo,
+    onPrimaryContainer = SigbefNavy,
     secondary = SigbefBlue,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFF7CBAFF),
-    onSecondaryContainer = Color(0xFF004A7D),
+    secondaryContainer = SigbefBlueFundo,
+    onSecondaryContainer = SigbefNavy,
     tertiary = SigbefGold,
     onTertiary = SigbefNavy,
     background = SigbefBackground,

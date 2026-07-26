@@ -42,15 +42,21 @@ import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Emprestimo
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
+import br.rn.cefe.sigbef.ui.components.PilulaStatus
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
+import br.rn.cefe.sigbef.ui.theme.SigbefBackground
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
+import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
 import br.rn.cefe.sigbef.ui.theme.SigbefError
+import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
 import br.rn.cefe.sigbef.ui.theme.SigbefGold
+import br.rn.cefe.sigbef.ui.theme.SigbefInk
 import br.rn.cefe.sigbef.ui.theme.SigbefLine
 import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
+import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
 
 @Composable
 fun LoansScreen(
@@ -61,15 +67,24 @@ fun LoansScreen(
     reservas: List<Reserva> = emptyList(),
     acaoEmCurso: Boolean = false,
     onRenovar: (Emprestimo) -> Unit = {},
-    onCancelarReserva: (Reserva) -> Unit = {}
+    onCancelarReserva: (Reserva) -> Unit = {},
+    /** Buscar dados novos na biblioteca. */
+    onAtualizar: (() -> Unit)? = null,
+    carregando: Boolean = false
 ) {
     val ativos = emprestimos.filter { !it.devolvido }
     val historico = emprestimos.filter { it.devolvido }
 
     Scaffold(
         topBar = {
-            SigbefTopAppBar(isOffline = isOffline,
-                            ultimaSincronizacao = ultimaSincronizacao)
+            SigbefTopAppBar(
+                title = "Meus empréstimos",
+                subtitle = "Acompanhe seus livros e a fila de espera",
+                isOffline = isOffline,
+                ultimaSincronizacao = ultimaSincronizacao,
+                onAtualizar = onAtualizar,
+                carregando = carregando
+            )
         },
         bottomBar = {
             SigbefBottomNavigation(
@@ -78,7 +93,7 @@ fun LoansScreen(
                 isOffline = isOffline
             )
         },
-        containerColor = Color(0xFFF7F9FC)
+        containerColor = SigbefBackground
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -86,23 +101,6 @@ fun LoansScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            Text(
-                text = "Meus empréstimos",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A)
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Acompanhe seus livros e o histórico",
-                fontSize = 14.sp,
-                color = SigbefMuted
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             TextButton(
                 onClick = { onNavigate(Screen.RENEW_INFO) },
                 modifier = Modifier.padding(0.dp)
@@ -116,7 +114,7 @@ fun LoansScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // A fila de espera conta como "coisa acontecendo": quem só tem
             // reserva não pode cair no estado vazio, senão some o único
@@ -134,7 +132,7 @@ fun LoansScreen(
                         modifier = Modifier
                             .size(140.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFD1E4FF).copy(alpha = 0.5f)),
+                            .background(SigbefBlueFundo),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -318,7 +316,7 @@ private fun ActiveLoanCard(
                         text = emp.livroTitulo,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A)
+                        color = SigbefInk
                     )
 
                     Spacer(modifier = Modifier.height(2.dp))
@@ -332,56 +330,20 @@ private fun ActiveLoanCard(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (emp.atrasado) {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFFFDAD6))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Error,
-                                    contentDescription = "Atrasado",
-                                    tint = SigbefError,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Atrasado",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SigbefError
-                                )
-                            }
-                        } else {
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFF2E7D32).copy(alpha = 0.1f))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Em dia",
-                                    tint = SigbefSuccess,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Em dia",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SigbefSuccess
-                                )
-                            }
-                        }
-
+                    if (emp.atrasado) {
+                        PilulaStatus(
+                            texto = "Atrasado",
+                            cor = SigbefError,
+                            fundo = SigbefErrorFundo,
+                            icone = Icons.Default.Error
+                        )
+                    } else {
+                        PilulaStatus(
+                            texto = "Em dia",
+                            cor = SigbefSuccess,
+                            fundo = SigbefSuccessFundo,
+                            icone = Icons.Default.CheckCircle
+                        )
                     }
                 }
             }
@@ -472,7 +434,7 @@ private fun ReservaCard(
                         text = reserva.titulo,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1A1A1A)
+                        color = SigbefInk
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -532,7 +494,7 @@ private fun HistoryLoanCard(emp: Emprestimo) {
                     text = "${emp.livroTitulo} (${emp.autor})",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1A1A1A)
+                    color = SigbefInk
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
