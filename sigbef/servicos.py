@@ -1267,6 +1267,55 @@ def estatisticas() -> dict:
     }
 
 
+def relatorio_inadimplentes() -> list[dict]:
+    """Quem está impedido de pegar livro, e por quê (RF-052).
+
+    Cobre as duas causas de bloqueio, não só a multa: `status_usuario`
+    barra tanto quem deve dinheiro quanto quem está com exemplar
+    atrasado, e uma lista que mostrasse só a primeira deixaria de fora
+    justamente quem ainda está com o livro da escola em casa.
+
+    Ordena pelo atraso mais antigo primeiro — é quem a bibliotecária
+    precisa procurar primeiro.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT u.id, u.nome, u.matricula,
+                       COALESCE(NULLIF(TRIM(u.turma), ''), '') AS turma,
+                       COALESCE(u.email, '') AS email,
+                       IFNULL(SUM(CASE WHEN e.multa > 0 THEN e.multa END), 0)
+                           AS multa,
+                       SUM(CASE WHEN e.data_devolucao IS NULL
+                                 AND date(e.data_prevista) < date('now','localtime')
+                                THEN 1 ELSE 0 END) AS em_atraso,
+                       MIN(CASE WHEN e.data_devolucao IS NULL
+                                 AND date(e.data_prevista) < date('now','localtime')
+                                THEN date(e.data_prevista) END) AS vencimento_antigo
+                 FROM usuario u
+                 JOIN emprestimo e ON e.usuario_id = u.id
+                WHERE u.ativo = 1
+                GROUP BY u.id
+               HAVING multa > 0 OR em_atraso > 0
+                ORDER BY vencimento_antigo IS NULL, vencimento_antigo,
+                         multa DESC, u.nome""",
+        )
+        linhas = [dict(r) for r in cur.fetchall()]
+
+    hoje = date.today()
+    for linha in linhas:
+        venc = linha.pop("vencimento_antigo", None)
+        # Dias do atraso mais antigo: é o número que dá urgência à lista.
+        if venc:
+            try:
+                linha["dias_atraso"] = (hoje - date.fromisoformat(venc)).days
+            except ValueError:
+                linha["dias_atraso"] = 0
+        else:
+            linha["dias_atraso"] = 0
+        linha["multa"] = round(float(linha["multa"] or 0), 2)
+    return linhas
+
+
 def relatorio_circulacao(top: int = 10) -> list[dict]:
     with db_cursor() as cur:
         cur.execute(

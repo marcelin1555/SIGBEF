@@ -184,5 +184,113 @@ class TestResumo(EstatisticasTestCase):
         self.assertEqual(r["leitores_30_dias"], 0)
 
 
+class TestRelatorioInadimplentes(EstatisticasTestCase):
+    """RF-052 — quem está impedido de pegar livro, e por quê.
+
+    O bloqueio de `status_usuario` tem duas causas (multa em aberto e
+    exemplar atrasado), e o relatório precisa cobrir as duas: uma lista
+    só de devedores deixaria de fora quem ainda está com o livro da
+    escola em casa.
+    """
+
+    def atrasar(self, emprestimo_id, dias):
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        ((date.today() - timedelta(days=dias)).isoformat(),
+                         emprestimo_id))
+
+    def test_biblioteca_em_dia_devolve_lista_vazia(self):
+        self.criar_usuario(matricula="a1")
+        livro = self.criar_livro()
+        self.emprestar(livro["exemplares"][0][1], "a1")
+        self.assertEqual(servicos.relatorio_inadimplentes(), [])
+
+    def test_pega_quem_esta_com_livro_atrasado(self):
+        """Ainda não devolveu: não há multa lançada, mas há pendência."""
+        self.criar_usuario(matricula="a1", nome="Ana")
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], "a1")
+        self.atrasar(emp["id"], 12)
+
+        r = servicos.relatorio_inadimplentes()
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["nome"], "Ana")
+        self.assertEqual(r[0]["em_atraso"], 1)
+        self.assertEqual(r[0]["dias_atraso"], 12)
+        self.assertEqual(r[0]["multa"], 0)
+
+    def test_pega_quem_devolveu_e_ficou_devendo(self):
+        self.criar_usuario(matricula="a2", nome="Bruno")
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], "a2")
+        self.atrasar(emp["id"], 4)
+        self.devolver(livro["exemplares"][0][1])
+
+        r = servicos.relatorio_inadimplentes()
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["nome"], "Bruno")
+        self.assertGreater(r[0]["multa"], 0)
+        self.assertEqual(r[0]["em_atraso"], 0)
+
+    def test_multa_quitada_sai_da_lista(self):
+        u = self.criar_usuario(matricula="a2", nome="Bruno")
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], "a2")
+        self.atrasar(emp["id"], 4)
+        self.devolver(livro["exemplares"][0][1])
+        self.assertTrue(servicos.relatorio_inadimplentes())
+
+        servicos.quitar_multa(emp["id"])
+        self.assertEqual(servicos.relatorio_inadimplentes(), [])
+
+    def test_atraso_mais_antigo_vem_primeiro(self):
+        """É quem a bibliotecária precisa procurar primeiro."""
+        self.criar_usuario(matricula="a1", nome="Recente")
+        self.criar_usuario(matricula="a2", nome="Antigo")
+        livro = self.criar_livro(exemplares=2)
+        e1 = self.emprestar(livro["exemplares"][0][1], "a1")
+        e2 = self.emprestar(livro["exemplares"][1][1], "a2")
+        self.atrasar(e1["id"], 3)
+        self.atrasar(e2["id"], 40)
+
+        nomes = [r["nome"] for r in servicos.relatorio_inadimplentes()]
+        self.assertEqual(nomes, ["Antigo", "Recente"])
+
+    def test_usuario_inativo_fica_de_fora(self):
+        u = self.criar_usuario(matricula="a1", nome="Saiu da escola")
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], "a1")
+        self.atrasar(emp["id"], 30)
+        with db_cursor() as cur:
+            cur.execute("UPDATE usuario SET ativo = 0 WHERE id = ?", (u["id"],))
+        self.assertEqual(servicos.relatorio_inadimplentes(), [])
+
+    def test_traz_contato_para_a_cobranca(self):
+        self.criar_usuario(matricula="a1", nome="Ana", turma="3º ano B",
+                            email="ana@escola.br")
+        livro = self.criar_livro()
+        emp = self.emprestar(livro["exemplares"][0][1], "a1")
+        self.atrasar(emp["id"], 5)
+
+        r = servicos.relatorio_inadimplentes()[0]
+        self.assertEqual(r["turma"], "3º ano B")
+        self.assertEqual(r["email"], "ana@escola.br")
+        self.assertEqual(r["matricula"], "a1")
+
+    def test_uma_linha_por_pessoa(self):
+        """Dois livros atrasados não podem virar duas linhas."""
+        self.criar_usuario(matricula="a1", nome="Ana")
+        livro = self.criar_livro(exemplares=2)
+        # Os dois empréstimos primeiro, o atraso depois: com um deles já
+        # vencido, a regra de negócio recusaria o segundo.
+        emps = [self.emprestar(livro["exemplares"][i][1], "a1") for i in (0, 1)]
+        for emp in emps:
+            self.atrasar(emp["id"], 7)
+
+        r = servicos.relatorio_inadimplentes()
+        self.assertEqual(len(r), 1)
+        self.assertEqual(r[0]["em_atraso"], 2)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

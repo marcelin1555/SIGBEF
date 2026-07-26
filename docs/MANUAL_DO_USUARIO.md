@@ -209,12 +209,21 @@ exposição, indicar em sala ou rever a próxima compra.
 ### Gerar relatórios
 
 1. Menu lateral → **Relatórios**.
-2. Escolha um dos 4 relatórios disponíveis:
+2. Escolha um dos 5 relatórios disponíveis:
    - **Acervo completo** — todos os livros e exemplares
    - **Empréstimos em aberto** — quem está com livros agora
    - **Usuários cadastrados** — listagem completa
    - **Top 50 mais emprestados** — livros mais procurados
+   - **Pendências dos leitores** — quem está impedido de pegar livro
 3. Clique em **Exportar CSV** e escolha onde salvar.
+
+O relatório de pendências traz o e-mail e a turma de cada um, porque ele
+costuma virar cobrança. Repare que ele lista **duas** situações
+diferentes: quem já devolveu com atraso e ficou devendo multa, e quem
+ainda está com o livro em casa depois do prazo. O segundo caso não tem
+multa lançada — ela só nasce na devolução —, mas é o mais urgente,
+porque o livro está fora da biblioteca. Por isso a lista vem ordenada
+pelo atraso mais antigo.
 
 O CSV pode ser aberto no Excel ou Google Sheets para análises adicionais.
 

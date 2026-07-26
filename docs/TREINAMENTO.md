@@ -152,8 +152,8 @@ a lista de livros parados.
 
 Objetivo: extrair dados e proteger o acervo.
 
-1. Menu **Relatórios**: exporte acervo, usuários ou os mais emprestados
-   em CSV (abre no Excel).
+1. Menu **Relatórios**: exporte acervo, usuários, os mais emprestados ou
+   as pendências dos leitores em CSV (abre no Excel).
 2. **Backup** (Configurações → Ferramentas → "Fazer backup agora"):
    faça isso toda semana. Guarde a cópia num pendrive ou na nuvem.
 

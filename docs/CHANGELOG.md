@@ -4,6 +4,21 @@ Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
 ## [Não lançado]
 
+### Pendências dos leitores (RF-052)
+
+Último requisito funcional da versão 1.0 que seguia em aberto. O sistema
+já bloqueava o leitor inadimplente e mostrava a multa na ficha dele, mas
+não havia como perguntar "quem está devendo?" sem abrir usuário por
+usuário.
+
+- Novo relatório em **Relatórios → Pendências dos leitores**, exportado
+  em CSV com nome, matrícula, turma, e-mail, exemplares em atraso, dias
+  do atraso mais antigo e multa
+- Cobre as **duas** causas de bloqueio, não só a multa: quem ainda está
+  com o livro da escola em casa aparece na lista mesmo sem multa lançada
+  — ela só nasce na devolução
+- Ordenado pelo atraso mais antigo, que é por onde a cobrança começa
+
 ### Reserva e renovação pelo celular
 
 O aluno passa a resolver sozinho o que antes exigia ir ao balcão para

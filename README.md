@@ -135,7 +135,7 @@ Além do desktop, o projeto tem:
 | Quitação de multa | Registro manual de multas pagas |
 | Fila de espera | Quem espera cada livro, com destaque para os exemplares já separados e o prazo de retirada |
 | Uso do acervo | Empréstimos por mês, turmas e categorias, taxa de atraso e a lista dos livros que nunca saíram |
-| Relatórios em CSV | Acervo, empréstimos abertos, usuários, livros mais emprestados |
+| Relatórios em CSV | Acervo, empréstimos abertos, usuários, livros mais emprestados e as pendências dos leitores |
 | Pareamento de celular | QR code para o aluno conectar o aplicativo, e controle dos aparelhos ligados |
 | Configurações *(admin)* | Ajuste de prazos, limites e valores de multa |
 

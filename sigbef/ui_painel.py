@@ -1239,6 +1239,9 @@ class SecaoRelatorios(SecaoBase):
             ("Top 50 mais emprestados",
              "Livros mais procurados em todo o histórico.",
              self._exportar_circulacao),
+            ("Pendências dos leitores",
+             "Quem está com livro atrasado ou multa em aberto.",
+             self._exportar_inadimplentes),
         ]):
             card = ttk.Frame(cards, style="Card.TFrame", padding=18)
             card.grid(row=i // 2, column=i % 2, sticky="ew",
@@ -1329,6 +1332,33 @@ class SecaoRelatorios(SecaoBase):
         self._escrever(nome, ["#", "Título", "Empréstimos"], linhas)
         messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
                               parent=self.painel)
+
+    def _exportar_inadimplentes(self):
+        pendentes = servicos.relatorio_inadimplentes()
+        if not pendentes:
+            messagebox.showinfo(
+                "Nenhuma pendência",
+                "Nenhum leitor está com livro atrasado ou multa em aberto.",
+                parent=self.painel)
+            return
+        nome = self._arquivo_destino(
+            f"pendencias_{datetime.now().strftime('%Y%m%d')}.csv")
+        if not nome:
+            return
+        # O e-mail entra porque a lista costuma virar cobrança, e sem ele
+        # a bibliotecária teria que voltar ao cadastro um por um.
+        linhas = [[r["nome"], r["matricula"], r["turma"], r["email"],
+                    r["em_atraso"], r["dias_atraso"], f"{r['multa']:.2f}"]
+                   for r in pendentes]
+        self._escrever(nome,
+                        ["Nome", "Matrícula", "Série / Turma", "E-mail",
+                         "Exemplares em atraso", "Dias do atraso mais antigo",
+                         "Multa (R$)"], linhas)
+        messagebox.showinfo(
+            "Pronto",
+            f"{len(pendentes)} leitor(es) com pendência.\n\n"
+            f"Arquivo salvo em:\n{nome}",
+            parent=self.painel)
 
 
 # ---------------------------------------------------------------------------
