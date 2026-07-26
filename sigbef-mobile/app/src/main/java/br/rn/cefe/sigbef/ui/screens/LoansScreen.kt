@@ -116,10 +116,11 @@ fun LoansScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // A fila de espera conta como "coisa acontecendo": quem só tem
-            // reserva não pode cair no estado vazio, senão some o único
-            // lugar onde ele acompanha a posição.
-            if (ativos.isEmpty() && reservas.isEmpty()) {
+            // O estado vazio é para quem nunca pegou um livro. Quem tem
+            // fila de espera, ou já devolveu alguma coisa, tem o que ver
+            // aqui — e leria "você ainda não pegou nenhum livro" sobre a
+            // própria estante de leituras, o que é falso.
+            if (ativos.isEmpty() && reservas.isEmpty() && historico.isEmpty()) {
                 // Empty Loans State
                 Column(
                     modifier = Modifier
