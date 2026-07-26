@@ -1400,6 +1400,10 @@ def estatisticas_do_leitor(usuario_id: int) -> dict:
         )
         r = cur.fetchone()
 
+        # Dois livros no mínimo para chamar de gosto. Com um só não há
+        # padrão nenhum: quem leu quatro livros de quatro categorias
+        # diferentes veria "você lê mais X · 1 livro", que é uma
+        # conclusão tirada do nada.
         cur.execute(
             """SELECT COALESCE(NULLIF(TRIM(c.nome), ''), '') AS categoria,
                        COUNT(*) AS lidos
@@ -1409,7 +1413,9 @@ def estatisticas_do_leitor(usuario_id: int) -> dict:
                  LEFT JOIN categoria c ON c.id = l.categoria_id
                 WHERE e.usuario_id = ? AND e.data_devolucao IS NOT NULL
                   AND TRIM(COALESCE(c.nome, '')) <> ''
-                GROUP BY categoria ORDER BY lidos DESC, categoria LIMIT 1""",
+                GROUP BY categoria
+               HAVING lidos >= 2
+                ORDER BY lidos DESC, categoria LIMIT 1""",
             (usuario_id,),
         )
         favorita = cur.fetchone()

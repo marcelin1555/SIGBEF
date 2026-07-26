@@ -41,6 +41,7 @@ import br.rn.cefe.sigbef.ui.screens.DigitalCardScreen
 import br.rn.cefe.sigbef.ui.screens.HomeScreen
 import br.rn.cefe.sigbef.ui.screens.LoansScreen
 import br.rn.cefe.sigbef.ui.screens.LoginScreen
+import br.rn.cefe.sigbef.ui.screens.ReadingScreen
 import br.rn.cefe.sigbef.ui.screens.RenewInfoScreen
 import br.rn.cefe.sigbef.ui.theme.MyApplicationTheme
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
@@ -81,6 +82,8 @@ fun SigbefApp() {
     val acaoEmCurso by viewModel.acaoEmCurso.collectAsState()
     val erroAcao by viewModel.erroAcao.collectAsState()
     val aviso by viewModel.actionNotification.collectAsState()
+    val estatistica by viewModel.estatisticaLeitura.collectAsState()
+    val recomendacoes by viewModel.recomendacoes.collectAsState()
 
     // A tela e o livro selecionado vivem no ViewModel, que sobrevive à
     // rotação do aparelho. Antes eram variáveis locais em `remember`, e
@@ -190,6 +193,19 @@ fun SigbefApp() {
                         isOffline = isOffline,
                         onBackClick = { viewModel.navigateTo(Screen.LOANS) },
                         onNavigate = viewModel::navigateTo
+                    )
+
+                    Screen.READING -> ReadingScreen(
+                        estatistica = estatistica,
+                        recomendacoes = recomendacoes,
+                        isOffline = isOffline,
+                        onNavigate = viewModel::navigateTo,
+                        ultimaSincronizacao = ultimaSync,
+                        // Abrir a sugestão leva à ficha do livro, de onde
+                        // dá para reservar — a recomendação vira ação.
+                        onAbrirLivro = { id -> viewModel.selecionarLivroPorId(id) },
+                        carregando = carregando,
+                        onAtualizar = { viewModel.navigateTo(Screen.READING) }
                     )
 
                     Screen.CARD -> DigitalCardScreen(

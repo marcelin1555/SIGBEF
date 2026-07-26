@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.ImportContacts
@@ -290,10 +291,13 @@ fun HomeScreen(
                         onClick = { onNavigate(Screen.LOANS) },
                         modifier = Modifier.weight(1f)
                     )
+                    // Era "Como renovar", que já tem link próprio dentro de
+                    // Meus empréstimos — o atalho aqui era o quarto card
+                    // gasto com a informação menos usada da tela.
                     BentoShortcutCard(
-                        title = "Como renovar",
-                        icon = Icons.Default.Autorenew,
-                        onClick = { onNavigate(Screen.RENEW_INFO) },
+                        title = "Minha leitura",
+                        icon = Icons.Default.AutoStories,
+                        onClick = { onNavigate(Screen.READING) },
                         modifier = Modifier.weight(1f)
                     )
                 }

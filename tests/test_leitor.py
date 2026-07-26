@@ -71,6 +71,21 @@ class TestEstatisticasDoLeitor(LeitorTestCase):
         self.assertEqual(e["dias_medios"], 0.0)
         self.assertEqual(e["leitor_desde"], "")
 
+    def test_um_livro_so_nao_faz_uma_favorita(self):
+        """Quatro livros de quatro categorias não revelam gosto nenhum.
+
+        Visto em dados reais: a tela dizia "você lê mais X · 1 livro",
+        uma conclusão tirada do nada.
+        """
+        u = self.criar_usuario(matricula="ana")
+        self.ler("ana", "Um", "Literatura")
+        self.ler("ana", "Dois", "Didáticos")
+        self.ler("ana", "Três", "História")
+
+        e = servicos.estatisticas_do_leitor(u["id"])
+        self.assertEqual(e["total_lidos"], 3)
+        self.assertEqual(e["categoria_favorita"], "")
+
     def test_livro_sem_categoria_nao_vira_favorita(self):
         """'Sem categoria' não é gosto de ninguém."""
         u = self.criar_usuario(matricula="ana")
@@ -139,9 +154,14 @@ class TestRecomendacoes(LeitorTestCase):
         self.assertIn("primeiro", parado[0]["motivo"])
 
     def test_categoria_favorita_tem_prioridade_sobre_o_parado(self):
-        """Explicação boa antes de explicação genérica."""
+        """Explicação boa antes de explicação genérica.
+
+        Dois livros na categoria porque um só não configura favorita —
+        ver `test_um_livro_so_nao_faz_uma_favorita`.
+        """
         ana = self.criar_usuario(matricula="ana")
         self.ler("ana", "Já Li", "Literatura")
+        self.ler("ana", "Já Li Também", "Literatura")
         self.livro("Outro de Literatura", "Literatura")
 
         rec = servicos.recomendacoes_para(ana["id"], 5)

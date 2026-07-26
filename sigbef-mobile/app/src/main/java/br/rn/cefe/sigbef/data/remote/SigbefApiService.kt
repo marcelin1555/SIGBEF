@@ -51,6 +51,18 @@ interface SigbefApiService {
     ): Response<SituacaoLeitorResponse>
 
     /**
+     * Retrato da leitura do aluno e sugestões de próximos livros.
+     *
+     * Rota separada da de empréstimos porque a recomendação é cara e não
+     * precisa ser recalculada a cada reserva ou renovação.
+     */
+    @GET("api/v1/usuarios/{matricula}/leitura")
+    suspend fun leitura(
+        @Path("matricula") matricula: String,
+        @Query("limite") limite: Int = 6
+    ): Response<LeituraResponse>
+
+    /**
      * Entra na fila de espera de um livro sem exemplar livre.
      * 409 quando a regra da biblioteca recusa (livro disponível, limite
      * de reservas atingido, reserva repetida) — a mensagem vem pronta.

@@ -50,6 +50,36 @@ data class EmprestimoEntity(
     val motivoRenovacao: String = ""
 )
 
+/**
+ * Retrato da leitura do aluno. Linha única (id = 1), como `usuarios`:
+ * o aparelho guarda um leitor só.
+ *
+ * Fica em cache porque o aluno gosta de rever quanto leu — e ele
+ * costuma abrir o app fora da escola, onde não há a rede da biblioteca.
+ */
+@Entity(tableName = "estatisticas_leitura")
+data class EstatisticaLeituraEntity(
+    @PrimaryKey val id: Int = 1,
+    val totalLidos: Int = 0,
+    val lidosNoAno: Int = 0,
+    val diasMedios: Double = 0.0,
+    val leitorDesde: String = "",
+    val categoriaFavorita: String = "",
+    val lidosNaFavorita: Int = 0
+)
+
+@Entity(tableName = "recomendacoes")
+data class RecomendacaoEntity(
+    @PrimaryKey val livroId: Int,
+    val titulo: String,
+    val categoria: String = "",
+    /** Explicação da sugestão, escrita pela biblioteca. */
+    val motivo: String = "",
+    /** Preserva a ordem de prioridade que veio do servidor. */
+    val ordem: Int = 0,
+    val spineColorHex: String = "#1F4E79"
+)
+
 @Entity(tableName = "reservas")
 data class ReservaEntity(
     @PrimaryKey val id: Int,

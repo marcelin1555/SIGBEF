@@ -67,6 +67,28 @@ data class Reserva(
     val spineColorHex: String = "#1F4E79"
 )
 
+/** O que o aluno leu. Vem da biblioteca, calculado sobre devoluções. */
+data class EstatisticaLeitura(
+    val totalLidos: Int = 0,
+    val lidosNoAno: Int = 0,
+    val diasMedios: Double = 0.0,
+    val leitorDesde: String = "",
+    val categoriaFavorita: String = "",
+    val lidosNaFavorita: Int = 0
+) {
+    /** Nunca devolveu nada — a tela mostra convite, não números zerados. */
+    val vazia: Boolean get() = totalLidos == 0
+}
+
+data class Recomendacao(
+    val livroId: Int,
+    val titulo: String,
+    val categoria: String = "",
+    /** "Quem leu X também leu", "Ninguém pegou ainda…" */
+    val motivo: String = "",
+    val spineColorHex: String = "#1F4E79"
+)
+
 enum class Screen {
     CONNECT,
     LOGIN,
@@ -76,5 +98,6 @@ enum class Screen {
     LOANS,
     RENEW_INFO,
     CARD,
-    RESERVE
+    RESERVE,
+    READING
 }

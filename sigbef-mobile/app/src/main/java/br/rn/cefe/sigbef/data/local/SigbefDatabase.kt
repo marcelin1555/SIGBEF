@@ -22,8 +22,9 @@ import androidx.room.RoomDatabase
  */
 @Database(
     entities = [UsuarioEntity::class, LivroEntity::class, EmprestimoEntity::class,
-                ReservaEntity::class],
-    version = 5,
+                ReservaEntity::class, EstatisticaLeituraEntity::class,
+                RecomendacaoEntity::class],
+    version = 6,
     exportSchema = false
 )
 abstract class SigbefDatabase : RoomDatabase() {
@@ -31,6 +32,7 @@ abstract class SigbefDatabase : RoomDatabase() {
     abstract fun livroDao(): LivroDao
     abstract fun emprestimoDao(): EmprestimoDao
     abstract fun reservaDao(): ReservaDao
+    abstract fun leituraDao(): LeituraDao
 
     companion object {
         @Volatile

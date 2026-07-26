@@ -69,6 +69,27 @@ interface EmprestimoDao {
 }
 
 @Dao
+interface LeituraDao {
+    @Query("SELECT * FROM estatisticas_leitura WHERE id = 1 LIMIT 1")
+    fun getEstatisticas(): Flow<EstatisticaLeituraEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun salvarEstatisticas(e: EstatisticaLeituraEntity)
+
+    @Query("SELECT * FROM recomendacoes ORDER BY ordem ASC")
+    fun getRecomendacoes(): Flow<List<RecomendacaoEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun salvarRecomendacoes(itens: List<RecomendacaoEntity>)
+
+    @Query("DELETE FROM recomendacoes")
+    suspend fun limparRecomendacoes()
+
+    @Query("DELETE FROM estatisticas_leitura")
+    suspend fun limparEstatisticas()
+}
+
+@Dao
 interface ReservaDao {
     /** Fila do aluno: quem já tem exemplar separado aparece primeiro. */
     @Query("SELECT * FROM reservas ORDER BY separado DESC, posicao ASC")

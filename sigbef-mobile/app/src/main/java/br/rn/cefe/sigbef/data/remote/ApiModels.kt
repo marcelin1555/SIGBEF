@@ -133,6 +133,34 @@ data class ReservaDto(
     @Json(name = "retirar_ate") val retirarAte: String? = null
 )
 
+// --------------------------------------------------- leitura do aluno
+/** GET /api/v1/usuarios/{matricula}/leitura */
+@JsonClass(generateAdapter = true)
+data class LeituraResponse(
+    val estatisticas: EstatisticasDto = EstatisticasDto(),
+    val recomendacoes: List<RecomendacaoDto> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
+data class EstatisticasDto(
+    /** Conta só o que foi devolvido: livro em mãos ainda não foi lido. */
+    @Json(name = "total_lidos") val totalLidos: Int = 0,
+    @Json(name = "lidos_no_ano") val lidosNoAno: Int = 0,
+    @Json(name = "dias_medios") val diasMedios: Double = 0.0,
+    @Json(name = "leitor_desde") val leitorDesde: String? = null,
+    @Json(name = "categoria_favorita") val categoriaFavorita: String? = null,
+    @Json(name = "lidos_na_favorita") val lidosNaFavorita: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
+data class RecomendacaoDto(
+    val id: Int,
+    val titulo: String,
+    val categoria: String? = null,
+    /** Por que este livro apareceu — a tela mostra junto do título. */
+    val motivo: String? = null
+)
+
 // ------------------------------------------------------- escrita (R3)
 @JsonClass(generateAdapter = true)
 data class ReservaRequest(

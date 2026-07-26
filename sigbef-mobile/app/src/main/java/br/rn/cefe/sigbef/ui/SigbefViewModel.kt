@@ -5,7 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import br.rn.cefe.sigbef.data.SigbefRepository
 import br.rn.cefe.sigbef.model.Emprestimo
+import br.rn.cefe.sigbef.model.EstatisticaLeitura
 import br.rn.cefe.sigbef.model.Livro
+import br.rn.cefe.sigbef.model.Recomendacao
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
@@ -76,6 +78,15 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     val reservas: StateFlow<List<Reserva>> = repository.reservasFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val estatisticaLeitura: StateFlow<EstatisticaLeitura> =
+        repository.estatisticaFlow.stateIn(
+            viewModelScope, SharingStarted.WhileSubscribed(5000),
+            EstatisticaLeitura())
+
+    val recomendacoes: StateFlow<List<Recomendacao>> =
+        repository.recomendacoesFlow.stateIn(
+            viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val livros: StateFlow<List<Livro>> = kotlinx.coroutines.flow.combine(
         _searchQuery, _selectedCategory
@@ -100,6 +111,18 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     // ------------------------------------------------------------ ações
     fun navigateTo(screen: Screen) {
         _currentScreen.value = screen
+        // A recomendação é a consulta mais cara do servidor; buscada só
+        // quando a tela abre, nunca junto das sincronizações de rotina.
+        if (screen == Screen.READING) {
+            viewModelScope.launch {
+                _carregando.value = true
+                if (repository.sincronizarLeitura()) {
+                    _isOffline.value = false
+                    marcarSincronizacao()
+                }
+                _carregando.value = false
+            }
+        }
     }
 
     fun setSearchQuery(query: String) {
@@ -108,6 +131,16 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
 
     fun setSelectedCategory(category: String) {
         _selectedCategory.value = category
+    }
+
+    /**
+     * Abre a ficha de um livro sabendo só o id — o caminho de quem veio
+     * de uma recomendação, onde não há o objeto completo em mãos.
+     */
+    fun selecionarLivroPorId(livroId: Int) {
+        _selectedBookId.value = livroId
+        navigateTo(Screen.BOOK_DETAIL)
+        viewModelScope.launch { repository.sincronizarDetalheLivro(livroId) }
     }
 
     fun selectBook(book: Livro) {

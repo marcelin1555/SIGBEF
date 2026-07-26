@@ -2,7 +2,9 @@ package br.rn.cefe.sigbef.data
 
 import android.content.Context
 import br.rn.cefe.sigbef.data.local.EmprestimoEntity
+import br.rn.cefe.sigbef.data.local.EstatisticaLeituraEntity
 import br.rn.cefe.sigbef.data.local.LivroEntity
+import br.rn.cefe.sigbef.data.local.RecomendacaoEntity
 import br.rn.cefe.sigbef.data.local.ReservaEntity
 import br.rn.cefe.sigbef.data.local.SigbefDatabase
 import br.rn.cefe.sigbef.data.local.UsuarioEntity
@@ -11,12 +13,14 @@ import br.rn.cefe.sigbef.data.remote.ReservaRequest
 import br.rn.cefe.sigbef.data.remote.RetrofitClient
 import br.rn.cefe.sigbef.data.remote.TokenManager
 import br.rn.cefe.sigbef.model.Emprestimo
+import br.rn.cefe.sigbef.model.EstatisticaLeitura
 import br.rn.cefe.sigbef.model.Livro
+import br.rn.cefe.sigbef.model.Recomendacao
 import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Usuario
+import kotlin.math.abs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.math.abs
 
 /**
  * Ponte entre a biblioteca (API do desktop) e o aparelho (cache Room).
@@ -47,6 +51,15 @@ class SigbefRepository(
 
     val reservasFlow: Flow<List<Reserva>> =
         db.reservaDao().getAllReservas().map { lista ->
+            lista.map { it.toDomain() }
+        }
+
+    val estatisticaFlow: Flow<EstatisticaLeitura> =
+        db.leituraDao().getEstatisticas().map { it?.toDomain()
+            ?: EstatisticaLeitura() }
+
+    val recomendacoesFlow: Flow<List<Recomendacao>> =
+        db.leituraDao().getRecomendacoes().map { lista ->
             lista.map { it.toDomain() }
         }
 
@@ -109,6 +122,8 @@ class SigbefRepository(
         db.reservaDao().clearAll()
         db.livroDao().clearAll()
         db.usuarioDao().clearAll()
+        db.leituraDao().limparRecomendacoes()
+        db.leituraDao().limparEstatisticas()
     }
 
     private fun api() = RetrofitClient.getApiService(
@@ -294,6 +309,45 @@ class SigbefRepository(
         return true
     }
 
+    /**
+     * Traz o retrato de leitura e as sugestões.
+     *
+     * Chamada quando a tela abre, não a cada sincronização: do lado do
+     * servidor a recomendação é a consulta mais cara que existe.
+     */
+    suspend fun sincronizarLeitura(): Boolean {
+        val matricula = tokenManager.obterMatricula() ?: return false
+        val resposta = runCatching { api().leitura(matricula) }
+            .getOrElse { return false }
+        val dto = resposta.body()?.takeIf { resposta.isSuccessful } ?: return false
+
+        val e = dto.estatisticas
+        db.leituraDao().salvarEstatisticas(
+            EstatisticaLeituraEntity(
+                totalLidos = e.totalLidos,
+                lidosNoAno = e.lidosNoAno,
+                diasMedios = e.diasMedios,
+                leitorDesde = e.leitorDesde.orEmpty(),
+                categoriaFavorita = e.categoriaFavorita.orEmpty(),
+                lidosNaFavorita = e.lidosNaFavorita
+            )
+        )
+        db.leituraDao().limparRecomendacoes()
+        db.leituraDao().salvarRecomendacoes(
+            dto.recomendacoes.mapIndexed { i, r ->
+                RecomendacaoEntity(
+                    livroId = r.id,
+                    titulo = r.titulo,
+                    categoria = r.categoria.orEmpty(),
+                    motivo = r.motivo.orEmpty(),
+                    ordem = i,
+                    spineColorHex = corDaLombada(r.titulo)
+                )
+            }
+        )
+        return true
+    }
+
     // ------------------------------------------------- ações do aluno
     /**
      * Traduz uma recusa da API na frase que o aluno lê.
@@ -451,6 +505,23 @@ fun EmprestimoEntity.toDomain() = Emprestimo(
     renovacoes = renovacoes,
     podeRenovar = podeRenovar,
     motivoRenovacao = motivoRenovacao
+)
+
+fun EstatisticaLeituraEntity.toDomain() = EstatisticaLeitura(
+    totalLidos = totalLidos,
+    lidosNoAno = lidosNoAno,
+    diasMedios = diasMedios,
+    leitorDesde = leitorDesde,
+    categoriaFavorita = categoriaFavorita,
+    lidosNaFavorita = lidosNaFavorita
+)
+
+fun RecomendacaoEntity.toDomain() = Recomendacao(
+    livroId = livroId,
+    titulo = titulo,
+    categoria = categoria,
+    motivo = motivo,
+    spineColorHex = spineColorHex
 )
 
 fun ReservaEntity.toDomain() = Reserva(
