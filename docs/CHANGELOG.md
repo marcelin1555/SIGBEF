@@ -44,6 +44,18 @@ emprestar/devolver seguem sendo do balcão porque exigem o livro na mão.
   nem sempre está presente nos aparelhos dos alunos. Em troca ele traz um
   motor nativo pesado, então o release passou a gerar **um APK por
   arquitetura**: o aluno instala 19 MB em vez de 35 MB
+- Verificado em aparelho real (Xiaomi, Android 15) contra o acervo de
+  verdade: ler o QR, parear, entrar, consultar os 2.867 livros, reservar
+  e renovar
+
+### Requisito de rede para implantar
+
+O teste em celular revelou algo que vale conferir em **cada escola**
+antes de instalar: o Wi-Fi não pode ter **isolamento de clientes** (o
+mesmo recurso chamado de "AP isolation" ou "modo visitante"). Com ele
+ligado, o celular enxerga a internet mas não enxerga o computador da
+biblioteca, e o app não consegue parear — mesmo com o endereço certo e
+os dois na mesma rede. Como reconhecer e como resolver: `docs/SIGBEF_MOBILE.md` §7.
 
 ### Aplicativo de celular (base no desktop)
 - **Parear celular**: novo botão em Configurações → Integrações que mostra

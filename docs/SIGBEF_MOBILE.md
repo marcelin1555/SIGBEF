@@ -1,15 +1,16 @@
 # SIGBEF Mobile — especificação do MVP
 
-Status: **implementado e integrado à API; falta o teste de ponta a ponta
-no aparelho.** Última atualização: 24/07/2026.
+Status: **entregue e verificado em aparelho real.** Última atualização:
+26/07/2026.
 
-O app já compila (`./gradlew assembleDebug`), conecta na biblioteca real,
-faz login por aluno e mostra acervo, empréstimos e a carteirinha com
-código de barras real. Os 5 achados críticos e os 9 altos da auditoria
-(`docs/AUDITORIA_MOBILE.md`) foram corrigidos. O que resta é rodar num
-celular na mesma rede do desktop para validar o fluxo inteiro — e, quando
-houver créditos/tempo, a leitura do QR pela câmera (hoje o endereço é
-digitado).
+O fluxo inteiro foi rodado num Xiaomi com Android 15, contra o acervo de
+verdade do CEFE: ler o QR com a câmera, parear, entrar, consultar os
+2.867 livros, ver a carteirinha, reservar e renovar. Os 5 achados
+críticos e os 9 altos da auditoria (`docs/AUDITORIA_MOBILE.md`) estão
+corrigidos.
+
+Um requisito de rede apareceu nesse teste e vale ler antes de implantar
+em qualquer escola: **§7**.
 
 Aplicativo de celular para **alunos e professores** consultarem o acervo,
 acompanharem os próprios empréstimos e usarem o cartão de biblioteca
@@ -63,16 +64,16 @@ Reserva e renovação **saíram desta lista**: foram entregues junto do R3
 
 | # | Tela | Estado | Observação |
 |---|---|---|---|
-| 1 | Conectar à biblioteca | ✅ | Falta inserir a ilustração |
+| 1 | Conectar à biblioteca | ✅ | Lê o QR pela câmera; digitar continua disponível |
 | 2 | Login | ✅ | Matrícula + senha do próprio sistema |
 | 3 | Início | ✅ | Saudação, resumo, atalhos 2×2, status da conexão |
 | 4 | Acervo (busca) | ✅ | **Padrão-ouro** das lombadas |
-| 5 | Detalhes do livro | ⚠️ revisar | Trocar capa por lombada; usar tombo |
-| 6 | Reservar livro | ✅ | Bloqueada até API de escrita |
-| 7 | Meus empréstimos | ⚠️ revisar | Datas para 2026; lombadas |
-| 8 | Renovação presencial | ✅ | Instruções numeradas |
-| 9 | Cartão digital | ⚠️ revisar | Remover foto de perfil; usar série/turma |
-| 10 | Modo offline | ✅ | Banner âmbar + selo "OFFLINE OK" |
+| 5 | Detalhes do livro | ✅ | Lombada e tombo; reserva quando emprestado |
+| 6 | Reservar livro | ✅ | Feito dentro do detalhe do livro, não em tela separada |
+| 7 | Meus empréstimos | ✅ | Com a fila de espera e o botão de renovar |
+| 8 | Como renovar | ✅ | Renovação é pelo app; a tela explica as regras |
+| 9 | Cartão digital | ✅ | Code 128 real, lido pelo mesmo leitor do balcão |
+| 10 | Modo offline | ✅ | Tarja âmbar no topo (o selo "OFFLINE OK" saiu: estourava a barra) |
 | 11 | Vazio: busca sem resultado | ✅ | |
 | 12 | Vazio: sem empréstimos | ✅ | |
 
@@ -101,7 +102,7 @@ Login e Conectar ficam fora da tab bar (fluxo de entrada).
 [Celular do aluno]                    [Computador da biblioteca]
   SIGBEF Mobile                          SIGBEF Desktop
    ├── cache local  ──── Wi-Fi da ────►   API REST :8765
-   │   (cartão,      ─── escola ─────►    (somente leitura)
+   │   (cartão,      ─── escola ─────►    (acervo só de leitura)
    │    últimas buscas)                        │
    └── sem internet externa                 SQLite
 ```
@@ -118,10 +119,14 @@ Login e Conectar ficam fora da tab bar (fluxo de entrada).
 | `GET /api/v1/livros?q=&disponiveis=1` | Busca do acervo |
 | `GET /api/v1/livros/{id}` | Detalhes do livro |
 | `GET /api/v1/usuarios/{matricula}/emprestimos` | Meus empréstimos |
-| `GET /api/v1/estatisticas` | (não usado no MVP) |
+| `POST /api/v1/login` | Entrar com matrícula e senha |
+| `POST /api/v1/reservas` | Entrar na fila de espera |
+| `POST /api/v1/reservas/{id}/cancelar` | Sair da fila |
+| `POST /api/v1/emprestimos/{id}/renovar` | Renovar o próprio empréstimo |
 
-Autenticação: header `Authorization: Bearer TOKEN`. Existem dois níveis;
-o app precisa do **token completo** (acessa dados do leitor).
+Autenticação: header `Authorization: Bearer TOKEN`. O app usa o **token
+de sessão do aluno**, emitido pelo login e presos a ele — não o token de
+sistema, que é da escola e não de uma pessoa.
 
 ---
 
@@ -145,30 +150,71 @@ resolvidos.
 
 ---
 
-## 6. Tecnologia — em aberto
+## 6. Tecnologia — decidida
 
-A definir com prós e contras antes de codar. Candidatos, considerando
-que a equipe domina Python e React:
-
-| Opção | A favor | Contra |
-|---|---|---|
-| **PWA** (React) | Reaproveita o stack do site; sem loja; instala pelo navegador | Câmera/QR mais limitada; "instalar" confunde usuário leigo |
-| **React Native / Expo** | Mesma linguagem do site; APK real; boa câmera | Build e distribuição do APK; mais dependências |
-| **Flutter** | Ótimo desempenho e visual | Linguagem nova (Dart) para a equipe |
-
-Distribuição provável: **APK entregue pela escola** (QR/site), não loja —
+**Kotlin + Jetpack Compose**, APK entregue pela escola (não pela loja) —
 evita conta de desenvolvedor paga e revisão.
+
+A escolha não foi por comparação teórica: já existia um app em Compose,
+feito no AI Studio, com as telas desenhadas. Refazer em outro stack
+jogaria fora ~2.900 linhas de interface que já seguiam este documento.
+Ver `docs/AUDITORIA_MOBILE.md` para o que aquele código era (uma
+demonstração com dados falsos) e o que foi preciso para torná-lo real.
+
+Dependências que entraram e por quê:
+
+| O quê | Por quê |
+|---|---|
+| Retrofit + Moshi + OkHttp | Falar com a API do desktop |
+| Room | Cache local, para o app funcionar sem rede |
+| CameraX + ML Kit (barcode) | Ler o QR de pareamento. O ML Kit é o **embarcado**, não o do Play Services: nem todo aparelho de aluno tem os serviços do Google |
+
+O motor do leitor pesa ~5 MB **por arquitetura**, então o release gera um
+APK por ABI: o aluno instala ~19 MB em vez de ~35 MB.
 
 ---
 
-## 7. Próximos passos
+## 7. Requisito de rede (descoberto em campo)
 
-1. Fechar as 3 telas marcadas como "revisar" (§3) e exportar mockups para
-   `docs/mobile/`.
-2. Decidir a tecnologia (§6).
-3. Implementar **R1 (QR de pareamento)** e **R2 (login por usuário)** no
-   desktop — sem eles o app não sai do papel.
-4. MVP do app: Conectar → Login → Cartão (offline) → Acervo → Empréstimos.
+**O Wi-Fi da escola não pode ter isolamento de clientes.**
+
+Esse recurso — "AP isolation", "isolamento de clientes", "modo visitante"
+— impede que dois aparelhos ligados no mesmo roteador conversem entre si.
+É comum vir ligado em redes de convidados. Com ele ativo, o celular
+enxerga a internet normalmente, mas **não** enxerga o computador da
+biblioteca, e o app não consegue parear.
+
+Como reconhecer: o app diz "Não encontrei a biblioteca nesse endereço"
+mesmo com o endereço certo e os dois no mesmo Wi-Fi. Confirmação, no
+celular com depuração USB ligada:
+
+```bash
+adb shell ip neigh show <IP-DO-COMPUTADOR>
+```
+
+Se responder `FAILED`, o celular não consegue nem descobrir o endereço
+físico do computador — é isolamento, não é o app. Um teste mais simples:
+abrir `http://<IP>:8765/api/v1/ping` no navegador do celular. Se der
+`ERR_ADDRESS_UNREACHABLE`, o problema é a rede.
+
+Solução: desligar o isolamento de clientes na administração do roteador,
+ou colocar o computador da biblioteca e os celulares na mesma rede sem
+isolamento. Vale conferir isso **antes** de implantar em cada escola.
+
+---
+
+## 8. Estado atual
+
+Entregue e verificado em aparelho real (Xiaomi, Android 15) contra o
+acervo de verdade do CEFE:
+
+- Pareamento por QR lido pela câmera, login do aluno, acervo com busca,
+  ficha do livro, cartão com código de barras Code 128, empréstimos
+- Reserva, cancelamento e renovação pelo próprio app
+- Tudo funciona offline a partir do cache; o cartão nunca depende de rede
+
+Fora do escopo, por decisão: emprestar e devolver (exigem o livro na
+mão, são de balcão) e perfil de bibliotecário (o app é para leitores).
 
 Registrado no roadmap do `README.md` como "Aplicativo móvel para consulta
 e renovação do acervo".
