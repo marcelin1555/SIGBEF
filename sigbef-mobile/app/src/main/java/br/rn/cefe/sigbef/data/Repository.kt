@@ -177,45 +177,68 @@ class SigbefRepository(
     // --------------------------------------------------- sincronizações
     /** Busca no acervo e guarda o resultado como cache. */
     /**
-     * Baixa o acervo inteiro para o cache.
+     * Baixa o acervo inteiro para o cache, uma página por vez.
      *
      * Sempre sem termo de busca: o filtro da tela é local (o DAO faz o
      * LIKE), então sincronizar com a busca ativa substituiria todo o
      * acervo guardado pelos poucos resultados daquela palavra — o aluno
      * ficaria sem catálogo offline.
+     *
+     * Em páginas porque o servidor deixou de mandar tudo de uma vez: um
+     * acervo grande virava um JSON de dezenas de MB, que o aparelho
+     * tinha que segurar inteiro na memória antes de gravar a primeira
+     * linha. Agora chega em blocos e cada bloco vai direto para o banco.
      */
     suspend fun sincronizarAcervo(): Boolean {
-        val resposta = runCatching { api().buscarLivros(q = "") }
-            .getOrElse { return false }
-        if (!resposta.isSuccessful) return false
-        val livros = resposta.body()?.livros ?: return false
-
         // Guarda o que já foi baixado da ficha completa para não perder
         // sinopse e tombo a cada sincronização.
         val jaBaixados = db.livroDao().listarTodosUmaVez()
             .associateBy { it.id }
 
-        db.livroDao().clearAll()
-        db.livroDao().insertLivros(
-            livros.map { dto ->
-                val anterior = jaBaixados[dto.id]
-                LivroEntity(
-                    id = dto.id,
-                    titulo = dto.titulo,
-                    autor = dto.autores.orEmpty(),
-                    categoria = dto.categoria.orEmpty(),
-                    ano = dto.anoPublicacao?.toString().orEmpty(),
-                    // O tombo pertence ao exemplar; só vem no detalhe.
-                    tombo = anterior?.tombo.orEmpty(),
-                    isbn = dto.isbn.orEmpty(),
-                    sinopse = anterior?.sinopse.orEmpty(),
-                    disponivel = dto.disponiveis > 0,
-                    previsaoDevolucao = null,
-                    spineColorHex = corDaLombada(dto.titulo)
-                )
+        var pagina = 1
+        var totalPaginas = 1
+        var algumaChegou = false
+
+        while (pagina <= totalPaginas && pagina <= MAX_PAGINAS_ACERVO) {
+            val resposta = runCatching {
+                api().buscarLivros(q = "", pagina = pagina,
+                                   limite = LIVROS_POR_PAGINA)
+            }.getOrElse { return algumaChegou }
+            if (!resposta.isSuccessful) return algumaChegou
+            val corpo = resposta.body() ?: return algumaChegou
+
+            // A limpeza só acontece depois que a primeira página chega:
+            // se a rede cair no meio, o aluno fica com o catálogo antigo
+            // em vez de ficar sem catálogo nenhum.
+            if (pagina == 1) {
+                totalPaginas = corpo.paginas.coerceAtLeast(1)
+                db.livroDao().clearAll()
             }
-        )
-        return true
+
+            db.livroDao().insertLivros(
+                corpo.livros.map { dto ->
+                    val anterior = jaBaixados[dto.id]
+                    LivroEntity(
+                        id = dto.id,
+                        titulo = dto.titulo,
+                        autor = dto.autores.orEmpty(),
+                        categoria = dto.categoria.orEmpty(),
+                        ano = dto.anoPublicacao?.toString().orEmpty(),
+                        // O tombo pertence ao exemplar; só vem no detalhe.
+                        tombo = anterior?.tombo.orEmpty(),
+                        isbn = dto.isbn.orEmpty(),
+                        sinopse = anterior?.sinopse.orEmpty(),
+                        disponivel = dto.disponiveis > 0,
+                        previsaoDevolucao = null,
+                        spineColorHex = corDaLombada(dto.titulo)
+                    )
+                }
+            )
+            algumaChegou = true
+            if (corpo.livros.isEmpty()) break
+            pagina++
+        }
+        return algumaChegou
     }
 
     /** Completa a ficha de um livro (sinopse e tombo do 1º exemplar). */
@@ -428,6 +451,23 @@ class SigbefRepository(
     companion object {
         /** Estado antes de o aluno entrar: nenhum dado inventado. */
         val usuarioVazio = Usuario()
+
+        /**
+         * Tamanho do bloco na sincronização do acervo, igual ao teto que
+         * a API aceita. Bloco pequeno multiplica idas à rede (um acervo
+         * de 250 mil viraria mais de mil requisições); grande demais
+         * traz de volta o problema do JSON gigante. Em 500, cada
+         * resposta fica na casa de centenas de KB.
+         */
+        private const val LIVROS_POR_PAGINA = 500
+
+        /**
+         * Teto de segurança. Com 500 por página, cobre 1,25 milhão de
+         * livros — muito além de qualquer biblioteca escolar. Existe
+         * para o app nunca entrar em laço infinito se o servidor
+         * devolver uma contagem de páginas errada.
+         */
+        private const val MAX_PAGINAS_ACERVO = 2_500
 
         /**
          * Cor da lombada derivada do título, só para a lista não ficar

@@ -95,14 +95,38 @@ curl -H "Authorization: Bearer $TOKEN" http://IP_DA_BIBLIOTECA:8765/api/v1/estat
  "emp_abertos": 61, "atrasados": 3, "usuarios": 380}
 ```
 
-### `GET /api/v1/livros?q=&disponiveis=1`
+### `GET /api/v1/livros?q=&disponiveis=1&pagina=1&limite=50`
 
-Acervo com agregados. `q` busca por título, autor, ISBN ou categoria;
-`disponiveis=1` filtra só o que tem exemplar livre.
+Acervo com agregados, **em páginas**. `q` busca por título, autor, ISBN
+ou categoria; `disponiveis=1` filtra só o que tem exemplar livre.
+
+`limite` vai de 1 a 500 (padrão 50) e `pagina` começa em 1. Valor fora
+da faixa é ajustado para o limite mais próximo, não vira erro: quem
+integra outro sistema não deve quebrar por pedir demais.
+
+Atenção à diferença entre dois números da resposta:
+
+| Campo | O que é |
+|---|---|
+| `total` | Quantos livros a busca encontrou no acervo |
+| `livros` | Só os que couberam nesta página |
+| `paginas` | Quantas páginas existem no total |
 
 ```bash
-curl -H "Authorization: Bearer $TOKEN" "http://IP:8765/api/v1/livros?q=machado"
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://IP:8765/api/v1/livros?q=machado&pagina=2&limite=100"
 ```
+
+```json
+{"total": 2867, "pagina": 2, "limite": 100, "paginas": 29,
+ "livros": [ ... 100 itens ... ]}
+```
+
+Para varrer o acervo inteiro, itere `pagina` até `paginas`. **Não existe
+mais uma resposta com o acervo todo**: até a v1.7.0 a rota devolvia tudo
+de uma vez, e num acervo grande isso virava dezenas de MB num JSON só,
+que o cliente precisava segurar inteiro na memória antes de usar a
+primeira linha.
 
 ### `GET /api/v1/livros/{id}`
 

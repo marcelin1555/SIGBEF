@@ -213,6 +213,11 @@ CREATE INDEX IF NOT EXISTS idx_sessao_app_usuario ON sessao_app(usuario_id);
 CREATE INDEX IF NOT EXISTS idx_livro_titulo ON livro(titulo);
 CREATE INDEX IF NOT EXISTS idx_livro_isbn ON livro(isbn);
 CREATE INDEX IF NOT EXISTS idx_exemplar_codigo ON exemplar(codigo_barras);
+-- O empréstimo de balcão procura por código de barras OU número de
+-- tombo (localizar_exemplar). O código já era indexado pela restrição
+-- UNIQUE, o tombo não: com um lado sem índice, o OR obrigava o SQLite a
+-- varrer a tabela inteira de exemplares a cada empréstimo.
+CREATE INDEX IF NOT EXISTS idx_exemplar_tombo ON exemplar(numero_tombo);
 CREATE INDEX IF NOT EXISTS idx_exemplar_livro ON exemplar(livro_id);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_status ON emprestimo(data_devolucao);
 CREATE INDEX IF NOT EXISTS idx_emprestimo_exemplar ON emprestimo(exemplar_id);

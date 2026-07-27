@@ -252,26 +252,84 @@ def remover_brasao(usuario_id: Optional[int] = None) -> None:
     registrar_auditoria(usuario_id, "BRASAO_REMOVIDO", "")
 
 
+def _filtro_de_livros(termo: str, apenas_disponiveis: bool,
+                      categoria: Optional[str], autor: Optional[str]):
+    """Monta o WHERE compartilhado entre listar e contar.
+
+    Existe para os dois nunca discordarem: um total que não bate com a
+    lista é pior que total nenhum, porque a pessoa fica procurando o
+    livro que o contador prometeu.
+    """
+    termo_like = f"%{termo.strip()}%" if termo else "%"
+    params: list = [termo_like, termo_like, termo_like, termo_like]
+    onde = """l.ativo = 1
+          AND (
+                l.titulo LIKE ?
+                OR IFNULL(l.isbn, '') LIKE ?
+                OR EXISTS (
+                    SELECT 1 FROM livro_autor la
+                    JOIN autor a ON a.id = la.autor_id
+                    WHERE la.livro_id = l.id AND a.nome LIKE ?
+                )
+                OR IFNULL(c.nome, '') LIKE ?
+              )"""
+    if categoria:
+        onde += " AND c.nome = ?"
+        params.append(categoria)
+    if autor:
+        onde += (" AND EXISTS (SELECT 1 FROM livro_autor la2 "
+                 "JOIN autor a2 ON a2.id = la2.autor_id "
+                 "WHERE la2.livro_id = l.id AND a2.nome = ?)")
+        params.append(autor)
+    if apenas_disponiveis:
+        # No SQL, não em Python: com LIMIT, filtrar depois cortaria o
+        # bloco antes de saber quais linhas sobrevivem, e a página viria
+        # com menos livros do que cabia nela.
+        onde += (" AND EXISTS (SELECT 1 FROM exemplar ex2 "
+                 "WHERE ex2.livro_id = l.id AND ex2.status = 'DISPONIVEL')")
+    return onde, params
+
+
+def contar_livros(termo: str = "", apenas_disponiveis: bool = False,
+                  categoria: Optional[str] = None,
+                  autor: Optional[str] = None) -> int:
+    """Quantos livros a busca encontra, sem trazer nenhum.
+
+    Barato porque não monta os agregados de exemplar nem os autores:
+    é a contagem que a tela mostra ao lado da página exibida.
+    """
+    onde, params = _filtro_de_livros(termo, apenas_disponiveis,
+                                      categoria, autor)
+    with db_cursor() as cur:
+        cur.execute(f"""SELECT COUNT(*) FROM livro l
+                        LEFT JOIN categoria c ON c.id = l.categoria_id
+                        WHERE {onde}""", params)
+        return cur.fetchone()[0]
+
+
 def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
                   categoria: Optional[str] = None,
-                  autor: Optional[str] = None) -> list[dict]:
+                  autor: Optional[str] = None,
+                  limite: Optional[int] = None,
+                  offset: int = 0) -> list[dict]:
     """Lista livros com agregados de exemplares (total e disponíveis).
 
     `termo` faz busca livre (título, ISBN, autor, categoria). `categoria`
     e `autor` são filtros exatos e opcionais (busca avançada); omitidos,
     o resultado é idêntico à busca simples.
+
+    `limite` corta o resultado no banco. Cada linha carrega três
+    subconsultas (autores, total de exemplares, disponíveis), então o
+    custo é por linha devolvida: pedir 50 de um acervo de 250 mil custa
+    50 vezes três, não 250 mil vezes três. Sem limite, o comportamento é
+    o de antes — quem exporta CSV precisa mesmo de tudo.
     """
-    termo_like = f"%{termo.strip()}%" if termo else "%"
-    params: list = [termo_like, termo_like, termo_like, termo_like]
-    filtros = ""
-    if categoria:
-        filtros += " AND c.nome = ?"
-        params.append(categoria)
-    if autor:
-        filtros += (" AND EXISTS (SELECT 1 FROM livro_autor la2 "
-                    "JOIN autor a2 ON a2.id = la2.autor_id "
-                    "WHERE la2.livro_id = l.id AND a2.nome = ?)")
-        params.append(autor)
+    onde, params = _filtro_de_livros(termo, apenas_disponiveis,
+                                      categoria, autor)
+    paginacao = ""
+    if limite is not None:
+        paginacao = " LIMIT ? OFFSET ?"
+        params = params + [int(limite), int(offset)]
     sql = f"""
         SELECT
             l.id,
@@ -293,26 +351,12 @@ def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
         FROM livro l
         LEFT JOIN categoria c ON c.id = l.categoria_id
         LEFT JOIN editora e ON e.id = l.editora_id
-        WHERE l.ativo = 1
-          AND (
-                l.titulo LIKE ?
-                OR IFNULL(l.isbn, '') LIKE ?
-                OR EXISTS (
-                    SELECT 1 FROM livro_autor la
-                    JOIN autor a ON a.id = la.autor_id
-                    WHERE la.livro_id = l.id AND a.nome LIKE ?
-                )
-                OR IFNULL(c.nome, '') LIKE ?
-              )
-          {filtros}
-        ORDER BY l.titulo
+        WHERE {onde}
+        ORDER BY l.titulo, l.id{paginacao}
     """
     with db_cursor() as cur:
         cur.execute(sql, params)
-        rows = [dict(r) for r in cur.fetchall()]
-    if apenas_disponiveis:
-        rows = [r for r in rows if (r["disponiveis"] or 0) > 0]
-    return rows
+        return [dict(r) for r in cur.fetchall()]
 
 
 def detalhes_livro(livro_id: int) -> Optional[dict]:

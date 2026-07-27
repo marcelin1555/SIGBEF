@@ -171,6 +171,92 @@ class TestListarLivros(ServicosTestCase):
         self.assertIn("Machado de Assis", servicos.listar_autores())
 
 
+class TestPaginacaoDoAcervo(ServicosTestCase):
+    """Listagem por blocos.
+
+    Existe porque a tela e a API deixaram de trazer o acervo inteiro: com
+    250 mil livros, cada linha carrega três subconsultas, e devolver
+    tudo travava a janela por segundos e virava um JSON de dezenas de MB.
+    """
+
+    def setUp(self):
+        super().setUp()
+        # Títulos repetidos de propósito: é o caso que quebra paginação
+        # ordenada só por título, porque a ordem entre iguais não é
+        # estável e a mesma linha aparece em duas páginas (ou em nenhuma).
+        for i in range(10):
+            self.criar_livro(titulo="Livro Repetido",
+                             autores=[f"Autor {i}"], categoria="Romance")
+        for i in range(5):
+            self.criar_livro(titulo=f"Único {i}", autores=["Solo"],
+                             categoria="Poesia")
+
+    def test_sem_limite_continua_trazendo_tudo(self):
+        """Quem exporta CSV precisa mesmo do acervo inteiro."""
+        self.assertEqual(len(servicos.listar_livros()), 15)
+
+    def test_limite_corta_o_resultado(self):
+        self.assertEqual(len(servicos.listar_livros(limite=4)), 4)
+
+    def test_offset_anda_para_a_frente(self):
+        p1 = servicos.listar_livros(limite=5, offset=0)
+        p2 = servicos.listar_livros(limite=5, offset=5)
+        self.assertEqual(len(p1), 5)
+        self.assertEqual(len(p2), 5)
+        self.assertFalse({r["id"] for r in p1} & {r["id"] for r in p2})
+
+    def test_paginar_o_acervo_todo_nao_perde_nem_repete(self):
+        """Com títulos iguais, a ordenação precisa ser estável."""
+        vistos = []
+        offset = 0
+        while True:
+            bloco = servicos.listar_livros(limite=4, offset=offset)
+            if not bloco:
+                break
+            vistos.extend(r["id"] for r in bloco)
+            offset += 4
+        self.assertEqual(len(vistos), 15)
+        self.assertEqual(len(set(vistos)), 15, "algum livro veio duas vezes")
+
+    def test_pagina_alem_do_fim_vem_vazia(self):
+        self.assertEqual(servicos.listar_livros(limite=5, offset=999), [])
+
+    def test_contar_bate_com_o_tamanho_da_lista_sem_limite(self):
+        for termo in ("", "Repetido", "Único", "nada disso"):
+            with self.subTest(termo=termo):
+                self.assertEqual(servicos.contar_livros(termo),
+                                 len(servicos.listar_livros(termo)))
+
+    def test_contar_respeita_categoria(self):
+        self.assertEqual(servicos.contar_livros(categoria="Poesia"), 5)
+        self.assertEqual(servicos.contar_livros(categoria="Romance"), 10)
+
+    def test_contar_ignora_o_limite(self):
+        """O total é do acervo, não da página; é o que a tela mostra."""
+        self.assertEqual(servicos.contar_livros("Repetido"), 10)
+        self.assertEqual(len(servicos.listar_livros("Repetido", limite=3)), 3)
+
+    def test_apenas_disponiveis_filtra_antes_de_cortar(self):
+        """O filtro migrou para o SQL justamente por causa do limite.
+
+        Filtrando em Python depois do corte, uma página de 5 poderia
+        chegar com 2 livros só porque os outros 3 estavam emprestados.
+        """
+        livro = self.criar_livro(titulo="Zzz Emprestado",
+                                  autores=["Autor"], categoria="Romance")
+        self.criar_usuario(matricula="p1")
+        servicos.realizar_emprestimo(
+            codigo_exemplar=livro["exemplares"][0][1],
+            matricula_usuario="p1")
+
+        total_disp = servicos.contar_livros(apenas_disponiveis=True)
+        self.assertEqual(total_disp, 15)          # o emprestado saiu
+
+        pagina = servicos.listar_livros(apenas_disponiveis=True, limite=15)
+        self.assertEqual(len(pagina), 15)
+        self.assertNotIn("Zzz Emprestado", [r["titulo"] for r in pagina])
+
+
 class TestDetalhesLivro(ServicosTestCase):
     """Ficha completa do livro."""
 

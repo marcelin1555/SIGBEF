@@ -202,6 +202,13 @@ class PainelPrincipal(tk.Tk):
             self.destroy()
 
 
+# Quantos livros a lista carrega por vez. 500 preenche a tela com folga
+# e insere em poucos centésimos de segundo; o acervo inteiro de uma vez
+# travava a janela por segundos, porque o Treeview insere linha a linha
+# na mesma thread que desenha.
+LIVROS_POR_BLOCO = 500
+
+
 # ---------------------------------------------------------------------------
 # Mixin: cada seção implementa atualizar()
 # ---------------------------------------------------------------------------
@@ -348,6 +355,21 @@ class SecaoLivros(SecaoBase):
         self.tree.pack(fill="both", expand=True, pady=(8, 0))
         self.tree.bind("<Double-1>", lambda e: self._detalhes())
 
+        # Rodapé de paginação. A lista carrega por blocos porque o
+        # Treeview insere linha por linha na mesma thread que desenha a
+        # janela: um acervo grande travava a tela por segundos antes de
+        # mostrar qualquer coisa.
+        rodape = ttk.Frame(self, padding=(0, 8))
+        rodape.pack(fill="x")
+        self.lbl_contagem = ttk.Label(rodape, text="")
+        self.lbl_contagem.pack(side="left")
+        self.btn_mais = ttk.Button(rodape, text="Carregar mais",
+                                    command=self._carregar_mais)
+        self.btn_mais.pack(side="right")
+        self.btn_mais.pack_forget()
+        self._carregados = 0
+        self._total = 0
+
     def _novo_livro(self):
         DialogoLivro(self.painel, self.sessao, ao_salvar=self.atualizar)
 
@@ -420,16 +442,41 @@ class SecaoLivros(SecaoBase):
         self._recarregar_categorias()
         for it in self.tree.get_children():
             self.tree.delete(it)
+        self._carregados = 0
+        self._total = servicos.contar_livros(
+            self.ent_busca.get(), self.var_disponiveis.get(),
+            categoria=self.cbo_categoria.get() or None)
+        self._carregar_mais()
+
+    def _carregar_mais(self):
         cat = self.cbo_categoria.get()
         for liv in servicos.listar_livros(
                 self.ent_busca.get(), self.var_disponiveis.get(),
-                categoria=cat or None):
+                categoria=cat or None,
+                limite=LIVROS_POR_BLOCO, offset=self._carregados):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "", liv["ano_publicacao"] or "",
                 liv["total_exemplares"] or 0, liv["disponiveis"] or 0,
             ))
+            self._carregados += 1
         tema.aplicar_zebra(self.tree)
+        self._atualizar_rodape()
+
+    def _atualizar_rodape(self):
+        if self._total == 0:
+            self.lbl_contagem.config(text="Nenhum livro encontrado.")
+        elif self._carregados >= self._total:
+            self.lbl_contagem.config(
+                text=f"{self._total} livro(s).")
+        else:
+            self.lbl_contagem.config(
+                text=f"Mostrando {self._carregados} de {self._total} "
+                      f"livro(s). Refine a busca para chegar mais perto.")
+        if self._carregados < self._total:
+            self.btn_mais.pack(side="right")
+        else:
+            self.btn_mais.pack_forget()
 
     def _recarregar_categorias(self):
         """Mantém o combo de categorias em dia (opção vazia = Todas)."""
@@ -2161,6 +2208,16 @@ class SecaoPesquisaAluno(SecaoBase):
         rodape.pack(fill="x", pady=(10, 0))
         self.lbl_msg = ttk.Label(rodape, text="", style="Hint.TLabel")
         self.lbl_msg.pack(side="left")
+        # Contagem separada da mensagem: uma diz quanto tem, a outra diz
+        # o que deu errado, e elas não podem apagar uma à outra.
+        self.lbl_contagem = ttk.Label(rodape, text="", style="Hint.TLabel")
+        self.lbl_contagem.pack(side="left", padx=(12, 0))
+        self.btn_mais = ttk.Button(rodape, text="Carregar mais",
+                                    command=self._carregar_mais)
+        self.btn_mais.pack(side="left", padx=(12, 0))
+        self.btn_mais.pack_forget()
+        self._carregados = 0
+        self._total = 0
         ttk.Button(rodape, text="Ver detalhes",
                     command=self._detalhes).pack(side="right", padx=(8, 0))
         ttk.Button(rodape, text=" Pegar emprestado",
@@ -2260,16 +2317,33 @@ class SecaoPesquisaAluno(SecaoBase):
                 self.cbo_categoria.set("")
         for it in self.tree.get_children():
             self.tree.delete(it)
+        self._carregados = 0
+        self._total = servicos.contar_livros(
+            self.ent.get(), self.var_disp.get(),
+            categoria=self.cbo_categoria.get() or None)
+        self._carregar_mais()
+
+    def _carregar_mais(self):
         for liv in servicos.listar_livros(
                 self.ent.get(), self.var_disp.get(),
-                categoria=self.cbo_categoria.get() or None):
+                categoria=self.cbo_categoria.get() or None,
+                limite=LIVROS_POR_BLOCO, offset=self._carregados):
             self.tree.insert("", "end", values=(
                 liv["id"], liv["titulo"], liv["autores"] or "",
                 liv["categoria"] or "",
                 liv["ano_publicacao"] or "",
                 f"{liv['disponiveis']}/{liv['total_exemplares']}",
             ))
+            self._carregados += 1
         tema.aplicar_zebra(self.tree)
+        if self._carregados >= self._total:
+            self.lbl_contagem.configure(
+                text=f"{self._total} livro(s)." if self._total else "")
+            self.btn_mais.pack_forget()
+        else:
+            self.lbl_contagem.configure(
+                text=f"{self._carregados} de {self._total} livro(s)")
+            self.btn_mais.pack(side="left", padx=(12, 0))
 
 
 # ---------------------------------------------------------------------------

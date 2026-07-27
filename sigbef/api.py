@@ -131,6 +131,12 @@ def endereco_pareamento() -> Optional[str]:
 # recentes — mandar tudo seria payload grande sem ninguém ler.
 HISTORICO_MAX = 20
 
+# Uma página de acervo. 50 cobre com folga o que cabe numa tela de
+# celular; o teto de 500 existe para quem integra outro sistema e quer
+# varrer o acervo em menos idas, sem poder pedir tudo de uma vez.
+LIVROS_POR_PAGINA = 50
+LIVROS_MAX_POR_PAGINA = 500
+
 
 def _inteiro(valores, padrao: int, minimo: int, maximo: int) -> int:
     """Lê um parâmetro numérico da query, preso a uma faixa.
@@ -436,8 +442,24 @@ class _Handler(BaseHTTPRequestHandler):
         if caminho == "/api/v1/livros":
             termo = (query.get("q") or [""])[0]
             apenas_disp = (query.get("disponiveis") or ["0"])[0] == "1"
-            livros = servicos.listar_livros(termo, apenas_disp)
-            self._json(200, {"total": len(livros), "livros": livros})
+            # Página fechada por padrão. Antes a rota serializava o acervo
+            # inteiro num JSON só: com 250 mil livros isso dava 57 MB e
+            # sete segundos, e o celular do aluno tinha que engolir tudo
+            # para mostrar as vinte linhas que cabem na tela.
+            limite = _inteiro(query.get("limite"), LIVROS_POR_PAGINA, 1,
+                              LIVROS_MAX_POR_PAGINA)
+            pagina = _inteiro(query.get("pagina"), 1, 1, 1_000_000)
+            offset = (pagina - 1) * limite
+            total = servicos.contar_livros(termo, apenas_disp)
+            livros = servicos.listar_livros(termo, apenas_disp,
+                                             limite=limite, offset=offset)
+            self._json(200, {
+                "total": total,              # quantos a busca encontrou
+                "pagina": pagina,
+                "limite": limite,
+                "paginas": max(1, -(-total // limite)),
+                "livros": livros,            # quantos vieram nesta página
+            })
             return
 
         m = _ROTA_LIVRO.match(caminho)
@@ -544,11 +566,26 @@ _servidor: Optional[ThreadingHTTPServer] = None
 _thread: Optional[threading.Thread] = None
 
 
+class _Servidor(ThreadingHTTPServer):
+    """ThreadingHTTPServer com fila de conexões maior.
+
+    O padrão do socketserver é 5: cinco conexões podem esperar para
+    serem aceitas, e a sexta leva recusa do sistema operacional. Cada
+    requisição é atendida numa thread, então a fila só enche em rajada
+    -- exatamente o que acontece quando bate o sinal do intervalo e a
+    turma inteira abre o app no mesmo minuto. O aluno via "sem conexão
+    com a biblioteca" com a biblioteca no ar.
+
+    128 é o teto usual do sistema operacional; pedir mais não aumenta.
+    """
+    request_queue_size = 128
+
+
 def criar_servidor(porta: Optional[int] = None,
                    bind: str = "0.0.0.0") -> ThreadingHTTPServer:
     """Cria o servidor (sem iniciar o loop). `porta=0` = porta efêmera."""
     p = porta_configurada() if porta is None else porta
-    return ThreadingHTTPServer((bind, p), _Handler)
+    return _Servidor((bind, p), _Handler)
 
 
 def iniciar_em_thread(porta: Optional[int] = None) -> int:

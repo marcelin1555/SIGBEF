@@ -101,6 +101,62 @@ class TestRotas(ApiTestCase):
         self.assertEqual(corpo["total"], 1)
         self.assertEqual(corpo["livros"][0]["titulo"], "Dom Casmurro")
 
+    def test_acervo_vem_em_paginas(self):
+        """A rota deixou de despejar o acervo inteiro num JSON só.
+
+        Antes, `total` era o tamanho da lista devolvida — os dois viviam
+        colados. Agora são coisas diferentes: `total` é o que a busca
+        encontrou, `livros` é o pedaço que coube nesta página, e o app
+        precisa dos dois para saber se ainda falta baixar.
+        """
+        for i in range(12):
+            self.criar_livro(titulo=f"Paginado {i:02d}")
+
+        status, corpo = self.get("/api/v1/livros?limite=5")
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["total"], 12)
+        self.assertEqual(len(corpo["livros"]), 5)
+        self.assertEqual(corpo["pagina"], 1)
+        self.assertEqual(corpo["paginas"], 3)
+
+        _, p2 = self.get("/api/v1/livros?limite=5&pagina=2")
+        self.assertEqual(len(p2["livros"]), 5)
+        _, p3 = self.get("/api/v1/livros?limite=5&pagina=3")
+        self.assertEqual(len(p3["livros"]), 2)
+
+        ids = ([l["id"] for l in corpo["livros"]]
+               + [l["id"] for l in p2["livros"]]
+               + [l["id"] for l in p3["livros"]])
+        self.assertEqual(len(set(ids)), 12, "página repetiu ou perdeu livro")
+
+    def test_pagina_alem_do_fim_vem_vazia_sem_erro(self):
+        self.criar_livro(titulo="Só um")
+        status, corpo = self.get("/api/v1/livros?pagina=99")
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["livros"], [])
+        self.assertEqual(corpo["total"], 1)
+
+    def test_limite_absurdo_vira_o_teto_em_vez_de_erro(self):
+        """Quem integra outro sistema pode pedir demais sem querer."""
+        self.criar_livro(titulo="Um")
+        _, corpo = self.get("/api/v1/livros?limite=999999")
+        self.assertEqual(corpo["limite"], api.LIVROS_MAX_POR_PAGINA)
+
+    def test_parametro_de_pagina_sujo_nao_derruba(self):
+        self.criar_livro(titulo="Um")
+        for sujeira in ("pagina=abc", "pagina=-5", "limite=zero", "limite=0"):
+            with self.subTest(q=sujeira):
+                status, _ = self.get(f"/api/v1/livros?{sujeira}")
+                self.assertEqual(status, 200)
+
+    def test_busca_com_pagina_conta_o_total_da_busca(self):
+        for i in range(8):
+            self.criar_livro(titulo=f"Sertao {i}")
+        self.criar_livro(titulo="Outro assunto")
+        _, corpo = self.get("/api/v1/livros?q=Sertao&limite=3")
+        self.assertEqual(corpo["total"], 8)       # o que a busca achou
+        self.assertEqual(len(corpo["livros"]), 3)  # o que coube na página
+
     def test_detalhes_do_livro(self):
         liv = self.criar_livro(titulo="Detalhado", exemplares=2,
                                isbn="9788500000001")

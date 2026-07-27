@@ -2,6 +2,57 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado]
+
+### O acervo deixa de ser carregado inteiro
+
+Um teste de estresse mediu o teto do sistema: **100 mil livros sozinho,
+25 mil com uma turma inteira no celular ao mesmo tempo**. O que segurava
+esse número era sempre a mesma coisa — nada limitava o tamanho do
+resultado, então cada tela, cada resposta da API e cada sincronização do
+app carregava o acervo completo para mostrar as vinte linhas visíveis.
+
+Depois das mudanças abaixo, **250 mil livros passam em tudo**, inclusive
+com 40 alunos buscando no mesmo instante.
+
+- **Listagem por páginas** (`servicos.listar_livros` ganhou `limite` e
+  `offset`, e há um `contar_livros` novo). Cada linha da listagem carrega
+  três subconsultas, então o custo é por linha devolvida: pedir 50 de um
+  acervo de 250 mil passou de 7,2 s para 5 ms. Quem exporta CSV continua
+  recebendo tudo, porque ali é o que se quer mesmo
+- O filtro "apenas disponíveis" migrou para o SQL. Era aplicado em
+  Python depois da consulta, e com o limite isso cortaria a página antes
+  de saber quais linhas sobrevivem
+- **`GET /api/v1/livros` responde em páginas** (`pagina` e `limite`, até
+  500 por vez), com `total` e `paginas` na resposta. Antes serializava o
+  acervo inteiro: 57 MB num JSON só, com 250 mil livros
+- **O aplicativo sincroniza o acervo em blocos**, e a lista fica usável
+  enquanto o resto ainda baixa. O catálogo antigo só é apagado depois
+  que a primeira página nova chega, para uma queda de rede no meio não
+  deixar o aluno sem catálogo nenhum
+- **As telas de acervo carregam 500 livros por vez**, com a contagem do
+  que ficou de fora e um botão para trazer mais. A lista era preenchida
+  linha a linha na mesma thread que desenha a janela: 250 mil livros
+  davam 9,8 segundos de tela congelada, agora são 0,11 s sem
+  travamento nenhum
+
+### Empréstimo de balcão deixa de varrer a tabela
+
+- **Índice novo em `exemplar(numero_tombo)`.** O empréstimo procura o
+  exemplar por código de barras **ou** tombo; o código já era indexado
+  pela restrição UNIQUE, o tombo não, e com um lado sem índice o SQLite
+  varria a tabela inteira a cada atendimento. Com 500 mil exemplares
+  isso custava 1,3 segundo por empréstimo — agora são 3 ms. O índice é
+  criado sozinho na primeira abertura, sem migração manual
+
+### A turma inteira consegue abrir o app junto
+
+- **Fila de conexões da API subiu de 5 para 128.** O padrão herdado do
+  Python deixa cinco conexões esperando para serem aceitas, e a sexta
+  leva recusa do sistema operacional. Com 80 aparelhos abrindo o app no
+  mesmo minuto, 42 recebiam "sem conexão com a biblioteca" — com a
+  biblioteca no ar. Agora nenhum
+
 ## [1.7.0] — 2026-07-26
 
 A biblioteca sai do computador da bibliotecária. Até aqui o aluno só

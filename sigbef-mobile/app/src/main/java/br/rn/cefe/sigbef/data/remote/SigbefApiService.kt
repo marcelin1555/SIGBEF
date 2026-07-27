@@ -33,7 +33,9 @@ interface SigbefApiService {
     @GET("api/v1/livros")
     suspend fun buscarLivros(
         @Query("q") q: String = "",
-        @Query("disponiveis") disponiveis: String = "0"
+        @Query("disponiveis") disponiveis: String = "0",
+        @Query("pagina") pagina: Int = 1,
+        @Query("limite") limite: Int = 200
     ): Response<ListaLivrosResponse>
 
     /** Ficha do livro, com sinopse e os exemplares (onde mora o tombo). */

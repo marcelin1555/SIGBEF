@@ -36,7 +36,10 @@ data class UsuarioLoginDto(
 /** Envelope de GET /api/v1/livros — a lista vem dentro de "livros". */
 @JsonClass(generateAdapter = true)
 data class ListaLivrosResponse(
+    /** Quantos livros a busca encontrou no servidor, não quantos vieram. */
     val total: Int = 0,
+    val pagina: Int = 1,
+    val paginas: Int = 1,
     val livros: List<LivroResumoDto> = emptyList()
 )
 
