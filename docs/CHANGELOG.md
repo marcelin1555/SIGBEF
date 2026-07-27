@@ -2,6 +2,72 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.8.0] — 2026-07-27
+
+Quatro funções que não estavam em requisito nenhum, mas que a operação
+diária da biblioteca pedia. Nenhuma delas muda o que já existia de
+lugar.
+
+### Relatórios por período
+
+- Faixa de datas no topo da tela de **Relatórios**, com atalhos para
+  **este mês**, **este bimestre** e **este ano** — que é onde a
+  bibliotecária vai clicar; os campos ficam para o intervalo específico
+- **Movimentação do período**, relatório novo: empréstimos, devoluções,
+  atrasos, multas e leitores diferentes, com a quebra por mês e por
+  turma. É o número que a direção pede no fim do bimestre, e que antes
+  só saía exportando tudo e filtrando no Excel
+- "Mais emprestados" passa a respeitar o período. Acervo, usuários e
+  pendências ignoram as datas de propósito: são uma fotografia de
+  agora, não um histórico
+
+### Baixa de exemplar
+
+- Um exemplar pode sair do acervo **sem levar o título junto**. Antes só
+  existia excluir o livro inteiro: um exemplar rasgado obrigava a
+  escolher entre sumir com a obra toda ou deixar o sistema dizendo que
+  ela está na estante
+- Quatro motivos, porque a diferença importa na hora de repor:
+  extraviado, danificado, descartado ou doado
+- **Exemplar emprestado também pode ser baixado**, e é o caso mais
+  comum: o aluno perdeu o livro. Exigir a devolução primeiro seria
+  exigir o impossível, então o empréstimo é encerrado junto, com a
+  multa de atraso se houver. O histórico de quem leu continua guardado
+- A contagem de exemplares na tela deixa de somar os baixados: a
+  pergunta ali é quantos a biblioteca tem, e o que foi extraviado não
+  está mais lá
+
+### Conferência do acervo
+
+Toda biblioteca escolar bate estante contra cadastro no fim do ano. Até
+agora isso era feito no papel e o resultado nunca voltava para o sistema.
+
+- Nova seção **Conferir acervo**: abre a conferência, passa o leitor em
+  cada exemplar, encerra. O campo volta a focar sozinho a cada leitura,
+  para trabalhar com as duas mãos na estante
+- Passar o mesmo livro duas vezes avisa e não conta em dobro — acontece
+  o tempo todo, e virar erro só ensinaria a ignorar o aviso
+- O resultado sai em três listas, cada uma com uma ação diferente: o que
+  **não foi encontrado** (procurar, depois dar baixa), o que está
+  **emprestado** (nada a fazer) e o que **apareceu** sem estar previsto
+  (corrigir o cadastro)
+- Dá para parar e continuar depois; a conferência só fecha quando a
+  bibliotecária encerra. Só uma pode estar aberta por vez, senão as
+  leituras se dividiriam entre elas e as duas acusariam sumiço
+
+### Cópia de segurança automática
+
+- Acontece sozinha ao **fechar o sistema**, uma vez por dia, guardando
+  as últimas 7 cópias. O botão manual continua onde estava
+- **Correção no backup manual:** ele copiava o arquivo com
+  `shutil.copy2`, e o banco roda em WAL — parte das transações vive num
+  arquivo separado até o checkpoint, então copiar o `.db` durante uma
+  escrita podia gerar uma cópia que abre mas está desatualizada. Agora
+  usa a API de backup do próprio SQLite, que leva um retrato
+  consistente mesmo com o balcão trabalhando
+- Falha no backup (pendrive removido, disco cheio) não trava o
+  fechamento: fica registrada na auditoria e a bibliotecária vai embora
+
 ## [1.7.1] — 2026-07-27
 
 Versão de desempenho: nenhuma função nova, nada mudou de lugar na tela.

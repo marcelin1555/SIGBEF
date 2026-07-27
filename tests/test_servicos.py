@@ -257,6 +257,211 @@ class TestPaginacaoDoAcervo(ServicosTestCase):
         self.assertNotIn("Zzz Emprestado", [r["titulo"] for r in pagina])
 
 
+class TestBaixaDeExemplar(ServicosTestCase):
+    """Tirar um exemplar do acervo sem levar o título junto.
+
+    Antes só existia `excluir_livro`, que baixa o livro inteiro: um
+    exemplar rasgado obrigava a escolher entre sumir com o título todo
+    ou deixar o sistema dizendo que ele está na estante.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.livro = self.criar_livro(titulo="Frágil", exemplares=3)
+        self.criar_usuario(matricula="a1", nome="Ana")
+        self.cod = [e[1] for e in self.livro["exemplares"]]
+
+    def test_exemplar_sai_do_acervo_sem_levar_o_livro(self):
+        servicos.baixar_exemplar(self.cod[0], "DANIFICADO")
+        achados = servicos.listar_livros("Frágil")
+        self.assertEqual(len(achados), 1, "o livro sumiu junto")
+        self.assertEqual(achados[0]["total_exemplares"], 2)
+        self.assertEqual(achados[0]["disponiveis"], 2)
+
+    def test_exemplar_baixado_nao_pode_mais_ser_emprestado(self):
+        servicos.baixar_exemplar(self.cod[0], "DESCARTADO")
+        with self.assertRaises(RegraNegocioError):
+            servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                          matricula_usuario="a1")
+
+    def test_aluno_perdeu_o_livro_encerra_o_emprestimo(self):
+        """O caso mais comum, e o que justifica permitir baixa de
+        exemplar emprestado: exigir devolução seria exigir o impossível."""
+        servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                      matricula_usuario="a1")
+        r = servicos.baixar_exemplar(self.cod[0], "EXTRAVIADO")
+
+        self.assertTrue(r["estava_emprestado"])
+        with db_cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM emprestimo "
+                        "WHERE data_devolucao IS NULL")
+            self.assertEqual(cur.fetchone()[0], 0)
+
+    def test_perda_de_livro_atrasado_lanca_multa(self):
+        emp = servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                            matricula_usuario="a1")
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        ((date.today() - timedelta(days=10)).isoformat(),
+                         emp["id"]))
+        r = servicos.baixar_exemplar(self.cod[0], "EXTRAVIADO")
+        self.assertGreater(r["multa"], 0)
+
+    def test_motivo_invalido_e_recusado(self):
+        with self.assertRaises(RegraNegocioError):
+            servicos.baixar_exemplar(self.cod[0], "SUMIU")
+
+    def test_motivo_aceita_minusculas(self):
+        """A interface manda maiúsculo, mas a API não deve ser chata."""
+        r = servicos.baixar_exemplar(self.cod[0], "danificado")
+        self.assertEqual(r["motivo"], "DANIFICADO")
+
+    def test_baixar_duas_vezes_e_recusado(self):
+        servicos.baixar_exemplar(self.cod[0], "DOADO")
+        with self.assertRaises(RegraNegocioError):
+            servicos.baixar_exemplar(self.cod[0], "DOADO")
+
+    def test_exemplar_inexistente_e_recusado(self):
+        with self.assertRaises(RegraNegocioError):
+            servicos.baixar_exemplar("NAO-EXISTE", "DOADO")
+
+    def test_motivo_e_data_ficam_registrados(self):
+        """Meses depois, é o motivo que explica por que o livro sumiu."""
+        servicos.baixar_exemplar(self.cod[0], "EXTRAVIADO")
+        det = servicos.detalhes_livro(self.livro["livro_id"])
+        baixado = [e for e in det["exemplares"] if e["status"] == "BAIXADO"][0]
+        self.assertEqual(baixado["motivo_baixa"], "EXTRAVIADO")
+        self.assertEqual(baixado["data_baixa"], date.today().isoformat())
+
+    def test_fica_na_auditoria(self):
+        servicos.baixar_exemplar(self.cod[0], "DANIFICADO")
+        with db_cursor() as cur:
+            cur.execute("SELECT detalhes FROM auditoria "
+                        "WHERE acao = 'BAIXA_EXEMPLAR'")
+            linha = cur.fetchone()
+        self.assertIsNotNone(linha)
+        self.assertIn("DANIFICADO", linha[0])
+
+    def test_historico_de_emprestimo_do_exemplar_e_preservado(self):
+        """O livro saiu do acervo, mas quem o leu continua registrado."""
+        servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                      matricula_usuario="a1")
+        servicos.realizar_devolucao(codigo_exemplar=self.cod[0])
+        servicos.baixar_exemplar(self.cod[0], "DESCARTADO")
+        with db_cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM emprestimo")
+            self.assertEqual(cur.fetchone()[0], 1)
+
+
+class TestRelatoriosPorPeriodo(ServicosTestCase):
+    """Recorte de datas nos relatórios.
+
+    Existe para a pergunta que a direção faz no fim do ano e que o
+    sistema não sabia responder: quanto a biblioteca circulou entre tais
+    datas.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.livro = self.criar_livro(titulo="Circulante", exemplares=4)
+        self.criar_usuario(matricula="a1", nome="Ana", turma="3A")
+        self.cod = [e[1] for e in self.livro["exemplares"]]
+
+    def emprestar_em(self, codigo, quando: date, devolver=True):
+        """Empréstimo com data forjada, para montar o histórico."""
+        emp = servicos.realizar_emprestimo(codigo_exemplar=codigo,
+                                            matricula_usuario="a1")
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_emprestimo = ? "
+                        "WHERE id = ?", (quando.isoformat(), emp["id"]))
+        if devolver:
+            servicos.realizar_devolucao(codigo_exemplar=codigo)
+            with db_cursor() as cur:
+                cur.execute("UPDATE emprestimo SET data_devolucao = ? "
+                            "WHERE id = ?", (quando.isoformat(), emp["id"]))
+        return emp
+
+    def test_sem_periodo_conta_tudo(self):
+        self.emprestar_em(self.cod[0], date.today() - timedelta(days=400))
+        self.emprestar_em(self.cod[1], date.today())
+        self.assertEqual(servicos.relatorio_movimentacao()["emprestimos"], 2)
+
+    def test_periodo_recorta(self):
+        self.emprestar_em(self.cod[0], date.today() - timedelta(days=400))
+        self.emprestar_em(self.cod[1], date.today())
+        r = servicos.relatorio_movimentacao(
+            (date.today() - timedelta(days=30)).isoformat(),
+            date.today().isoformat())
+        self.assertEqual(r["emprestimos"], 1)
+
+    def test_bordas_sao_inclusivas(self):
+        """Quem pede 01/05 a 31/05 espera o dia 31 dentro da conta."""
+        dia = date.today() - timedelta(days=10)
+        self.emprestar_em(self.cod[0], dia)
+        for inicio, fim in [(dia, dia),
+                            (dia, date.today()),
+                            (dia - timedelta(days=1), dia)]:
+            with self.subTest(inicio=inicio, fim=fim):
+                r = servicos.relatorio_movimentacao(inicio.isoformat(),
+                                                     fim.isoformat())
+                self.assertEqual(r["emprestimos"], 1)
+
+    def test_periodo_invertido_devolve_vazio_sem_quebrar(self):
+        self.emprestar_em(self.cod[0], date.today())
+        r = servicos.relatorio_movimentacao(
+            date.today().isoformat(),
+            (date.today() - timedelta(days=30)).isoformat())
+        self.assertEqual(r["emprestimos"], 0)
+
+    def test_apenas_data_inicial(self):
+        self.emprestar_em(self.cod[0], date.today() - timedelta(days=400))
+        self.emprestar_em(self.cod[1], date.today())
+        r = servicos.relatorio_movimentacao(
+            (date.today() - timedelta(days=7)).isoformat(), None)
+        self.assertEqual(r["emprestimos"], 1)
+
+    def test_conta_por_turma(self):
+        self.criar_usuario(matricula="a2", nome="Bruno", turma="2B")
+        self.emprestar_em(self.cod[0], date.today())
+        servicos.realizar_emprestimo(codigo_exemplar=self.cod[1],
+                                      matricula_usuario="a2")
+        turmas = {t["turma"]: t["total"]
+                  for t in servicos.relatorio_movimentacao()["por_turma"]}
+        self.assertEqual(turmas, {"3A": 1, "2B": 1})
+
+    def test_circulacao_respeita_o_periodo(self):
+        outro = self.criar_livro(titulo="Antigo", exemplares=1)
+        self.emprestar_em(outro["exemplares"][0][1],
+                          date.today() - timedelta(days=400))
+        self.emprestar_em(self.cod[0], date.today())
+
+        recente = servicos.relatorio_circulacao(
+            10, (date.today() - timedelta(days=30)).isoformat(),
+            date.today().isoformat())
+        self.assertEqual([r["titulo"] for r in recente], ["Circulante"])
+        self.assertEqual(len(servicos.relatorio_circulacao(10)), 2)
+
+    def test_taxa_de_atraso_do_periodo(self):
+        emp = servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                            matricula_usuario="a1")
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        ((date.today() - timedelta(days=5)).isoformat(),
+                         emp["id"]))
+        servicos.realizar_devolucao(codigo_exemplar=self.cod[0])
+
+        r = servicos.relatorio_movimentacao()
+        self.assertEqual(r["devolucoes"], 1)
+        self.assertEqual(r["com_atraso"], 1)
+        self.assertEqual(r["taxa_atraso"], 100.0)
+        self.assertGreater(r["multa_total"], 0)
+
+    def test_biblioteca_parada_nao_divide_por_zero(self):
+        r = servicos.relatorio_movimentacao()
+        self.assertEqual(r["emprestimos"], 0)
+        self.assertEqual(r["taxa_atraso"], 0.0)
+
+
 class TestDetalhesLivro(ServicosTestCase):
     """Ficha completa do livro."""
 

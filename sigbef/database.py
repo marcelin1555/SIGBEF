@@ -130,6 +130,8 @@ CREATE TABLE IF NOT EXISTS exemplar (
     numero_tombo TEXT,
     localizacao TEXT,
     status TEXT NOT NULL DEFAULT 'DISPONIVEL',
+    motivo_baixa TEXT,
+    data_baixa TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 
@@ -210,6 +212,26 @@ CREATE TABLE IF NOT EXISTS sessao_app (
 CREATE INDEX IF NOT EXISTS idx_sessao_app_token ON sessao_app(token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessao_app_usuario ON sessao_app(usuario_id);
 
+-- Conferência do acervo: a bibliotecária passa o leitor nas estantes e
+-- o sistema anota o que viu. No fim, a diferença entre o que existe no
+-- cadastro e o que apareceu na prateleira é o resultado.
+CREATE TABLE IF NOT EXISTS inventario (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao TEXT,
+    iniciado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    encerrado_em TEXT,
+    usuario_id INTEGER REFERENCES usuario(id)
+);
+
+-- Um exemplar só entra uma vez por conferência: passar o mesmo livro
+-- duas vezes no leitor é acidente comum e não pode virar contagem dupla.
+CREATE TABLE IF NOT EXISTS inventario_item (
+    inventario_id INTEGER NOT NULL REFERENCES inventario(id),
+    exemplar_id INTEGER NOT NULL REFERENCES exemplar(id),
+    visto_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
+    PRIMARY KEY (inventario_id, exemplar_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_livro_titulo ON livro(titulo);
 CREATE INDEX IF NOT EXISTS idx_livro_isbn ON livro(isbn);
 CREATE INDEX IF NOT EXISTS idx_exemplar_codigo ON exemplar(codigo_barras);
@@ -239,6 +261,13 @@ CONFIG_PADRAO = {
     "LOGIN_MAX_TENTATIVAS": "5",
     "LOGIN_BLOQUEIO_MIN": "15",
     "ISBN_LOOKUP": "0",  # busca de metadados por ISBN, desligada (offline-first)
+    # Cópia de segurança automática ao fechar o sistema. Nasce LIGADA:
+    # a regra de opt-in vale para o que fala com a rede, e isto é
+    # proteção local — quem perde o banco perde o acervo inteiro.
+    "BACKUP_AUTO": "1",
+    "BACKUP_PASTA": "",      # vazio = pasta "backups" ao lado do banco
+    "BACKUP_MANTER": "7",    # quantas cópias guardar
+    "BACKUP_ULTIMO": "",     # data da última cópia, para não repetir no dia
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
     "LIMITE_RENOVACOES": "2",     # renovações seguidas que o aluno faz sozinho
@@ -288,6 +317,15 @@ def _migrar_schema(cur) -> None:
     if "renovacoes" not in colunas:
         cur.execute("ALTER TABLE emprestimo "
                     "ADD COLUMN renovacoes INTEGER NOT NULL DEFAULT 0")
+
+    cur.execute("PRAGMA table_info(exemplar)")
+    colunas = {r["name"] for r in cur.fetchall()}
+    if "motivo_baixa" not in colunas:
+        # Exemplar baixado sem motivo é exemplar que ninguém sabe
+        # explicar depois: "sumiu" e "foi descartado por estar rasgado"
+        # contam histórias diferentes na hora de repor o acervo.
+        cur.execute("ALTER TABLE exemplar ADD COLUMN motivo_baixa TEXT")
+        cur.execute("ALTER TABLE exemplar ADD COLUMN data_baixa TEXT")
 
 
 # ---------------------------------------------------------------------------

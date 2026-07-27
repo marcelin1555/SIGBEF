@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.7.1-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.8.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -135,7 +135,11 @@ Além do desktop, o projeto tem:
 | Quitação de multa | Registro manual de multas pagas |
 | Fila de espera | Quem espera cada livro, com destaque para os exemplares já separados e o prazo de retirada |
 | Uso do acervo | Empréstimos por mês, turmas e categorias, taxa de atraso e a lista dos livros que nunca saíram |
-| Relatórios em CSV | Acervo, empréstimos abertos, usuários, livros mais emprestados e as pendências dos leitores |
+| Conferir acervo | Conferência com o leitor na estante: o que não foi encontrado, o que está emprestado e o que apareceu sem estar previsto |
+| Baixa de exemplar | Tira do acervo um exemplar extraviado, danificado, descartado ou doado, sem levar o título junto |
+| Relatórios em CSV | Acervo, empréstimos abertos, usuários, mais emprestados, pendências dos leitores e a movimentação do período |
+| Período nos relatórios | Recorte por datas, com atalhos para o mês, o bimestre e o ano |
+| Cópia de segurança | Automática ao fechar o sistema, guardando as últimas 7 |
 | Pareamento de celular | QR code para o aluno conectar o aplicativo, e controle dos aparelhos ligados |
 | Configurações *(admin)* | Ajuste de prazos, limites e valores de multa |
 
@@ -651,9 +655,15 @@ Funcionalidades planejadas para versões futuras:
 
 ### Próxima versão
 
-- [ ] Camada de engajamento de leitura: estatísticas pessoais,
-      recomendações por categoria, conquistas opcionais para alunos
-- [ ] Painel com gráficos de uso do acervo (hoje os relatórios saem em CSV)
+- [ ] **Devolução em lote** — no fim do ano a turma inteira devolve de
+      uma vez, e hoje é um código de barras por vez
+- [ ] **Aviso de vencimento no celular** — o aplicativo já guarda as
+      datas no cache, então dá para avisar sem rede e sem servidor
+      ligado; nasce desligado, como toda função opcional
+- [ ] **Empréstimo de coleção para o professor** — livro-texto para a
+      turma inteira num registro só, em vez de trinta. Depende de
+      definir com a bibliotecária se o exemplar fica no nome do
+      professor ou de cada aluno
 
 ### Aproximação de normas de biblioteconomia
 
@@ -683,6 +693,22 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Conferência do acervo (inventário)**: passar o leitor na estante
+      e receber a lista do que não foi encontrado, do que está
+      emprestado e do que apareceu sem estar previsto (v1.8.0)
+- [x] **Baixa de exemplar individual**, com motivo, inclusive de livro
+      perdido pelo aluno — encerra o empréstimo junto (v1.8.0)
+- [x] **Relatórios por período** e o relatório de movimentação, para a
+      prestação de contas à direção (v1.8.0)
+- [x] **Cópia de segurança automática** ao fechar o sistema, com
+      rotação das cópias antigas (v1.8.0)
+- [x] **Acervos grandes**: até 250 mil livros, com a turma inteira no
+      celular ao mesmo tempo (v1.7.1)
+- [x] **Camada de engajamento de leitura**: estatísticas pessoais e
+      recomendações com o motivo de cada sugestão (v1.7.0)
+- [x] **Painel de uso do acervo** com gráficos e a lista do que nunca
+      saiu da estante (v1.7.0)
+- [x] **Relatório de pendências dos leitores** (v1.7.0)
 - [x] **Aplicativo Android** para o aluno: acervo, carteirinha com código
       de barras real, empréstimos, reserva e renovação; funciona offline e
       pareia lendo um QR code (v1.6.2)
@@ -755,7 +781,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.7.1** — Julho/2026
+**SIGBEF v1.8.0** — Julho/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

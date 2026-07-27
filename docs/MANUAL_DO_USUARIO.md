@@ -209,13 +209,27 @@ exposição, indicar em sala ou rever a próxima compra.
 ### Gerar relatórios
 
 1. Menu lateral → **Relatórios**.
-2. Escolha um dos 5 relatórios disponíveis:
+2. Se quiser recortar um período, use a faixa no topo da tela. Os
+   botões **Este mês**, **Este bimestre** e **Este ano** preenchem as
+   datas sozinhos; **Tudo** volta ao histórico completo. Também dá para
+   digitar as datas no formato dd/mm/aaaa.
+3. Escolha um dos 6 relatórios disponíveis:
    - **Acervo completo** — todos os livros e exemplares
    - **Empréstimos em aberto** — quem está com livros agora
    - **Usuários cadastrados** — listagem completa
-   - **Top 50 mais emprestados** — livros mais procurados
+   - **Mais emprestados** — livros mais procurados no período
    - **Pendências dos leitores** — quem está impedido de pegar livro
-3. Clique em **Exportar CSV** e escolha onde salvar.
+   - **Movimentação do período** — empréstimos, devoluções, atrasos e
+     multas, com a quebra por mês e por turma
+4. Clique em **Exportar CSV** e escolha onde salvar.
+
+O período vale para os relatórios de movimento (mais emprestados e
+movimentação). Acervo, usuários e pendências ignoram as datas de
+propósito: eles são uma fotografia de agora, não um histórico.
+
+**Movimentação do período** é o relatório para levar à direção no fim do
+bimestre ou do ano. Ele responde numa página: quantos empréstimos, quantas
+devoluções, quantas em atraso, quanto de multa e quais turmas leram mais.
 
 O relatório de pendências traz o e-mail e a turma de cada um, porque ele
 costuma virar cobrança. Repare que ele lista **duas** situações
@@ -226,6 +240,64 @@ porque o livro está fora da biblioteca. Por isso a lista vem ordenada
 pelo atraso mais antigo.
 
 O CSV pode ser aberto no Excel ou Google Sheets para análises adicionais.
+
+### Tirar um exemplar do acervo
+
+Um livro voltou rasgado, o aluno perdeu, ou a coleção ficou
+desatualizada. Isso é diferente de excluir o livro: aqui sai **um
+exemplar**, e os outros do mesmo título continuam na estante.
+
+1. Menu lateral → **Livros e exemplares**, selecione o livro e clique em
+   **Ver detalhes / código de barras**.
+2. Na lista de exemplares, clique no que vai sair e depois em **Dar
+   baixa no exemplar**.
+3. Escolha o motivo:
+   - **Extraviado** — não foi encontrado
+   - **Danificado** — sem conserto
+   - **Descartado** — desatualizado ou fora de uso
+   - **Doado ou transferido**
+4. Confirme.
+
+O motivo não é burocracia: seis meses depois, "extraviado" e "descartado
+por estar velho" levam a decisões diferentes na hora de repor a estante.
+
+**Se o exemplar estiver emprestado** — o caso do aluno que perdeu o
+livro — o sistema avisa e, ao confirmar, encerra o empréstimo e lança a
+multa de atraso, se houver. Não é preciso esperar uma devolução que não
+vai acontecer. O histórico de quem leu aquele exemplar continua
+guardado.
+
+### Conferir o acervo (inventário)
+
+A conferência de fim de ano: passar o leitor na estante e descobrir o
+que sumiu. Pode ser feita em vários dias — a conferência fica aberta até
+você encerrar.
+
+1. Menu lateral → **Conferir acervo** → **Iniciar conferência**.
+2. Passe o leitor em cada exemplar da estante. O cursor já fica no campo
+   certo e volta sozinho depois de cada leitura, então dá para trabalhar
+   com as duas mãos na estante.
+3. A tela vai avisando:
+   - **Conferido** — tudo certo
+   - **Já tinha sido lido** — você passou esse livro duas vezes; não
+     conta em dobro, pode seguir
+   - **Estava emprestado!** ou **Estava baixado!** — o livro está na
+     estante, mas o sistema achava que não. Anote para corrigir
+4. Quando terminar, clique em **Encerrar conferência**.
+
+O resultado sai em três listas, e cada uma pede uma ação diferente:
+
+| Lista | O que fazer |
+|---|---|
+| **Não encontrados** | Procurar na estante. Se não achar, dar baixa como extraviado |
+| **Emprestados** | Nada. Estão com os leitores, como esperado |
+| **Apareceram** | Corrigir o cadastro: o sistema está errado sobre esses |
+
+Use **Exportar CSV** para levar a lista impressa até a estante.
+
+Só uma conferência pode estar aberta por vez. Se duas pessoas contassem
+ao mesmo tempo em conferências diferentes, cada uma acusaria como sumido
+o que a outra encontrou.
 
 ---
 

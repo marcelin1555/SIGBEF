@@ -712,6 +712,82 @@ class DialogoEditarUsuario(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: baixa de um exemplar
+# ---------------------------------------------------------------------------
+class DialogoBaixaExemplar(tk.Toplevel):
+    """Tira um exemplar do acervo, perguntando por quê.
+
+    O motivo não é burocracia: seis meses depois, "extraviado" e
+    "descartado por estar desatualizado" levam a decisões diferentes na
+    hora de repor a estante.
+    """
+
+    def __init__(self, parent, codigo: str, ao_confirmar=None):
+        super().__init__(parent)
+        self.codigo = codigo
+        self.ao_confirmar = ao_confirmar
+        self.title("Dar baixa no exemplar")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 520, 340)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Dar baixa no exemplar",
+                  style="Titulo.TLabel").pack(anchor="w")
+
+        ex = servicos.localizar_exemplar(codigo)
+        titulo = ex["titulo"] if ex else "(exemplar não encontrado)"
+        ttk.Label(wrap, text=f"{titulo}\nTombo/código: {codigo}",
+                  style="Hint.TLabel", justify="left").pack(anchor="w",
+                                                              pady=(4, 16))
+
+        ttk.Label(wrap, text="Por que este exemplar está saindo do acervo?"
+                  ).pack(anchor="w")
+        self.var_motivo = tk.StringVar(value="EXTRAVIADO")
+        for chave, rotulo in servicos.MOTIVOS_BAIXA.items():
+            ttk.Radiobutton(wrap, text=rotulo, value=chave,
+                            variable=self.var_motivo).pack(anchor="w",
+                                                             pady=2)
+
+        self.lbl_aviso = ttk.Label(wrap, text="", style="Hint.TLabel",
+                                     wraplength=460, justify="left")
+        self.lbl_aviso.pack(anchor="w", pady=(10, 0))
+        if ex and ex["status"] == "EMPRESTADO":
+            self.lbl_aviso.configure(
+                text="Atenção: este exemplar está emprestado. Dar baixa "
+                      "encerra o empréstimo e lança a multa de atraso, se "
+                      "houver.",
+                foreground=tema.COR_AVISO)
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(fill="x", pady=(16, 0))
+        ttk.Button(rodape, text="Cancelar",
+                    command=self.destroy).pack(side="right")
+        ttk.Button(rodape, text="Confirmar baixa", style="Primario.TButton",
+                    command=self._confirmar).pack(side="right", padx=(0, 8))
+
+    def _confirmar(self):
+        try:
+            r = servicos.baixar_exemplar(self.codigo, self.var_motivo.get())
+        except RegraNegocioError as e:
+            messagebox.showwarning("Não foi possível", str(e), parent=self)
+            return
+        extra = ""
+        if r["estava_emprestado"]:
+            extra = "\n\nO empréstimo foi encerrado."
+            if r["multa"]:
+                extra += f" Multa lançada: {reais(r['multa'])}."
+        messagebox.showinfo(
+            "Baixa registrada",
+            f"'{r['titulo']}' saiu do acervo.{extra}", parent=self)
+        if self.ao_confirmar:
+            self.ao_confirmar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
 class DialogoDetalhesLivro(tk.Toplevel):
@@ -772,16 +848,49 @@ class DialogoDetalhesLivro(tk.Toplevel):
         tree.column("codigo", width=200, anchor="w")
         tree.column("loc", width=180, anchor="w")
         tree.column("status", width=110, anchor="w")
-        for ex in livro["exemplares"]:
-            tree.insert("", "end",
-                        values=(ex["numero_tombo"], ex["codigo_barras"],
-                                ex.get("localizacao") or "", ex["status"]))
+        self._livro_id = livro_id
+        self.tree = tree
+        self._preencher_exemplares(livro)
         tree.pack(fill="both", expand=True)
 
-        ttk.Button(wrap, text="Imprimir etiquetas (visualizar)",
+        botoes = ttk.Frame(wrap)
+        botoes.pack(fill="x", pady=(12, 0))
+        ttk.Button(botoes, text="Imprimir etiquetas (visualizar)",
                    style="Primario.TButton",
                    command=lambda: VisualizadorBarcodes(self, livro)
-                   ).pack(pady=(12, 0))
+                   ).pack(side="left")
+        ttk.Button(botoes, text="Dar baixa no exemplar",
+                   command=self._dar_baixa).pack(side="left", padx=(8, 0))
+
+    def _preencher_exemplares(self, livro: dict):
+        for it in self.tree.get_children():
+            self.tree.delete(it)
+        for ex in livro["exemplares"]:
+            situacao = ex["status"]
+            if ex["status"] == "BAIXADO" and ex.get("motivo_baixa"):
+                # O motivo importa mais que a palavra "baixado": é o que
+                # explica, meses depois, por que aquele exemplar sumiu.
+                situacao = servicos.MOTIVOS_BAIXA.get(ex["motivo_baixa"],
+                                                       ex["motivo_baixa"])
+            self.tree.insert("", "end",
+                             values=(ex["numero_tombo"], ex["codigo_barras"],
+                                     ex.get("localizacao") or "", situacao))
+
+    def _dar_baixa(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um exemplar",
+                                  "Escolha na lista o exemplar que vai sair "
+                                  "do acervo.", parent=self)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        codigo = str(valores[1])
+        DialogoBaixaExemplar(self, codigo, ao_confirmar=self._recarregar)
+
+    def _recarregar(self):
+        livro = servicos.detalhes_livro(self._livro_id)
+        if livro:
+            self._preencher_exemplares(livro)
 
 
 # ---------------------------------------------------------------------------

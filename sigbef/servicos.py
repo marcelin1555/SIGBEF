@@ -345,7 +345,11 @@ def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
                 JOIN autor a ON a.id = la.autor_id
                 WHERE la.livro_id = l.id
             ) AS autores,
-            (SELECT COUNT(*) FROM exemplar ex WHERE ex.livro_id = l.id) AS total_exemplares,
+            -- Baixado não conta: a pergunta da tela é quantos exemplares
+            -- a biblioteca tem, e o que foi extraviado ou descartado não
+            -- está mais lá. O histórico de empréstimo deles continua.
+            (SELECT COUNT(*) FROM exemplar ex
+                WHERE ex.livro_id = l.id AND ex.status != 'BAIXADO') AS total_exemplares,
             (SELECT COUNT(*) FROM exemplar ex
                 WHERE ex.livro_id = l.id AND ex.status = 'DISPONIVEL') AS disponiveis
         FROM livro l
@@ -381,7 +385,8 @@ def detalhes_livro(livro_id: int) -> Optional[dict]:
         )
         livro["autores"] = [r["nome"] for r in cur.fetchall()]
         cur.execute(
-            """SELECT id, codigo_barras, numero_tombo, localizacao, status
+            """SELECT id, codigo_barras, numero_tombo, localizacao, status,
+                      motivo_baixa, data_baixa
                FROM exemplar WHERE livro_id = ? ORDER BY numero_tombo""",
             (livro_id,),
         )
@@ -688,6 +693,97 @@ def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
             (livro_id,),
         )
     registrar_auditoria(usuario_id, "EXCLUSAO_LIVRO", f"livro_id={livro_id}")
+
+
+def _atraso_e_multa(data_prevista: str,
+                     ate: Optional[date] = None) -> tuple[int, float]:
+    """Dias de atraso e multa correspondente, na regra da escola.
+
+    Uma função só porque agora há dois caminhos que encerram um
+    empréstimo — a devolução no balcão e a baixa de um exemplar perdido —
+    e a conta precisa ser a mesma nos dois. O teto (`MULTA_TETO`) existe
+    para o esquecimento de um ano não virar uma dívida impagável.
+    """
+    prevista = datetime.strptime(data_prevista, "%Y-%m-%d").date()
+    dias = max(((ate or date.today()) - prevista).days, 0)
+    if not dias:
+        return 0, 0.0
+    multa = min(_config_float("MULTA_POR_DIA", 1.5) * dias,
+                _config_float("MULTA_TETO", 60.0))
+    return dias, round(multa, 2)
+
+
+# Por que o exemplar saiu do acervo. A diferença importa na hora de
+# repor: extraviado costuma virar cobrança, danificado vira compra,
+# descartado foi decisão da escola.
+MOTIVOS_BAIXA = {
+    "EXTRAVIADO": "Extraviado (não foi encontrado)",
+    "DANIFICADO": "Danificado sem conserto",
+    "DESCARTADO": "Descartado (desatualizado ou fora de uso)",
+    "DOADO": "Doado ou transferido",
+}
+
+
+def baixar_exemplar(codigo: str, motivo: str,
+                     usuario_id: Optional[int] = None) -> dict:
+    """Tira um exemplar do acervo, sem mexer nos outros do mesmo título.
+
+    Antes só existia `excluir_livro`, que baixa o título inteiro: um
+    exemplar rasgado obrigava a escolher entre sumir com o livro todo ou
+    deixar o sistema dizendo que ele está na estante.
+
+    Exemplar **emprestado também pode ser baixado**, e esse é o caso que
+    mais acontece: o aluno perdeu o livro. Exigir a devolução primeiro
+    seria exigir o impossível, então o empréstimo é encerrado aqui, com
+    a data de hoje, e a multa de atraso é calculada se houver — o que a
+    escola faz depois com a cobrança é decisão dela, fora do sistema.
+    """
+    motivo = (motivo or "").strip().upper()
+    if motivo not in MOTIVOS_BAIXA:
+        raise RegraNegocioError(
+            "Informe por que o exemplar está saindo do acervo: "
+            + ", ".join(MOTIVOS_BAIXA))
+
+    ex = localizar_exemplar(codigo)
+    if not ex:
+        raise RegraNegocioError(
+            "Exemplar não encontrado. Confira o código de barras ou o tombo.")
+    if ex["status"] == "BAIXADO":
+        raise RegraNegocioError(
+            f"Este exemplar já foi baixado do acervo.")
+
+    hoje = date.today().isoformat()
+    multa = 0.0
+    with db_cursor() as cur:
+        cur.execute("""SELECT id, usuario_id, data_prevista FROM emprestimo
+                        WHERE exemplar_id = ? AND data_devolucao IS NULL
+                        LIMIT 1""", (ex["id"],))
+        emp = cur.fetchone()
+        if emp:
+            _, multa = _atraso_e_multa(emp["data_prevista"])
+            cur.execute("""UPDATE emprestimo
+                              SET data_devolucao = ?, multa = ?
+                            WHERE id = ?""",
+                        (hoje, multa, emp["id"]))
+
+        cur.execute("""UPDATE exemplar
+                          SET status = 'BAIXADO', motivo_baixa = ?,
+                              data_baixa = ?
+                        WHERE id = ?""", (motivo, hoje, ex["id"]))
+
+    registrar_auditoria(
+        usuario_id, "BAIXA_EXEMPLAR",
+        f"exemplar={ex['codigo_barras']} livro={ex['titulo']} motivo={motivo}"
+        + (f" emprestimo_encerrado={emp['id']}" if emp else ""))
+
+    return {
+        "exemplar_id": ex["id"],
+        "codigo_barras": ex["codigo_barras"],
+        "titulo": ex["titulo"],
+        "motivo": motivo,
+        "estava_emprestado": bool(emp),
+        "multa": multa,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -1097,9 +1193,6 @@ def realizar_devolucao(*, codigo_exemplar: str,
             "Exemplar não encontrado. Confira o código de barras ou o tombo."
         )
 
-    multa_dia = _config_float("MULTA_POR_DIA", 1.5)
-    multa_teto = _config_float("MULTA_TETO", 60.0)
-
     from . import reservas
     with db_cursor() as cur:
         cur.execute(
@@ -1118,10 +1211,7 @@ def realizar_devolucao(*, codigo_exemplar: str,
                 "no momento."
             )
 
-        prevista = datetime.strptime(emp["data_prevista"], "%Y-%m-%d").date()
-        hoje = date.today()
-        dias_atraso = max((hoje - prevista).days, 0)
-        multa = round(min(multa_dia * dias_atraso, multa_teto), 2) if dias_atraso else 0.0
+        dias_atraso, multa = _atraso_e_multa(emp["data_prevista"])
 
         cur.execute(
             "UPDATE emprestimo SET data_devolucao = datetime('now','localtime'), multa = ? "
@@ -1360,17 +1450,122 @@ def relatorio_inadimplentes() -> list[dict]:
     return linhas
 
 
-def relatorio_circulacao(top: int = 10) -> list[dict]:
+def _recorte_de_periodo(inicio: Optional[str], fim: Optional[str],
+                        coluna: str = "e.data_emprestimo"):
+    """Cláusula de período para os relatórios, e seus parâmetros.
+
+    As datas chegam como 'AAAA-MM-DD' e o intervalo é fechado dos dois
+    lados: quem pede 01/05 a 31/05 espera o dia 31 dentro da conta.
+    `date()` na coluna porque `data_emprestimo` guarda data e hora, e
+    comparar o texto cru deixaria o último dia de fora.
+
+    Período invertido (fim antes do início) não é erro: devolve vazio,
+    que é a resposta honesta para um intervalo que não existe.
+    """
+    onde, params = "", []
+    if inicio:
+        onde += f" AND date({coluna}) >= date(?)"
+        params.append(inicio)
+    if fim:
+        onde += f" AND date({coluna}) <= date(?)"
+        params.append(fim)
+    return onde, params
+
+
+def relatorio_circulacao(top: int = 10, inicio: Optional[str] = None,
+                          fim: Optional[str] = None) -> list[dict]:
+    """Livros mais emprestados, opcionalmente num intervalo de datas.
+
+    Sem período, o resultado é o de sempre: o acumulado desde a
+    implantação.
+    """
+    onde, params = _recorte_de_periodo(inicio, fim)
     with db_cursor() as cur:
         cur.execute(
-            """SELECT l.titulo, COUNT(*) AS emprestimos
+            f"""SELECT l.titulo, COUNT(*) AS emprestimos
                 FROM emprestimo e
                 JOIN exemplar ex ON ex.id = e.exemplar_id
                 JOIN livro l ON l.id = ex.livro_id
+                WHERE 1 = 1 {onde}
                 GROUP BY l.id
                 ORDER BY emprestimos DESC
-                LIMIT ?""", (top,))
+                LIMIT ?""", params + [top])
         return [dict(r) for r in cur.fetchall()]
+
+
+def relatorio_movimentacao(inicio: Optional[str] = None,
+                            fim: Optional[str] = None) -> dict:
+    """O que aconteceu na biblioteca num período.
+
+    Existe para a pergunta que a direção faz no fim do ano e que o
+    sistema não sabia responder: quanto a biblioteca circulou entre
+    tais datas. Devolve os totais, o movimento mês a mês e a divisão
+    por turma, tudo já recortado.
+
+    Empréstimo e devolução são contados por datas diferentes de
+    propósito: um livro emprestado em novembro e devolvido em fevereiro
+    aparece no empréstimo de novembro e na devolução de fevereiro, que
+    é como a bibliotecária conta.
+    """
+    onde_emp, p_emp = _recorte_de_periodo(inicio, fim)
+    onde_dev, p_dev = _recorte_de_periodo(inicio, fim, "e.data_devolucao")
+
+    with db_cursor() as cur:
+        cur.execute(f"""SELECT COUNT(*) FROM emprestimo e
+                         WHERE 1 = 1 {onde_emp}""", p_emp)
+        emprestimos = cur.fetchone()[0]
+
+        cur.execute(f"""SELECT COUNT(*) FROM emprestimo e
+                         WHERE e.data_devolucao IS NOT NULL {onde_dev}""",
+                    p_dev)
+        devolucoes = cur.fetchone()[0]
+
+        # Atraso e multa se contam na devolução: é quando o atraso
+        # termina de existir e a multa é lançada.
+        cur.execute(f"""SELECT
+                          SUM(CASE WHEN date(e.data_devolucao)
+                                      > date(e.data_prevista)
+                                   THEN 1 ELSE 0 END),
+                          IFNULL(SUM(e.multa), 0)
+                        FROM emprestimo e
+                       WHERE e.data_devolucao IS NOT NULL {onde_dev}""",
+                    p_dev)
+        linha = cur.fetchone()
+        com_atraso, multa_total = (linha[0] or 0), (linha[1] or 0.0)
+
+        cur.execute(f"""SELECT strftime('%Y-%m', e.data_emprestimo) AS mes,
+                               COUNT(*) AS total
+                          FROM emprestimo e
+                         WHERE 1 = 1 {onde_emp}
+                         GROUP BY mes ORDER BY mes""", p_emp)
+        por_mes = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(f"""SELECT IFNULL(NULLIF(u.turma, ''), 'Sem turma') AS turma,
+                               COUNT(*) AS total,
+                               COUNT(DISTINCT u.id) AS leitores
+                          FROM emprestimo e
+                          JOIN usuario u ON u.id = e.usuario_id
+                         WHERE 1 = 1 {onde_emp}
+                         GROUP BY turma
+                         ORDER BY total DESC""", p_emp)
+        por_turma = [dict(r) for r in cur.fetchall()]
+
+        cur.execute(f"""SELECT COUNT(DISTINCT e.usuario_id) FROM emprestimo e
+                         WHERE 1 = 1 {onde_emp}""", p_emp)
+        leitores = cur.fetchone()[0]
+
+    return {
+        "inicio": inicio, "fim": fim,
+        "emprestimos": emprestimos,
+        "devolucoes": devolucoes,
+        "com_atraso": com_atraso,
+        "multa_total": round(multa_total, 2),
+        "leitores": leitores,
+        "taxa_atraso": round(com_atraso * 100 / devolucoes, 1) if devolucoes
+                       else 0.0,
+        "por_mes": por_mes,
+        "por_turma": por_turma,
+    }
 
 
 # ---------------------------------------------------------------------------

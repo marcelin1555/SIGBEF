@@ -21,9 +21,23 @@ function Badge({ texto }) {
 
 const versoes = [
   {
-    numero: '1.7.1',
+    numero: '1.8.0',
     data: '27 de julho de 2026',
     destaque: true,
+    categorias: ['Acervo', 'Interface', 'Robustez'],
+    itens: [
+      { cat: 'Acervo', texto: 'Conferência do acervo: passe o leitor na estante e receba a lista do que não foi encontrado, do que está emprestado e do que apareceu sem estar previsto' },
+      { cat: 'Acervo', texto: 'Baixa de exemplar individual, com motivo (extraviado, danificado, descartado ou doado), sem tirar o título inteiro do acervo' },
+      { cat: 'Acervo', texto: 'Livro perdido pelo aluno: dar baixa encerra o empréstimo e lança a multa, sem esperar uma devolução que não vai acontecer' },
+      { cat: 'Interface', texto: 'Relatórios por período, com atalhos para este mês, este bimestre e este ano' },
+      { cat: 'Interface', texto: 'Novo relatório de movimentação: empréstimos, devoluções, atrasos e multas do período, por mês e por turma — o número que a direção pede' },
+      { cat: 'Robustez', texto: 'Cópia de segurança automática ao fechar o sistema, guardando as últimas 7 e apagando as antigas sozinha' },
+      { cat: 'Robustez', texto: 'O backup passou a usar a função do próprio banco de dados, garantindo uma cópia consistente mesmo com o balcão trabalhando' },
+    ],
+  },
+  {
+    numero: '1.7.1',
+    data: '27 de julho de 2026',
     categorias: ['Robustez', 'API'],
     itens: [
       { cat: 'Robustez', texto: 'O sistema passa a aguentar acervos de até 250 mil livros, com a biblioteca inteira usando ao mesmo tempo: balcão, autoatendimento e uma turma no celular' },

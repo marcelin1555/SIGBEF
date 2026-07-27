@@ -154,17 +154,48 @@ Objetivo: extrair dados e proteger o acervo.
 
 1. Menu **Relatórios**: exporte acervo, usuários, os mais emprestados ou
    as pendências dos leitores em CSV (abre no Excel).
-2. **Backup** (Configurações → Ferramentas → "Fazer backup agora"):
-   faça isso toda semana. Guarde a cópia num pendrive ou na nuvem.
+2. **Período**: os botões no topo (Este mês, Este bimestre, Este ano)
+   recortam os relatórios de movimento. É assim que se monta o número
+   para levar à direção.
+3. **Movimentação do período**: o relatório de prestação de contas.
+   Numa página: empréstimos, devoluções, atrasos, multas e as turmas
+   que mais leram.
+4. **Backup**: agora acontece sozinho ao fechar o sistema, uma vez por
+   dia, guardando as últimas 7 cópias. O botão manual continua em
+   Configurações → Ferramentas, para levar uma cópia no pendrive.
 
-**Exercício:** gere o relatório "Top 50 mais emprestados" e faça um
-backup do banco.
+**Exercício:** escolha "Este ano", gere a **Movimentação do período** e
+confira quantos empréstimos a escola fez.
+
+### Módulo 8: Conferir o acervo e dar baixa
+
+Objetivo: saber o que a biblioteca realmente tem na estante.
+
+Este módulo é o do fim do ano letivo, e é o que mais dá trabalho — vale
+treinar antes de precisar.
+
+1. Menu **Conferir acervo** → **Iniciar conferência**.
+2. Passe o leitor em cada exemplar da prateleira. O cursor volta sozinho
+   para o campo: dá para segurar o leitor numa mão e os livros na outra.
+3. Fique de olho nos avisos em laranja: "Estava emprestado!" quer dizer
+   que o livro está na sua frente mas o sistema acha que está com
+   alguém.
+4. Pode parar e continuar depois — a conferência só fecha quando você
+   clicar em **Encerrar**.
+5. No fim, exporte o CSV e leve a lista de **não encontrados** para uma
+   segunda busca na estante.
+6. O que não aparecer nem na segunda busca: **Livros → Ver detalhes →
+   Dar baixa no exemplar → Extraviado**.
+
+**Exercício:** faça uma conferência de uma prateleira só, deixando um
+livro de fora de propósito, e confira que ele aparece na lista de não
+encontrados.
 
 ---
 
 ## Parte 2 — Aluno / Professor
 
-### Módulo 8: Pesquisar e reservar
+### Módulo 9: Pesquisar e reservar
 
 Objetivo: o aluno encontra e garante o livro que quer.
 
@@ -180,7 +211,7 @@ Objetivo: o aluno encontra e garante o livro que quer.
 **Exercício:** reserve um livro esgotado e confira sua posição em
 "Meus empréstimos".
 
-### Módulo 9: Terminal de Autoatendimento (kiosk)
+### Módulo 10: Terminal de Autoatendimento (kiosk)
 
 Objetivo: emprestar/devolver sozinho, sem a bibliotecária.
 
@@ -195,7 +226,7 @@ Objetivo: emprestar/devolver sozinho, sem a bibliotecária.
 **Exercício:** no modo kiosk, faça um empréstimo e uma devolução
 completos usando só a tela de toque/teclado.
 
-### Módulo 10: O aplicativo no celular
+### Módulo 11: O aplicativo no celular
 
 Objetivo: o aluno acompanha a biblioteca sem precisar ir até lá.
 

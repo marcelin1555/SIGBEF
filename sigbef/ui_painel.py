@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import csv
 import tkinter as tk
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from tkinter import ttk, messagebox, filedialog
 
@@ -117,6 +117,7 @@ class PainelPrincipal(tk.Tk):
                 ("emprestimos", "Empréstimos abertos", "troca"),
                 ("reservas", "Fila de espera", "leitor"),
                 ("uso", "Uso do acervo", "grafico"),
+                ("inventario", "Conferir acervo", "busca"),
                 ("relatorios", "Relatórios", "grafico"),
             ]
         if self.sessao.is_admin:
@@ -158,6 +159,8 @@ class PainelPrincipal(tk.Tk):
             self._secoes[chave] = SecaoReservas(self._principal, self)
         elif chave == "uso":
             self._secoes[chave] = SecaoUso(self._principal, self)
+        elif chave == "inventario":
+            self._secoes[chave] = SecaoInventario(self._principal, self)
         elif chave == "relatorios":
             self._secoes[chave] = SecaoRelatorios(self._principal, self)
         elif chave == "config":
@@ -199,7 +202,22 @@ class PainelPrincipal(tk.Tk):
         if messagebox.askyesno("Encerrar sessão",
                                 "Deseja realmente sair do sistema?",
                                 parent=self):
+            self._backup_ao_sair()
             self.destroy()
+
+    def _backup_ao_sair(self):
+        """Cópia de segurança do dia, na saída.
+
+        É o momento certo: o movimento do dia já aconteceu e ninguém
+        está esperando a tela responder. `executar_se_necessario` não
+        levanta exceção e pula se já houve cópia hoje, então isto não
+        atrasa nem trava o fechamento.
+        """
+        from . import backup
+        caminho = backup.executar_se_necessario(self.sessao.id)
+        if caminho:
+            self.title(f"SIGBEF — salvando cópia de segurança…")
+            self.update_idletasks()
 
 
 # Quantos livros a lista carrega por vez. 500 preenche a tela com folga
@@ -1261,6 +1279,234 @@ class SecaoReservas(SecaoBase):
         self.atualizar()
 
 
+class SecaoInventario(SecaoBase):
+    """Conferência do acervo: passar o leitor na estante e ver o que falta.
+
+    A tela é feita para ser usada de pé, com o leitor na mão: o campo de
+    código já vem focado e volta a focar sozinho a cada leitura, então a
+    bibliotecária não precisa tocar no mouse entre um livro e outro.
+    """
+
+    def __init__(self, parent, painel):
+        super().__init__(parent, painel)
+        ttk.Label(self, text="Conferir acervo",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(self, text=("Passe o leitor em cada exemplar da estante. "
+                               "No fim, o sistema mostra o que não foi "
+                               "encontrado."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        # --- barra de comando: muda conforme há conferência aberta
+        self.barra = ttk.Frame(self, style="Card.TFrame", padding=14)
+        self.barra.pack(fill="x")
+
+        self.lbl_estado = ttk.Label(self.barra, style="Card.TLabel",
+                                     font=("Segoe UI Semibold", 11))
+        self.lbl_estado.pack(anchor="w")
+
+        self.linha_leitura = ttk.Frame(self.barra, style="Card.TFrame")
+        self.linha_leitura.pack(fill="x", pady=(10, 0))
+        ttk.Label(self.linha_leitura, text="Código ou tombo:",
+                  style="Card.TLabel").pack(side="left")
+        self.ent_codigo = ttk.Entry(self.linha_leitura, width=28,
+                                     font=("Segoe UI", 12))
+        self.ent_codigo.pack(side="left", padx=8, ipady=3)
+        self.ent_codigo.bind("<Return>", lambda e: self._ler())
+        ttk.Button(self.linha_leitura, text="Registrar",
+                    style="Primario.TButton",
+                    command=self._ler).pack(side="left")
+        self.btn_encerrar = ttk.Button(self.linha_leitura,
+                                        text="Encerrar conferência",
+                                        command=self._encerrar)
+        self.btn_encerrar.pack(side="right")
+
+        self.btn_abrir = ttk.Button(self.barra, text="Iniciar conferência",
+                                     style="Primario.TButton",
+                                     command=self._abrir)
+
+        self.lbl_ultima = ttk.Label(self, style="Hint.TLabel", text="")
+        self.lbl_ultima.pack(anchor="w", pady=(10, 0))
+
+        # --- lista do que já foi lido nesta sessão de trabalho
+        cols = ("hora", "titulo", "codigo", "situacao")
+        self.tree = ttk.Treeview(self, columns=cols, show="headings",
+                                  height=14)
+        for c, t, w in [("hora", "Hora", 80), ("titulo", "Título", 340),
+                        ("codigo", "Código", 200),
+                        ("situacao", "Situação", 220)]:
+            self.tree.heading(c, text=t)
+            self.tree.column(c, width=w, anchor="w")
+        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+
+        rodape = ttk.Frame(self)
+        rodape.pack(fill="x", pady=(10, 0))
+        ttk.Button(rodape, text="Ver resultado parcial",
+                    command=self._resultado_parcial).pack(side="left")
+        ttk.Button(rodape, text="Exportar último resultado (CSV)",
+                    command=self._exportar).pack(side="left", padx=(8, 0))
+
+    # ------------------------------------------------------------------
+    def atualizar(self):
+        from . import inventario
+        self.aberta = inventario.em_andamento()
+        if self.aberta:
+            inv = inventario.obter(self.aberta["id"])
+            self.lbl_estado.configure(
+                text=f"Conferência em andamento desde "
+                      f"{data_hora_br(inv['iniciado_em'])} — "
+                      f"{inv['lidos']} exemplar(es) lido(s).")
+            self.btn_abrir.pack_forget()
+            self.linha_leitura.pack(fill="x", pady=(10, 0))
+            self.ent_codigo.focus_set()
+        else:
+            ultimas = inventario.listar(1)
+            if ultimas:
+                self.lbl_estado.configure(
+                    text=f"Nenhuma conferência aberta. A última foi "
+                          f"encerrada em "
+                          f"{data_hora_br(ultimas[0]['encerrado_em'])}.")
+            else:
+                self.lbl_estado.configure(
+                    text="Nenhuma conferência foi feita ainda.")
+            self.linha_leitura.pack_forget()
+            self.btn_abrir.pack(anchor="w", pady=(10, 0))
+
+    def _abrir(self):
+        from . import inventario
+        try:
+            inv = inventario.abrir(usuario_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+            return
+        for it in self.tree.get_children():
+            self.tree.delete(it)
+        self.atualizar()
+
+    def _ler(self):
+        from . import inventario
+        codigo = self.ent_codigo.get().strip()
+        if not codigo or not self.aberta:
+            return
+        try:
+            r = inventario.registrar_leitura(self.aberta["id"], codigo)
+        except RegraNegocioError as e:
+            self.lbl_ultima.configure(text=str(e), foreground=tema.COR_ERRO)
+            self.ent_codigo.delete(0, tk.END)
+            self.ent_codigo.focus_set()
+            return
+
+        if r["repetido"]:
+            situacao, cor = "Já tinha sido lido", tema.COR_AVISO
+        elif r["inesperado"]:
+            situacao = ("Estava emprestado!" if r["status"] == "EMPRESTADO"
+                        else "Estava baixado!")
+            cor = tema.COR_AVISO
+        else:
+            situacao, cor = "Conferido", tema.COR_SUCESSO
+
+        self.tree.insert("", 0, values=(datetime.now().strftime("%H:%M"),
+                                         r["titulo"], r["codigo_barras"],
+                                         situacao))
+        tema.aplicar_zebra(self.tree)
+        self.lbl_ultima.configure(text=f"{r['titulo']} — {situacao}",
+                                    foreground=cor)
+        self.ent_codigo.delete(0, tk.END)
+        self.ent_codigo.focus_set()
+        self.atualizar_contador()
+
+    def atualizar_contador(self):
+        from . import inventario
+        inv = inventario.obter(self.aberta["id"])
+        self.lbl_estado.configure(
+            text=f"Conferência em andamento desde "
+                  f"{data_hora_br(inv['iniciado_em'])} — "
+                  f"{inv['lidos']} exemplar(es) lido(s).")
+
+    def _encerrar(self):
+        from . import inventario
+        if not self.aberta:
+            return
+        if not messagebox.askyesno(
+                "Encerrar conferência",
+                "Encerrar a conferência e gerar o resultado?\n\n"
+                "Depois disso não dá para registrar mais leituras nela.",
+                parent=self.painel):
+            return
+        res = inventario.encerrar(self.aberta["id"], self.sessao.id)
+        self.atualizar()
+        self._mostrar_resultado(res)
+
+    def _resultado_parcial(self):
+        from . import inventario
+        alvo = self.aberta or (inventario.listar(1) or [None])[0]
+        if not alvo:
+            messagebox.showinfo("Sem conferência",
+                                  "Nenhuma conferência foi feita ainda.",
+                                  parent=self.painel)
+            return
+        self._mostrar_resultado(inventario.resultado(alvo["id"]))
+
+    def _mostrar_resultado(self, res: dict):
+        self._ultimo_resultado = res
+        faltando = len(res["nao_encontrados"])
+        messagebox.showinfo(
+            "Resultado da conferência",
+            f"Exemplares no acervo: {res['no_acervo']}\n"
+            f"Lidos na estante: {res['lidos']}\n\n"
+            f"Não encontrados: {faltando}\n"
+            f"Emprestados (fora, como esperado): "
+            f"{len(res['fora_como_esperado'])}\n"
+            f"Apareceram sem estar previstos: {len(res['apareceram'])}\n\n"
+            + ("Exporte o CSV para ver a lista item a item."
+               if faltando else "Nenhum exemplar sumido. Acervo bate."),
+            parent=self.painel)
+
+    def _exportar(self):
+        from . import inventario
+        res = getattr(self, "_ultimo_resultado", None)
+        if res is None:
+            alvo = self.aberta or (inventario.listar(1) or [None])[0]
+            if not alvo:
+                messagebox.showinfo("Sem conferência",
+                                      "Nenhuma conferência foi feita ainda.",
+                                      parent=self.painel)
+                return
+            res = inventario.resultado(alvo["id"])
+
+        nome = filedialog.asksaveasfilename(
+            parent=self.painel,
+            initialfile=f"conferencia_{datetime.now().strftime('%Y%m%d')}.csv",
+            defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+        if not nome:
+            return
+
+        linhas = [["NÃO ENCONTRADOS (procurar na estante)", "", "", ""]]
+        linhas += [[x["titulo"], x["numero_tombo"] or "",
+                     x["codigo_barras"], x.get("localizacao") or ""]
+                   for x in res["nao_encontrados"]]
+        linhas += [["", "", "", ""],
+                   ["EMPRESTADOS (fora, como esperado)", "Com quem",
+                    "Devolução prevista", ""]]
+        linhas += [[x["titulo"], x.get("com_quem") or "",
+                     data_br(x.get("data_prevista")) if x.get("data_prevista")
+                     else "", x["codigo_barras"]]
+                   for x in res["fora_como_esperado"]]
+        linhas += [["", "", "", ""],
+                   ["APARECERAM (corrigir o cadastro)", "Situação no sistema",
+                    "", ""]]
+        linhas += [[x["titulo"], x["status"], x.get("motivo_baixa") or "",
+                     x["codigo_barras"]]
+                   for x in res["apareceram"]]
+
+        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.writer(f, delimiter=";")
+            w.writerow(["Título", "Detalhe", "Detalhe", "Código"])
+            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                          for linha in linhas])
+        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
+                              parent=self.painel)
+
+
 class SecaoRelatorios(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
@@ -1269,6 +1515,8 @@ class SecaoRelatorios(SecaoBase):
         ttk.Label(self, text=("Gere relatórios em CSV para análise externa "
                                "(planilhas, BI, etc.)."),
                   style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        self._construir_periodo()
 
         cards = ttk.Frame(self)
         cards.pack(fill="x")
@@ -1283,12 +1531,16 @@ class SecaoRelatorios(SecaoBase):
             ("Usuários cadastrados",
              "Todos os usuários com seus perfis.",
              self._exportar_usuarios),
-            ("Top 50 mais emprestados",
-             "Livros mais procurados em todo o histórico.",
+            ("Mais emprestados",
+             "Livros mais procurados. Respeita o período escolhido.",
              self._exportar_circulacao),
             ("Pendências dos leitores",
              "Quem está com livro atrasado ou multa em aberto.",
              self._exportar_inadimplentes),
+            ("Movimentação do período",
+             "Empréstimos, devoluções, atrasos e multas, por mês e por "
+             "turma. É o relatório para a direção.",
+             self._exportar_movimentacao),
         ]):
             card = ttk.Frame(cards, style="Card.TFrame", padding=18)
             card.grid(row=i // 2, column=i % 2, sticky="ew",
@@ -1301,6 +1553,121 @@ class SecaoRelatorios(SecaoBase):
             ttk.Button(card, text="Exportar CSV",
                         style="Primario.TButton",
                         command=callback).pack(anchor="w")
+
+    # ------------------------------------------------------------------
+    # Período
+    # ------------------------------------------------------------------
+    def _construir_periodo(self):
+        """Faixa de datas que vale para os relatórios de movimento.
+
+        Tk não traz seletor de data, e desenhar um calendário seria muito
+        código para pouco uso: na prática a bibliotecária quer "este mês"
+        ou "este ano", e é nos atalhos que ela vai clicar. Os campos
+        ficam para o caso raro de um intervalo fechado específico.
+        """
+        faixa = ttk.Frame(self, style="Card.TFrame", padding=14)
+        faixa.pack(fill="x", pady=(0, 14))
+
+        linha = ttk.Frame(faixa, style="Card.TFrame")
+        linha.pack(fill="x")
+        ttk.Label(linha, text="Período:", style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)).pack(side="left")
+        ttk.Label(linha, text="de", style="CardHint.TLabel").pack(
+            side="left", padx=(12, 4))
+        self.ent_inicio = ttk.Entry(linha, width=12)
+        self.ent_inicio.pack(side="left")
+        ttk.Label(linha, text="até", style="CardHint.TLabel").pack(
+            side="left", padx=4)
+        self.ent_fim = ttk.Entry(linha, width=12)
+        self.ent_fim.pack(side="left")
+        ttk.Label(linha, text="(dd/mm/aaaa)",
+                  style="CardHint.TLabel").pack(side="left", padx=(8, 0))
+
+        atalhos = ttk.Frame(faixa, style="Card.TFrame")
+        atalhos.pack(fill="x", pady=(10, 0))
+        for rotulo, fn in [("Este mês", self._periodo_mes),
+                           ("Este bimestre", self._periodo_bimestre),
+                           ("Este ano", self._periodo_ano),
+                           ("Tudo", self._periodo_tudo)]:
+            ttk.Button(atalhos, text=rotulo, command=fn).pack(
+                side="left", padx=(0, 8))
+
+        self.lbl_periodo = ttk.Label(atalhos, text="Sem recorte: todo o "
+                                                     "histórico.",
+                                      style="CardHint.TLabel")
+        self.lbl_periodo.pack(side="left", padx=(12, 0))
+
+    def _definir_periodo(self, inicio, fim):
+        self.ent_inicio.delete(0, tk.END)
+        self.ent_fim.delete(0, tk.END)
+        if inicio:
+            self.ent_inicio.insert(0, inicio.strftime("%d/%m/%Y"))
+        if fim:
+            self.ent_fim.insert(0, fim.strftime("%d/%m/%Y"))
+        self._descrever_periodo()
+
+    def _periodo_mes(self):
+        hoje = date.today()
+        self._definir_periodo(hoje.replace(day=1), hoje)
+
+    def _periodo_bimestre(self):
+        """Bimestre letivo corrente, contado de janeiro."""
+        hoje = date.today()
+        primeiro_mes = ((hoje.month - 1) // 2) * 2 + 1
+        self._definir_periodo(hoje.replace(month=primeiro_mes, day=1), hoje)
+
+    def _periodo_ano(self):
+        hoje = date.today()
+        self._definir_periodo(hoje.replace(month=1, day=1), hoje)
+
+    def _periodo_tudo(self):
+        self._definir_periodo(None, None)
+
+    def _ler_data(self, entry, rotulo) -> str | None:
+        """dd/mm/aaaa -> AAAA-MM-DD. Campo vazio é ausência, não erro."""
+        texto = entry.get().strip()
+        if not texto:
+            return None
+        for formato in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(texto, formato).date().isoformat()
+            except ValueError:
+                continue
+        raise RegraNegocioError(
+            f"Data {rotulo} inválida: '{texto}'.\n\n"
+            "Use o formato dd/mm/aaaa, por exemplo 01/05/2026.")
+
+    def _periodo(self) -> tuple[str | None, str | None]:
+        inicio = self._ler_data(self.ent_inicio, "inicial")
+        fim = self._ler_data(self.ent_fim, "final")
+        if inicio and fim and inicio > fim:
+            raise RegraNegocioError(
+                "A data final é anterior à inicial.\n\n"
+                "Confira o período antes de gerar o relatório.")
+        return inicio, fim
+
+    def _descrever_periodo(self):
+        try:
+            inicio, fim = self._periodo()
+        except RegraNegocioError:
+            self.lbl_periodo.configure(text="Período inválido.")
+            return
+        if not inicio and not fim:
+            self.lbl_periodo.configure(text="Sem recorte: todo o histórico.")
+        else:
+            de = inicio or "o começo"
+            ate = fim or "hoje"
+            self.lbl_periodo.configure(text=f"De {de} até {ate}.")
+
+    def _sufixo_periodo(self) -> str:
+        """Pedaço do nome do arquivo, para não sobrescrever o do mês passado."""
+        try:
+            inicio, fim = self._periodo()
+        except RegraNegocioError:
+            return ""
+        if not inicio and not fim:
+            return ""
+        return f"_{(inicio or 'inicio')}_a_{(fim or 'hoje')}"
 
     def _arquivo_destino(self, sugestao: str) -> str | None:
         return filedialog.asksaveasfilename(
@@ -1370,15 +1737,66 @@ class SecaoRelatorios(SecaoBase):
                               parent=self.painel)
 
     def _exportar_circulacao(self):
+        try:
+            inicio, fim = self._periodo()
+        except RegraNegocioError as e:
+            messagebox.showwarning("Período", str(e), parent=self.painel)
+            return
         nome = self._arquivo_destino(
-            f"circulacao_{datetime.now().strftime('%Y%m%d')}.csv")
+            f"circulacao{self._sufixo_periodo()}.csv")
         if not nome:
             return
-        rs = servicos.relatorio_circulacao(50)
+        rs = servicos.relatorio_circulacao(50, inicio, fim)
         linhas = [[i + 1, r["titulo"], r["emprestimos"]] for i, r in enumerate(rs)]
         self._escrever(nome, ["#", "Título", "Empréstimos"], linhas)
         messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
                               parent=self.painel)
+
+    def _exportar_movimentacao(self):
+        """O relatório que vai para a direção no fim do período."""
+        try:
+            inicio, fim = self._periodo()
+        except RegraNegocioError as e:
+            messagebox.showwarning("Período", str(e), parent=self.painel)
+            return
+        mov = servicos.relatorio_movimentacao(inicio, fim)
+        if not mov["emprestimos"]:
+            messagebox.showinfo(
+                "Nada no período",
+                "Nenhum empréstimo foi registrado no período escolhido.",
+                parent=self.painel)
+            return
+        nome = self._arquivo_destino(
+            f"movimentacao{self._sufixo_periodo()}.csv")
+        if not nome:
+            return
+
+        # Um CSV com três blocos: o resumo que responde a pergunta, e as
+        # duas quebras que explicam o número. Separar em três arquivos
+        # daria mais trabalho para quem só quer abrir e olhar.
+        linhas = [
+            ["RESUMO", "", ""],
+            ["Empréstimos no período", mov["emprestimos"], ""],
+            ["Devoluções no período", mov["devolucoes"], ""],
+            ["Devoluções com atraso", mov["com_atraso"],
+             f"{mov['taxa_atraso']}%"],
+            ["Multas lançadas (R$)", f"{mov['multa_total']:.2f}", ""],
+            ["Leitores diferentes", mov["leitores"], ""],
+            ["", "", ""],
+            ["POR MÊS", "Empréstimos", ""],
+        ]
+        linhas += [[m["mes"], m["total"], ""] for m in mov["por_mes"]]
+        linhas += [["", "", ""], ["POR TURMA", "Empréstimos", "Leitores"]]
+        linhas += [[t["turma"], t["total"], t["leitores"]]
+                   for t in mov["por_turma"]]
+
+        self._escrever(nome, ["", "", ""], linhas)
+        messagebox.showinfo(
+            "Pronto",
+            f"{mov['emprestimos']} empréstimo(s) e "
+            f"{mov['devolucoes']} devolução(ões) no período.\n\n"
+            f"Arquivo salvo em:\n{nome}",
+            parent=self.painel)
 
     def _exportar_inadimplentes(self):
         pendentes = servicos.relatorio_inadimplentes()
@@ -1820,10 +2238,8 @@ class SecaoConfig(SecaoBase):
                              "Brasão removido.", parent=self.painel)
 
     def _backup(self):
-        from datetime import datetime as _dt
-        import shutil
-        from .database import DB_PATH
-        sugestao = f"sigbef_backup_{_dt.now().strftime('%Y%m%d_%H%M')}.db"
+        from . import backup
+        sugestao = f"sigbef_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.db"
         destino = filedialog.asksaveasfilename(
             parent=self.painel,
             title="Salvar backup do banco de dados",
@@ -1834,7 +2250,11 @@ class SecaoConfig(SecaoBase):
         if not destino:
             return
         try:
-            shutil.copy2(DB_PATH, destino)
+            # Passa pelo mesmo caminho do backup automático, que usa a
+            # API do SQLite em vez de copiar o arquivo: com o banco em
+            # WAL, copiar o .db no meio de uma escrita gera uma cópia
+            # que abre mas está desatualizada.
+            backup.copiar(destino)
         except Exception as e:
             messagebox.showerror("Erro no backup",
                                    f"Não foi possível copiar o banco:\n{e}",
