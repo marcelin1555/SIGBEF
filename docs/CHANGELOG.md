@@ -2,7 +2,16 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado]
+## [1.7.1] — 2026-07-27
+
+Versão de desempenho: nenhuma função nova, nada mudou de lugar na tela.
+O sistema passou a aguentar **250 mil livros** onde antes começava a
+doer em 100 mil — e em 25 mil, se a turma inteira estivesse no celular
+ao mesmo tempo.
+
+**Atenção a quem integra outro sistema:** `GET /api/v1/livros` passou a
+responder em páginas. Quem varria o acervo numa chamada só precisa
+iterar `pagina` até `paginas`. Detalhes em `docs/API.md`.
 
 ### O acervo deixa de ser carregado inteiro
 

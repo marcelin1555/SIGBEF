@@ -21,9 +21,22 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.7.1',
+    data: '27 de julho de 2026',
+    destaque: true,
+    categorias: ['Robustez', 'API'],
+    itens: [
+      { cat: 'Robustez', texto: 'O sistema passa a aguentar acervos de até 250 mil livros, com a biblioteca inteira usando ao mesmo tempo: balcão, autoatendimento e uma turma no celular' },
+      { cat: 'Robustez', texto: 'A tela do acervo abre na hora mesmo em bibliotecas grandes, carregando por blocos em vez de montar a lista toda de uma vez' },
+      { cat: 'Robustez', texto: 'Empréstimo de balcão ficou mais rápido em acervos grandes: a busca do exemplar pelo número de tombo agora usa índice' },
+      { cat: 'Robustez', texto: 'Uma turma inteira consegue abrir o aplicativo no mesmo minuto sem receber "sem conexão com a biblioteca"' },
+      { cat: 'Robustez', texto: 'No aplicativo, o catálogo continua disponível enquanto uma nova sincronização acontece — e sobrevive a uma queda de rede no meio' },
+      { cat: 'API', texto: 'A rota do acervo passa a responder em páginas. Quem integra outro sistema precisa iterar as páginas; veja docs/API.md' },
+    ],
+  },
+  {
     numero: '1.7.0',
     data: '26 de julho de 2026',
-    destaque: true,
     categorias: ['Multiplataforma', 'API', 'Acervo', 'Interface'],
     itens: [
       { cat: 'Multiplataforma', texto: 'Aplicativo Android do aluno (v0.1): carteirinha digital com código de barras real, acervo, empréstimos e prazos no bolso — funcionando offline depois da primeira sincronização' },
