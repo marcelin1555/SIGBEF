@@ -54,6 +54,15 @@ interface LivroDao {
 
     @Query("DELETE FROM livros")
     suspend fun clearAll()
+
+    /**
+     * Remove livros específicos. Usado no fim da sincronização para
+     * tirar o que saiu do acervo, em vez de apagar tudo no começo: um
+     * acervo grande leva minutos para baixar, e apagar antes deixaria o
+     * aluno olhando uma biblioteca vazia esse tempo todo.
+     */
+    @Query("DELETE FROM livros WHERE id IN (:ids)")
+    suspend fun deletarPorIds(ids: List<Int>)
 }
 
 @Dao

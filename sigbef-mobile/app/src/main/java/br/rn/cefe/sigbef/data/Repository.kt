@@ -188,35 +188,37 @@ class SigbefRepository(
      * acervo grande virava um JSON de dezenas de MB, que o aparelho
      * tinha que segurar inteiro na memória antes de gravar a primeira
      * linha. Agora chega em blocos e cada bloco vai direto para o banco.
+     *
+     * Nada é apagado antes de começar. Cada livro que chega substitui o
+     * de mesmo id, e só no fim os que sumiram do acervo são removidos.
+     * Apagar tudo primeiro seria mais simples, mas um acervo grande leva
+     * minutos para descer, e nesse tempo o aluno veria uma biblioteca
+     * vazia — inclusive offline, se a rede caísse no meio.
      */
     suspend fun sincronizarAcervo(): Boolean {
         // Guarda o que já foi baixado da ficha completa para não perder
         // sinopse e tombo a cada sincronização.
         val jaBaixados = db.livroDao().listarTodosUmaVez()
             .associateBy { it.id }
+        val vistos = mutableSetOf<Int>()
 
         var pagina = 1
         var totalPaginas = 1
-        var algumaChegou = false
+        var completou = false
 
         while (pagina <= totalPaginas && pagina <= MAX_PAGINAS_ACERVO) {
             val resposta = runCatching {
                 api().buscarLivros(q = "", pagina = pagina,
                                    limite = LIVROS_POR_PAGINA)
-            }.getOrElse { return algumaChegou }
-            if (!resposta.isSuccessful) return algumaChegou
-            val corpo = resposta.body() ?: return algumaChegou
+            }.getOrElse { return vistos.isNotEmpty() }
+            if (!resposta.isSuccessful) return vistos.isNotEmpty()
+            val corpo = resposta.body() ?: return vistos.isNotEmpty()
 
-            // A limpeza só acontece depois que a primeira página chega:
-            // se a rede cair no meio, o aluno fica com o catálogo antigo
-            // em vez de ficar sem catálogo nenhum.
-            if (pagina == 1) {
-                totalPaginas = corpo.paginas.coerceAtLeast(1)
-                db.livroDao().clearAll()
-            }
+            if (pagina == 1) totalPaginas = corpo.paginas.coerceAtLeast(1)
 
             db.livroDao().insertLivros(
                 corpo.livros.map { dto ->
+                    vistos += dto.id
                     val anterior = jaBaixados[dto.id]
                     LivroEntity(
                         id = dto.id,
@@ -234,11 +236,19 @@ class SigbefRepository(
                     )
                 }
             )
-            algumaChegou = true
             if (corpo.livros.isEmpty()) break
+            if (pagina >= totalPaginas) completou = true
             pagina++
         }
-        return algumaChegou
+
+        // A limpeza só faz sentido se o acervo veio inteiro. Numa
+        // sincronização interrompida, o que não chegou não sumiu do
+        // acervo — só não deu tempo de baixar.
+        if (completou) {
+            val sumiram = jaBaixados.keys - vistos
+            sumiram.chunked(500).forEach { db.livroDao().deletarPorIds(it) }
+        }
+        return vistos.isNotEmpty()
     }
 
     /** Completa a ficha de um livro (sinopse e tombo do 1º exemplar). */
