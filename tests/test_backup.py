@@ -171,15 +171,27 @@ class TestAutomatico(BackupTestCase):
         backup.executar_se_necessario()
         self.assertTrue(get_config("BACKUP_ULTIMO"))
 
+    def pasta_impossivel(self) -> str:
+        """Um caminho que não pode virar pasta em nenhum sistema.
+
+        Antes isto era `Z:/pasta/que/nao/existe`, que só falha no
+        Windows: no Linux `Z:` é um nome de pasta comum, o mkdir criava
+        e o backup dava certo — o teste passava aqui e quebrava no CI.
+        Um arquivo no meio do caminho falha nos dois.
+        """
+        arquivo = backup.Path(DB_PATH).parent / "isto_e_um_arquivo.txt"
+        arquivo.write_text("não sou pasta")
+        return str(arquivo / "backups")
+
     def test_pasta_invalida_nao_derruba_o_fechamento(self):
         """A bibliotecária não pode ficar presa numa janela de erro na
         hora de ir embora."""
-        set_config("BACKUP_PASTA", "Z:/pasta/que/nao/existe")
+        set_config("BACKUP_PASTA", self.pasta_impossivel())
         self.criar_livro()
         self.assertIsNone(backup.executar_se_necessario())
 
     def test_falha_fica_registrada_na_auditoria(self):
-        set_config("BACKUP_PASTA", "Z:/pasta/que/nao/existe")
+        set_config("BACKUP_PASTA", self.pasta_impossivel())
         self.criar_livro()
         backup.executar_se_necessario()
         with db_cursor() as cur:
