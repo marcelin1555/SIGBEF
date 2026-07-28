@@ -241,6 +241,24 @@ pelo atraso mais antigo.
 
 O CSV pode ser aberto no Excel ou Google Sheets para análises adicionais.
 
+### Devolver vários livros de uma vez
+
+No fim do ano a turma inteira devolve junto, e confirmar um por um leva
+a tarde toda.
+
+1. Menu lateral → **Empréstimos abertos** → **Devolver em lote**.
+2. Vá passando o leitor. Cada leitura já devolve — não aparece janela de
+   confirmação.
+3. A lista mostra o que foi devolvido, de quem era, o atraso e a multa.
+4. Se um livro for recusado (código errado, ou exemplar que não estava
+   emprestado), aparece um aviso em vermelho e **a pilha continua**.
+   Resolva aquele no fim.
+5. Clique em **Concluir** para ver o total.
+
+No resumo, preste atenção na lista **"separar da estante"**: são os
+livros que alguém está esperando na fila. Esses não voltam para a
+prateleira — vão para o balcão de reservados.
+
 ### Tirar um exemplar do acervo
 
 Um livro voltou rasgado, o aluno perdeu, ou a coleção ficou

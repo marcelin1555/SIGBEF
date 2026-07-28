@@ -33,6 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import br.rn.cefe.sigbef.aviso.AvisoDevolucao
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
 import br.rn.cefe.sigbef.ui.components.BarcodeView
@@ -198,6 +209,10 @@ fun DigitalCardScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
+            AvisoDevolucaoOpcao()
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             // Encerrar a sessão neste aparelho. Antes não havia como sair:
             // o acesso do aluno ficava para sempre e, num celular
             // compartilhado, o próximo via os dados do anterior.
@@ -222,6 +237,71 @@ fun DigitalCardScreen(
             ) {
                 Text("Trocar de biblioteca", color = SigbefMuted, fontSize = 13.sp)
             }
+        }
+    }
+}
+
+/**
+ * Interruptor do aviso de devolução.
+ *
+ * Fica aqui, junto de "sair da conta", porque é a única tela do app com
+ * ajustes do próprio aluno — criar uma tela de configurações inteira
+ * para uma opção seria mais navegação do que ajuste.
+ *
+ * A permissão de notificação é pedida **ao ligar**, não na abertura do
+ * app: pedir antes de existir o motivo é o jeito mais rápido de levar
+ * um "não" permanente.
+ */
+@Composable
+private fun AvisoDevolucaoOpcao() {
+    val contexto = LocalContext.current
+    var ligado by remember { mutableStateOf(AvisoDevolucao.ligado(contexto)) }
+
+    val pedirPermissao = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        // Sem permissão o aviso não teria como aparecer, então o
+        // interruptor volta sozinho em vez de ficar ligado mentindo.
+        ligado = concedida
+        AvisoDevolucao.definir(contexto, concedida)
+    }
+
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White,
+        border = BorderStroke(1.dp, SigbefLine),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Avisar quando o livro estiver para vencer",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Um aviso no celular na véspera da devolução. " +
+                        "Funciona sem internet.",
+                    color = SigbefMuted,
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Switch(
+                checked = ligado,
+                onCheckedChange = { querLigar ->
+                    if (querLigar && !AvisoDevolucao.temPermissao(contexto)) {
+                        pedirPermissao.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        ligado = querLigar
+                        AvisoDevolucao.definir(contexto, querLigar)
+                    }
+                }
+            )
         }
     }
 }

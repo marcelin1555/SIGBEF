@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import br.rn.cefe.sigbef.aviso.AvisoDevolucao
 import br.rn.cefe.sigbef.data.SigbefRepository
 import br.rn.cefe.sigbef.model.Livro
 import br.rn.cefe.sigbef.model.Screen
@@ -50,6 +51,10 @@ import br.rn.cefe.sigbef.ui.theme.SigbefWarning
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // O agendamento do aviso de devolução não sobrevive a algumas
+        // situações (limpeza do sistema, troca de aparelho). Recriar na
+        // abertura é barato e garante que quem ligou continue avisado.
+        AvisoDevolucao.restaurarSeLigado(this)
         // Ícones da barra de status em branco: ela fica sobre o cabeçalho
         // em gradiente navy, e no padrão claro o relógio e a bateria
         // sumiriam no azul escuro.

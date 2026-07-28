@@ -75,6 +75,14 @@ interface EmprestimoDao {
 
     @Query("DELETE FROM emprestimos")
     suspend fun clearAll()
+
+    /**
+     * Leitura pontual para o aviso de vencimento. O worker roda fora da
+     * tela e precisa de uma consulta que termina, não de um Flow que
+     * fica aberto esperando mudanças.
+     */
+    @Query("SELECT * FROM emprestimos WHERE devolvido = 0")
+    suspend fun listarAbertosUmaVez(): List<EmprestimoEntity>
 }
 
 @Dao

@@ -20,6 +20,17 @@
         android:required="false" />
 
     <!--
+        Aviso de devolução. O app já guarda os prazos no cache, então a
+        verificação é local: não precisa de rede, nem do servidor da
+        escola ligado, e funciona em casa e no fim de semana.
+
+        A permissão é pedida quando o aluno liga o aviso nas
+        configurações, não na abertura do app. E o aviso nasce
+        desligado, como toda função opcional do SIGBEF.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
         allowBackup desligado: o aparelho guarda o acesso do aluno e os
         dados da carteirinha. Não faz sentido esse conteúdo sair do
         celular numa cópia de segurança da nuvem.

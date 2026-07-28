@@ -712,6 +712,145 @@ class DialogoEditarUsuario(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: devolução em lote
+# ---------------------------------------------------------------------------
+class DialogoDevolucaoEmLote(tk.Toplevel):
+    """Devolver uma pilha de livros sem uma janela por livro.
+
+    É o fluxo do fim do ano letivo, quando a turma inteira devolve de
+    uma vez. O caminho normal (duplo clique na linha, confirmar) é bom
+    para um livro e insuportável para trinta.
+
+    Nada de confirmação item a item: cada leitura já devolve e a linha
+    aparece na lista. O resumo, com as multas somadas, fica para o fim.
+    """
+
+    def __init__(self, parent, sessao: Sessao, ao_fechar=None):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.ao_fechar = ao_fechar
+        self.devolvidos: list[dict] = []
+        self.recusados = 0
+
+        self.title("Devolução em lote")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 760, 560)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Devolução em lote",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text=("Vá passando o leitor nos livros. Cada leitura "
+                               "devolve na hora — sem confirmar um a um."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 14))
+
+        linha = ttk.Frame(wrap)
+        linha.pack(fill="x")
+        ttk.Label(linha, text="Código ou tombo:").pack(side="left")
+        self.ent = ttk.Entry(linha, width=30, font=("Segoe UI", 13))
+        self.ent.pack(side="left", padx=8, ipady=4)
+        self.ent.bind("<Return>", lambda e: self._devolver())
+        self.ent.focus_set()
+        ttk.Button(linha, text="Devolver", style="Primario.TButton",
+                    command=self._devolver).pack(side="left")
+
+        self.lbl_ultimo = ttk.Label(wrap, text="", style="Hint.TLabel",
+                                      wraplength=700, justify="left")
+        self.lbl_ultimo.pack(anchor="w", pady=(10, 0))
+
+        cols = ("titulo", "quem", "atraso", "multa")
+        self.tree = ttk.Treeview(wrap, columns=cols, show="headings",
+                                  height=13)
+        for c, t, w in [("titulo", "Título", 300), ("quem", "Estava com", 190),
+                        ("atraso", "Atraso", 90), ("multa", "Multa", 100)]:
+            self.tree.heading(c, text=t)
+            self.tree.column(c, width=w, anchor="w")
+        self.tree.tag_configure("atrasado", background="#FDECEA",
+                                 foreground=tema.COR_ERRO)
+        self.tree.pack(fill="both", expand=True, pady=(10, 0))
+
+        self.lbl_total = ttk.Label(wrap, text="Nenhum livro devolvido ainda.",
+                                     style="Card.TLabel",
+                                     font=("Segoe UI Semibold", 11))
+        self.lbl_total.pack(anchor="w", pady=(12, 0))
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(fill="x", pady=(12, 0))
+        ttk.Button(rodape, text="Concluir", style="Primario.TButton",
+                    command=self._concluir).pack(side="right")
+
+    def _devolver(self):
+        codigo = self.ent.get().strip()
+        if not codigo:
+            return
+        try:
+            r = servicos.realizar_devolucao(codigo_exemplar=codigo,
+                                             operador_id=self.sessao.id)
+        except RegraNegocioError as e:
+            # Um livro recusado não pode parar a pilha: a bibliotecária
+            # segue devolvendo os outros e resolve esse no fim.
+            self.recusados += 1
+            self.lbl_ultimo.configure(text=f"{codigo}: {e}",
+                                        foreground=tema.COR_ERRO)
+            self.ent.delete(0, tk.END)
+            self.ent.focus_set()
+            return
+
+        self.devolvidos.append(r)
+        dias = r.get("dias_atraso", 0)
+        multa = r.get("multa", 0) or 0
+        self.tree.insert(
+            "", 0,
+            values=(r["titulo"], r.get("usuario") or "",
+                    f"{dias} dia(s)" if dias else "—",
+                    reais(multa) if multa else "—"),
+            tags=("atrasado",) if dias else ())
+
+        aviso = ""
+        if r.get("reservado_para"):
+            # Não pode voltar para a estante: alguém está esperando.
+            aviso = (f"  ⚠ SEPARAR para {r['reservado_para']}")
+        self.lbl_ultimo.configure(
+            text=f"{r['titulo']} devolvido."
+                  + (f" Multa: {reais(multa)}." if multa else "")
+                  + aviso,
+            foreground=tema.COR_AVISO if (multa or aviso)
+                       else tema.COR_SUCESSO)
+        self.ent.delete(0, tk.END)
+        self.ent.focus_set()
+        self._atualizar_total()
+
+    def _atualizar_total(self):
+        total_multa = sum((d.get("multa") or 0) for d in self.devolvidos)
+        atrasados = sum(1 for d in self.devolvidos if d.get("dias_atraso"))
+        texto = f"{len(self.devolvidos)} livro(s) devolvido(s)"
+        if atrasados:
+            texto += f" — {atrasados} com atraso, {reais(total_multa)} em multa"
+        if self.recusados:
+            texto += f" · {self.recusados} não devolvido(s)"
+        self.lbl_total.configure(text=texto)
+
+    def _concluir(self):
+        if self.devolvidos:
+            total_multa = sum((d.get("multa") or 0) for d in self.devolvidos)
+            separar = [d for d in self.devolvidos if d.get("reservado_para")]
+            resumo = f"{len(self.devolvidos)} livro(s) devolvido(s)."
+            if total_multa:
+                resumo += f"\nMultas lançadas: {reais(total_multa)}."
+            if separar:
+                resumo += ("\n\nSeparar da estante (têm fila de espera):\n"
+                           + "\n".join(f"• {d['titulo']} — "
+                                        f"{d['reservado_para']}"
+                                        for d in separar))
+            messagebox.showinfo("Devolução concluída", resumo, parent=self)
+        if self.ao_fechar:
+            self.ao_fechar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
 # Diálogo: baixa de um exemplar
 # ---------------------------------------------------------------------------
 class DialogoBaixaExemplar(tk.Toplevel):

@@ -21,9 +21,21 @@ function Badge({ texto }) {
 
 const versoes = [
   {
-    numero: '1.8.0',
+    numero: '1.9.0',
     data: '27 de julho de 2026',
     destaque: true,
+    categorias: ['Acervo', 'Multiplataforma'],
+    itens: [
+      { cat: 'Acervo', texto: 'Devolução em lote: no fim do ano, vá passando o leitor na pilha inteira — cada leitura devolve na hora, sem confirmar um por um' },
+      { cat: 'Acervo', texto: 'Um livro recusado no meio da pilha não interrompe os outros; o aviso aparece e a devolução continua' },
+      { cat: 'Acervo', texto: 'No fim, os livros que têm fila de espera aparecem separados: são os que não voltam para a estante' },
+      { cat: 'Multiplataforma', texto: 'O aplicativo avisa quando o prazo de devolução está chegando. O cálculo é feito no próprio celular: funciona em casa, no fim de semana e sem internet' },
+      { cat: 'Multiplataforma', texto: 'O aviso nasce desligado — o aluno liga no cartão digital, quando quiser' },
+    ],
+  },
+  {
+    numero: '1.8.0',
+    data: '27 de julho de 2026',
     categorias: ['Acervo', 'Interface', 'Robustez'],
     itens: [
       { cat: 'Acervo', texto: 'Conferência do acervo: passe o leitor na estante e receba a lista do que não foi encontrado, do que está emprestado e do que apareceu sem estar previsto' },

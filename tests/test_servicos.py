@@ -353,6 +353,74 @@ class TestBaixaDeExemplar(ServicosTestCase):
             self.assertEqual(cur.fetchone()[0], 1)
 
 
+class TestDevolucaoEmLote(ServicosTestCase):
+    """A devolução em lote chama `realizar_devolucao` uma vez por leitura.
+
+    O que se garante aqui é o contrato de que a tela depende: um erro no
+    meio da pilha não pode derrubar as devoluções seguintes, e o retorno
+    precisa dizer de quem era o livro — numa pilha de trinta, a
+    bibliotecária não tem o aluno na frente.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.livro = self.criar_livro(titulo="Turma Toda", exemplares=4)
+        self.criar_usuario(matricula="a1", nome="Ana")
+        self.criar_usuario(matricula="a2", nome="Bruno")
+        self.cod = [e[1] for e in self.livro["exemplares"]]
+
+    def test_devolucao_diz_de_quem_era_o_livro(self):
+        servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                      matricula_usuario="a1")
+        r = servicos.realizar_devolucao(codigo_exemplar=self.cod[0])
+        self.assertEqual(r["usuario"], "Ana")
+        self.assertEqual(r["matricula"], "a1")
+
+    def test_erro_no_meio_nao_impede_as_seguintes(self):
+        for cod, mat in [(self.cod[0], "a1"), (self.cod[1], "a2")]:
+            servicos.realizar_emprestimo(codigo_exemplar=cod,
+                                          matricula_usuario=mat)
+
+        devolvidos, recusados = [], 0
+        for codigo in [self.cod[0], "CODIGO-INEXISTENTE",
+                       self.cod[2], self.cod[1]]:
+            try:
+                devolvidos.append(
+                    servicos.realizar_devolucao(codigo_exemplar=codigo))
+            except RegraNegocioError:
+                recusados += 1
+
+        self.assertEqual(len(devolvidos), 2)
+        self.assertEqual(recusados, 2)   # inexistente e não emprestado
+
+    def test_multas_do_lote_somam(self):
+        emp = servicos.realizar_emprestimo(codigo_exemplar=self.cod[0],
+                                            matricula_usuario="a1")
+        servicos.realizar_emprestimo(codigo_exemplar=self.cod[1],
+                                      matricula_usuario="a2")
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        ((date.today() - timedelta(days=4)).isoformat(),
+                         emp["id"]))
+
+        total = sum((servicos.realizar_devolucao(codigo_exemplar=c)["multa"]
+                     or 0) for c in self.cod[:2])
+        self.assertGreater(total, 0)
+
+    def test_livro_com_fila_avisa_para_separar(self):
+        """Na pilha do fim de ano, é o que não pode voltar para a estante."""
+        from sigbef import reservas
+        for i in range(4):
+            servicos.realizar_emprestimo(codigo_exemplar=self.cod[i],
+                                          matricula_usuario="a1"
+                                          if i < 3 else "a2")
+        u = servicos.localizar_usuario("a2")
+        reservas.criar_reserva(self.livro["livro_id"], u["id"])
+
+        r = servicos.realizar_devolucao(codigo_exemplar=self.cod[0])
+        self.assertEqual(r["reservado_para"], "Bruno")
+
+
 class TestRelatoriosPorPeriodo(ServicosTestCase):
     """Recorte de datas nos relatórios.
 

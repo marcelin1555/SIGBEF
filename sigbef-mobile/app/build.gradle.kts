@@ -12,8 +12,8 @@ android {
     applicationId = "br.rn.cefe.sigbef"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
-    versionName = "0.1"
+    versionCode = 2
+    versionName = "0.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -113,6 +113,7 @@ dependencies {
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.lifecycle.viewmodel.compose)
   // implementation(libs.androidx.navigation.compose)
+  implementation(libs.androidx.work.runtime)
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   // implementation(libs.coil.compose)

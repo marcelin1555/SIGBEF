@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.8.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.9.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -655,11 +655,6 @@ Funcionalidades planejadas para versões futuras:
 
 ### Próxima versão
 
-- [ ] **Devolução em lote** — no fim do ano a turma inteira devolve de
-      uma vez, e hoje é um código de barras por vez
-- [ ] **Aviso de vencimento no celular** — o aplicativo já guarda as
-      datas no cache, então dá para avisar sem rede e sem servidor
-      ligado; nasce desligado, como toda função opcional
 - [ ] **Empréstimo de coleção para o professor** — livro-texto para a
       turma inteira num registro só, em vez de trinta. Depende de
       definir com a bibliotecária se o exemplar fica no nome do
@@ -693,6 +688,9 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Devolução em lote** no balcão, para a pilha do fim de ano (v1.9.0)
+- [x] **Aviso de devolução no celular**, calculado localmente: funciona
+      sem internet e com a biblioteca fechada (v1.9.0)
 - [x] **Conferência do acervo (inventário)**: passar o leitor na estante
       e receber a lista do que não foi encontrado, do que está
       emprestado e do que apareceu sem estar previsto (v1.8.0)
@@ -781,7 +779,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.8.0** — Julho/2026
+**SIGBEF v1.9.0** — Julho/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

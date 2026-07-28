@@ -2,6 +2,41 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.9.0] — 2026-07-27
+
+Duas funções para os dois extremos do ano letivo: a pilha de devoluções
+do fim de ano, e o aluno que esquece o prazo o ano inteiro.
+
+### Devolução em lote
+
+- Botão novo em **Empréstimos abertos**. Vai passando o leitor: cada
+  leitura devolve na hora, sem uma janela de confirmação por livro
+- A lista mostra título, de quem era, o atraso e a multa conforme
+  aparecem; o resumo com o total sai no fim
+- **Um livro recusado não para a pilha.** Código errado ou exemplar que
+  não estava emprestado viram um aviso na tela, e a bibliotecária segue
+  devolvendo os outros
+- No fim, os livros com fila de espera aparecem numa lista à parte: são
+  os que não podem voltar para a estante
+- A devolução passou a informar **de quem era o livro**. Numa devolução
+  avulsa a bibliotecária tem o aluno na frente; numa pilha de trinta,
+  não
+
+### Aviso de devolução no celular (aplicativo v0.2)
+
+- O app avisa quando o prazo está chegando. A verificação é **local**, a
+  partir dos prazos que ele já guarda: funciona em casa, no fim de
+  semana, sem internet e com a biblioteca fechada
+- Um livro: diz qual e quando vence. Vários: diz quantos, porque a
+  notificação não comporta a lista
+- Livro já atrasado também entra — quem esqueceu ontem precisa mais do
+  lembrete que quem vence amanhã
+- **Nasce desligado**, com o interruptor na tela do cartão. A permissão
+  de notificação é pedida ao ligar, não na abertura do app
+- Limite conhecido: se o aluno renovar no balcão, o app só descobre na
+  próxima sincronização e pode avisar sem necessidade. Avisar demais é
+  melhor que avisar tarde
+
 ## [1.8.0] — 2026-07-27
 
 Quatro funções que não estavam em requisito nenhum, mas que a operação

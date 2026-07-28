@@ -776,8 +776,15 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._renovar).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Quitar multa",
                     command=self._quitar).pack(side="left")
+        ttk.Button(op, text="Devolver em lote",
+                    command=self._devolver_em_lote).pack(side="left",
+                                                          padx=(8, 0))
         ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
                   style="Hint.TLabel").pack(side="left", padx=(16, 0))
+
+    def _devolver_em_lote(self):
+        DialogoDevolucaoEmLote(self.painel, self.sessao,
+                                ao_fechar=self.atualizar)
 
     def _selecionar_exemplar_emprestimo(self):
         d = DialogoSelecionarExemplar(self.painel)

@@ -1197,10 +1197,12 @@ def realizar_devolucao(*, codigo_exemplar: str,
     with db_cursor() as cur:
         cur.execute(
             """SELECT e.id, e.usuario_id, e.data_prevista,
-                       ex.id AS exemplar_id, l.id AS livro_id, l.titulo
+                       ex.id AS exemplar_id, l.id AS livro_id, l.titulo,
+                       u.nome AS usuario, u.matricula
                FROM emprestimo e
                JOIN exemplar ex ON ex.id = e.exemplar_id
                JOIN livro l ON l.id = ex.livro_id
+               JOIN usuario u ON u.id = e.usuario_id
                WHERE ex.id = ? AND e.data_devolucao IS NULL""",
             (ex_localizado["id"],),
         )
@@ -1234,6 +1236,11 @@ def realizar_devolucao(*, codigo_exemplar: str,
                          f"emp_id={emp['id']}; multa={multa:.2f}; atraso={dias_atraso}d")
     return {
         "titulo": emp["titulo"],
+        # Quem estava com o livro. Numa devolução avulsa a bibliotecária
+        # tem o aluno na frente; numa pilha de trinta, não — e é ela que
+        # precisa saber de quem era cada um.
+        "usuario": emp["usuario"],
+        "matricula": emp["matricula"],
         "dias_atraso": dias_atraso,
         "multa": multa,
         "reservado_para": promovida["usuario_nome"] if promovida else None,
