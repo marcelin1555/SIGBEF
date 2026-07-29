@@ -114,6 +114,39 @@ class AvisoRegrasTest {
         assertEquals("Livros atrasados", aviso.titulo)
     }
 
+    @Test
+    fun `mistura de atrasado e a vencer nao chama tudo de prazo chegando`() {
+        // Apareceu no teste em aparelho: o título dizia "Livros
+        // atrasados" e o texto falava em "prazo chegando", o que
+        // subestima o livro que já venceu.
+        val vencendo = AvisoRegras.aVencer(
+            listOf(emprestimo("Atrasado", "2026-07-20"),
+                   emprestimo("Amanha", "2026-07-28")), hoje, 1)
+        val aviso = AvisoRegras.montarMensagem(vencendo, hoje)!!
+        assertTrue(aviso.texto, aviso.texto.contains("1 livro atrasado"))
+        assertTrue(aviso.texto, aviso.texto.contains("1 outro vencendo"))
+    }
+
+    @Test
+    fun `so atrasados diz que estao atrasados`() {
+        val vencendo = AvisoRegras.aVencer(
+            listOf(emprestimo("Um", "2026-07-20"),
+                   emprestimo("Dois", "2026-07-21")), hoje, 1)
+        val aviso = AvisoRegras.montarMensagem(vencendo, hoje)!!
+        assertTrue(aviso.texto.contains("2 livros estão atrasados"))
+    }
+
+    @Test
+    fun `plural correto com varios atrasados e um a vencer`() {
+        val vencendo = AvisoRegras.aVencer(
+            listOf(emprestimo("Um", "2026-07-20"),
+                   emprestimo("Dois", "2026-07-21"),
+                   emprestimo("Tres", "2026-07-28")), hoje, 1)
+        val aviso = AvisoRegras.montarMensagem(vencendo, hoje)!!
+        assertTrue(aviso.texto, aviso.texto.contains("2 livros atrasados"))
+        assertTrue(aviso.texto, aviso.texto.contains("1 outro vencendo"))
+    }
+
     // ------------------------------------------------------------ data
     @Test
     fun `entende o formato do servidor e o brasileiro`() {

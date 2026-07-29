@@ -190,14 +190,29 @@ object AvisoRegras {
             }
             return Aviso("Devolução de livro", "\"${emp.livroTitulo}\" $quando.")
         }
+        // Os três casos precisam de frases diferentes. Dizer "prazo
+        // chegando" com um livro já vencido no meio subestima o
+        // problema, e foi o que apareceu no teste em aparelho: o título
+        // avisava "Livros atrasados" e o texto falava em prazo chegando.
         val atrasados = vencendo.count { (_, prazo) -> prazo.isBefore(hoje) }
-        val titulo = if (atrasados > 0) "Livros atrasados" else "Devolução de livros"
-        val texto = if (atrasados == vencendo.size)
-            "${vencendo.size} livros estão atrasados. Passe na biblioteca."
-        else
-            "${vencendo.size} livros com prazo chegando. Toque para ver."
-        return Aviso(titulo, texto)
+        val aVencer = vencendo.size - atrasados
+        return when {
+            atrasados == 0 -> Aviso(
+                "Devolução de livros",
+                "${vencendo.size} livros com prazo chegando. Toque para ver.")
+            aVencer == 0 -> Aviso(
+                "Livros atrasados",
+                "${vencendo.size} livros estão atrasados. Passe na biblioteca.")
+            else -> Aviso(
+                "Livros atrasados",
+                "${plural(atrasados, "livro atrasado", "livros atrasados")} " +
+                    "e ${plural(aVencer, "outro vencendo", "outros vencendo")}. " +
+                    "Passe na biblioteca.")
+        }
     }
+
+    private fun plural(n: Int, singular: String, plural: String) =
+        if (n == 1) "$n $singular" else "$n $plural"
 
     /** O cache guarda a data como texto; aceita os formatos que aparecem. */
     fun interpretarData(texto: String): LocalDate? {
