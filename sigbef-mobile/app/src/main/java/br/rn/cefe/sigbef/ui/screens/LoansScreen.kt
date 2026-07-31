@@ -357,7 +357,7 @@ private fun ActiveLoanCard(
                             containerColor = SigbefNavy
                         )
                     ) {
-                        Text("Renovar por mais uma semana", fontSize = 14.sp)
+                        Text("Renovar empréstimo", fontSize = 14.sp)
                     }
 
                     emp.podeRenovar -> Text(

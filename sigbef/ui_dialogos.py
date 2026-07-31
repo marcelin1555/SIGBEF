@@ -630,7 +630,15 @@ class DialogoEditarUsuario(tk.Toplevel):
         self.sessao = sessao
         self.usuario_id = usuario_id
         self.ao_salvar = ao_salvar
-        self.usuario = servicos.obter_usuario(usuario_id)
+        try:
+            self.usuario = servicos.obter_usuario(usuario_id)
+        except RegraNegocioError:
+            # O Toplevel já foi criado por super().__init__(); sem isto,
+            # uma exceção aqui (usuário excluído por outra sessão entre a
+            # listagem e o clique em "Editar") deixa uma janela vazia
+            # flutuando na tela que ninguém sabe fechar.
+            self.destroy()
+            raise
         self.title("Editar usuário")
         self.transient(parent)
         self.grab_set()

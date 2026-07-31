@@ -82,6 +82,20 @@ class TestCriarReserva(ReservasTestCase):
         with self.assertRaises(RegraNegocioError):
             reservas.criar_reserva(99999, self.ub["id"])
 
+    def test_posicao_nao_conta_reserva_ja_promovida(self):
+        """Reserva com exemplar separado não é mais "fila": não deve
+        inflar a posição de quem chega depois (bug: a consulta original
+        contava toda reserva ATIVA, promovida ou não)."""
+        r1 = reservas.criar_reserva(self.livro_id, self.ub["id"])
+        servicos.realizar_devolucao(codigo_exemplar=self.codigo)
+        self.assertIsNotNone(self.reserva(r1["id"])["exemplar_id"])
+
+        r2 = reservas.criar_reserva(self.livro_id, self.uc["id"])
+        self.assertEqual(r2["posicao"], 1)
+        # Bate com o que "Minhas reservas" mostra pro mesmo usuário.
+        minhas = reservas.listar_reservas_usuario(self.uc["id"])
+        self.assertEqual(minhas[0]["posicao"], 1)
+
 
 class TestDevolucaoPromoveFila(ReservasTestCase):
     def test_devolucao_separa_exemplar_pro_primeiro_da_fila(self):

@@ -9,6 +9,7 @@ Uso:
 """
 from tests.base import SigbefTestCase
 
+import sqlite3
 import unittest
 from datetime import date, timedelta
 
@@ -136,6 +137,83 @@ class TestPorMes(EstatisticasTestCase):
         serie = servicos.emprestimos_por_mes(6)
         self.assertEqual(serie[-1]["emprestimos"], 1)
         self.assertEqual(sum(s["emprestimos"] for s in serie), 2)
+
+
+class TestSeriePorMesNosDiasDificeis(unittest.TestCase):
+    """A técnica SQL de `emprestimos_por_mes`, testada nos dias em que ela
+    quebrava: 29, 30 e 31.
+
+    `date('now','-N months')` no SQLite não recua N meses no calendário —
+    ele mantém o dia do mês e, se esse dia não existir no mês de destino,
+    **rola para a frente** em vez de voltar. Em 31/07 menos 1 mês, o
+    SQLite tenta "30/06", que não existe (junho tem 30 dias, mas o
+    problema é achar o dia 31), e a rolagem devolve 01/07 — o mesmo mês
+    de origem. Dois meses viravam o mesmo rótulo, e a soma dobrava.
+
+    Como o teste roda em datas reais, ele não pode depender de "hoje"
+    calhar de ser um desses dias. Por isso fixa a data com um literal em
+    vez de `'now'` — é a mesma expressão SQL do código de produção
+    (`servicos.emprestimos_por_mes`), só com a âncora sob controle.
+    """
+
+    def serie_para(self, ancora: str, meses: int) -> list[str]:
+        con = sqlite3.connect(":memory:")
+        try:
+            rows = con.execute(
+                """WITH RECURSIVE seq(n) AS (
+                       SELECT 0 UNION ALL SELECT n + 1 FROM seq WHERE n < ?
+                   )
+                   SELECT strftime('%Y-%m',
+                                   date(?, 'start of month',
+                                        '-' || (? - n) || ' months')
+                          ) AS mes FROM seq""",
+                (meses - 1, ancora, meses - 1),
+            ).fetchall()
+            return [r[0] for r in rows]
+        finally:
+            con.close()
+
+    def mes_esperado(self, ano: int, mes: int, voltar: int) -> str:
+        """Calendário em Python puro, sem passar pelo SQLite: é o
+        oráculo independente contra quem o SQL é conferido."""
+        indice = (ano * 12 + (mes - 1)) - voltar
+        return f"{indice // 12:04d}-{indice % 12 + 1:02d}"
+
+    def test_dias_31_30_29_28_no_ano(self):
+        casos = [
+            ("2026-01-31", 2026, 1),   # janeiro -> dezembro (31 -> 31, ok)
+            ("2026-03-31", 2026, 3),   # março -> fevereiro (31 -> 28)
+            ("2026-05-31", 2026, 5),   # maio -> abril (31 -> 30)
+            ("2026-07-31", 2026, 7),   # o caso que pegou o teste real
+            ("2026-08-31", 2026, 8),   # agosto -> julho (31 -> 31, ok)
+            ("2026-10-31", 2026, 10),  # outubro -> setembro (31 -> 30)
+            ("2026-12-31", 2026, 12),  # dezembro -> novembro (31 -> 30)
+            ("2028-02-29", 2028, 2),   # 29 de fevereiro, ano bissexto
+            ("2026-04-30", 2026, 4),   # dia 30 também rola em fev
+        ]
+        for ancora, ano, mes in casos:
+            with self.subTest(ancora=ancora):
+                serie = self.serie_para(ancora, 6)
+                esperado = [self.mes_esperado(ano, mes, v)
+                            for v in range(5, -1, -1)]
+                self.assertEqual(serie, esperado)
+                self.assertEqual(len(set(serie)), 6,
+                                 "mês duplicado: dois meses colapsaram "
+                                 "no mesmo rótulo")
+
+    def test_um_ano_inteiro_de_ancoras_dificeis(self):
+        """Varre os 12 últimos dias de cada mês de um ano — não só os
+        dias 31 — porque a rolagem também acontece a partir do 30 e do 29
+        indo para fevereiro."""
+        for mes in range(1, 13):
+            ultimo_dia = (date(2026, mes % 12 + 1, 1) - timedelta(days=1)
+                          if mes < 12 else date(2026, 12, 31))
+            ancora = ultimo_dia.isoformat()
+            with self.subTest(ancora=ancora):
+                serie = self.serie_para(ancora, 12)
+                self.assertEqual(len(serie), 12)
+                self.assertEqual(len(set(serie)), 12,
+                                 f"âncora {ancora} produziu mês duplicado")
 
 
 class TestResumo(EstatisticasTestCase):

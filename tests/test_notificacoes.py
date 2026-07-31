@@ -1,6 +1,8 @@
 """Testes dos avisos de vencimento por e-mail (sigbef/notificacoes.py)."""
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 from tests.base import SigbefTestCase
 
 from sigbef import notificacoes, servicos
@@ -94,6 +96,32 @@ class TestTransporteReal(NotificacoesTestCase):
         set_config("SMTP_HOST", "")
         with self.assertRaises(RegraNegocioError):
             notificacoes.enviar_avisos()  # transporte real, sem host
+
+    def test_queda_no_meio_do_lote_nao_reenvia_quem_ja_recebeu(self):
+        """Bug: uma conexão SMTP que cai no meio do lote não podia fazer
+        quem já recebeu o aviso ser avisado de novo na próxima tentativa
+        — antes, o registro só acontecia depois do lote inteiro dar
+        certo, então uma falha parcial apagava o progresso já feito."""
+        set_config("SMTP_HOST", "smtp.escola.br")
+        self.criar_usuario(matricula="a2", nome="Bia Mail",
+                           email="bia@escola.br")
+        liv = self.criar_livro(titulo="Segundo Prazo", exemplares=1)
+        servicos.realizar_emprestimo(codigo_exemplar=liv["exemplares"][0][1],
+                                     matricula_usuario="a2")
+        self.assertEqual(len(notificacoes.emails_pendentes()), 2)
+
+        fake_smtp = MagicMock()
+        fake_smtp.has_extn.return_value = False
+        fake_smtp.send_message.side_effect = [None, OSError("conexão caiu")]
+
+        with patch("sigbef.notificacoes.smtplib.SMTP", return_value=fake_smtp):
+            with self.assertRaises(RegraNegocioError):
+                notificacoes.enviar_avisos()
+
+        self.assertEqual(fake_smtp.send_message.call_count, 2)
+        # O primeiro já saiu antes da queda: não pode voltar a aparecer
+        # como pendente, senão a próxima tentativa manda de novo.
+        self.assertEqual(len(notificacoes.emails_pendentes()), 1)
 
 
 class TestAvisoReserva(NotificacoesTestCase):

@@ -128,30 +128,58 @@ def _montar_mensagem_reserva(aviso: dict) -> EmailMessage:
 # ---------------------------------------------------------------------------
 # Envio
 # ---------------------------------------------------------------------------
-def _transporte_smtp(mensagens: list[EmailMessage]) -> None:
-    """Envia via SMTP configurado (STARTTLS quando o servidor oferece)."""
-    host = (get_config("SMTP_HOST") or "").strip()
-    if not host:
-        raise RegraNegocioError(
-            "Configure o servidor SMTP em Configurações antes de enviar "
-            "(host, porta e credenciais do e-mail da biblioteca).")
-    porta = _config_int("SMTP_PORTA", 587)
-    usuario = (get_config("SMTP_USUARIO") or "").strip()
-    senha = get_config("SMTP_SENHA") or ""
-    try:
-        with smtplib.SMTP(host, porta, timeout=15) as smtp:
-            smtp.ehlo()
-            if smtp.has_extn("starttls"):
-                smtp.starttls()
-                smtp.ehlo()
-            if usuario:
-                smtp.login(usuario, senha)
-            for msg in mensagens:
-                smtp.send_message(msg)
-    except (smtplib.SMTPException, OSError) as e:
-        raise RegraNegocioError(
-            f"Falha ao enviar pelos dados SMTP configurados: {e}. "
-            "Confira host, porta, usuário e senha em Configurações.")
+class _ConexaoSMTP:
+    """Abre a conexão uma vez e manda mensagens uma a uma.
+
+    Existe pra quem chama poder registrar cada envio assim que ele
+    acontece, em vez de só no fim do lote inteiro: se a conexão cair no
+    meio (depois de enviar 3 de 10, por exemplo), os 3 primeiros não
+    podem ser reenviados na próxima tentativa — e antes eram, porque
+    nada tinha sido gravado ainda.
+    """
+
+    def __init__(self):
+        host = (get_config("SMTP_HOST") or "").strip()
+        if not host:
+            raise RegraNegocioError(
+                "Configure o servidor SMTP em Configurações antes de "
+                "enviar (host, porta e credenciais do e-mail da "
+                "biblioteca).")
+        self._host = host
+        self._porta = _config_int("SMTP_PORTA", 587)
+        self._usuario = (get_config("SMTP_USUARIO") or "").strip()
+        self._senha = get_config("SMTP_SENHA") or ""
+        self._smtp: Optional[smtplib.SMTP] = None
+
+    def __enter__(self) -> "_ConexaoSMTP":
+        try:
+            self._smtp = smtplib.SMTP(self._host, self._porta, timeout=15)
+            self._smtp.ehlo()
+            if self._smtp.has_extn("starttls"):
+                self._smtp.starttls()
+                self._smtp.ehlo()
+            if self._usuario:
+                self._smtp.login(self._usuario, self._senha)
+        except (smtplib.SMTPException, OSError) as e:
+            raise RegraNegocioError(
+                f"Falha ao enviar pelos dados SMTP configurados: {e}. "
+                "Confira host, porta, usuário e senha em Configurações.")
+        return self
+
+    def __exit__(self, *exc) -> None:
+        if self._smtp is not None:
+            try:
+                self._smtp.quit()
+            except Exception:
+                pass
+
+    def enviar(self, msg: EmailMessage) -> None:
+        try:
+            self._smtp.send_message(msg)
+        except (smtplib.SMTPException, OSError) as e:
+            raise RegraNegocioError(
+                f"Falha ao enviar pelos dados SMTP configurados: {e}. "
+                "Confira host, porta, usuário e senha em Configurações.")
 
 
 def enviar_avisos(
@@ -162,9 +190,11 @@ def enviar_avisos(
     disponível) de uma vez.
 
     Retorna {"enviados": total, "vencimento": n, "reserva": m}.
-    `transporte` permite injetar um envio alternativo (testes). O
-    registro só acontece se o envio inteiro der certo, então uma falha
-    permite tentar de novo sem perder ninguém.
+    `transporte` permite injetar um envio alternativo (testes) — nesse
+    caso o registro segue em lote, tudo ou nada. No envio real, cada
+    mensagem é registrada assim que sai (ver `_ConexaoSMTP`): o que já
+    foi enviado não volta a aparecer como pendente, e só quem não saiu
+    continua pendente pra próxima tentativa.
     """
     if not avisos_ativos():
         raise RegraNegocioError(
@@ -175,24 +205,40 @@ def enviar_avisos(
     if not venc and not res:
         return {"enviados": 0, "vencimento": 0, "reserva": 0}
 
-    mensagens = ([_montar_mensagem(a) for a in venc]
-                 + [_montar_mensagem_reserva(a) for a in res])
-    (transporte or _transporte_smtp)(mensagens)
+    itens = ([("VENCIMENTO", a["emprestimo_id"], _montar_mensagem(a))
+              for a in venc]
+             + [("RESERVA", a["reserva_id"], _montar_mensagem_reserva(a))
+                for a in res])
 
-    with db_cursor() as cur:
-        for a in venc:
-            cur.execute(
-                "INSERT INTO notificacao(emprestimo_id, tipo) "
-                "VALUES (?, 'VENCIMENTO')",
-                (a["emprestimo_id"],),
-            )
-        for a in res:
-            cur.execute(
-                "INSERT INTO notificacao_reserva(reserva_id) VALUES (?)",
-                (a["reserva_id"],),
-            )
-    total = len(venc) + len(res)
+    enviados_venc = enviados_res = 0
+
+    def registrar(tipo: str, chave: int) -> None:
+        nonlocal enviados_venc, enviados_res
+        with db_cursor() as cur:
+            if tipo == "VENCIMENTO":
+                cur.execute(
+                    "INSERT INTO notificacao(emprestimo_id, tipo) "
+                    "VALUES (?, 'VENCIMENTO')", (chave,))
+                enviados_venc += 1
+            else:
+                cur.execute(
+                    "INSERT INTO notificacao_reserva(reserva_id) VALUES (?)",
+                    (chave,))
+                enviados_res += 1
+
+    if transporte is not None:
+        transporte([msg for _, _, msg in itens])
+        for tipo, chave, _ in itens:
+            registrar(tipo, chave)
+    else:
+        with _ConexaoSMTP() as conexao:
+            for tipo, chave, msg in itens:
+                conexao.enviar(msg)
+                registrar(tipo, chave)
+
+    total = enviados_venc + enviados_res
     registrar_auditoria(executor_id, "EMAIL_AVISOS",
-                         f"enviados={total}; vencimento={len(venc)}; "
-                         f"reserva={len(res)}")
-    return {"enviados": total, "vencimento": len(venc), "reserva": len(res)}
+                         f"enviados={total}; vencimento={enviados_venc}; "
+                         f"reserva={enviados_res}")
+    return {"enviados": total, "vencimento": enviados_venc,
+            "reserva": enviados_res}

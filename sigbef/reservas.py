@@ -134,8 +134,13 @@ def criar_reserva(livro_id: int, usuario_id: int) -> dict:
         )
         reserva_id = cur.lastrowid
         cur.execute(
+            # Só conta quem ainda está na fila de verdade — reserva já
+            # promovida (com exemplar separado) não tira a vez de
+            # ninguém, senão o aluno via uma posição inflada e diferente
+            # da que a tela "Minhas reservas" mostra pra ele um instante
+            # depois (listar_reservas_usuario já filtra assim).
             "SELECT COUNT(*) AS n FROM reserva "
-            "WHERE livro_id = ? AND status = 'ATIVA'",
+            "WHERE livro_id = ? AND status = 'ATIVA' AND exemplar_id IS NULL",
             (livro_id,),
         )
         posicao = cur.fetchone()["n"]

@@ -1589,15 +1589,25 @@ def emprestimos_por_mes(meses: int = 12) -> list[dict]:
     Meses sem empréstimo nenhum entram com zero: um buraco no gráfico
     conta uma história (férias, greve, biblioteca fechada) que a linha
     pulando o mês esconderia.
+
+    O deslocamento de meses sempre parte do primeiro dia do mês
+    (`'start of month'`), nunca do dia de hoje direto. Sem isso, no dia
+    31 de um mês, `date('now', '-1 months')` cai num mês sem dia 31 (ex.:
+    30/06) e o SQLite **rola para a frente**, não para trás — devolvendo
+    01/07 em vez de 30/06. O resultado: dois meses diferentes colapsavam
+    no mesmo rótulo (e um terceiro sumia), dobrando a contagem exibida.
+    Só acontece nos dias 29, 30 ou 31, o que fez o defeito passar
+    despercebido em meses de teste mais curtos.
     """
+    offset = f"-{int(meses) - 1} months"
     with db_cursor() as cur:
         cur.execute(
             """SELECT strftime('%Y-%m', data_emprestimo) AS mes,
                        COUNT(*) AS emprestimos
                  FROM emprestimo
-                WHERE data_emprestimo >= date('now','localtime',?)
+                WHERE data_emprestimo >= date('now','localtime','start of month',?)
                 GROUP BY mes ORDER BY mes""",
-            (f"-{int(meses)} months",),
+            (offset,),
         )
         achados = {r["mes"]: r["emprestimos"] for r in cur.fetchall()}
 
@@ -1607,7 +1617,8 @@ def emprestimos_por_mes(meses: int = 12) -> list[dict]:
                    SELECT 0 UNION ALL SELECT n + 1 FROM seq WHERE n < ?
                )
                SELECT strftime('%Y-%m',
-                               date('now','localtime', '-' || (? - n) || ' months')
+                               date('now','localtime','start of month',
+                                    '-' || (? - n) || ' months')
                       ) AS mes FROM seq""",
             (int(meses) - 1, int(meses) - 1),
         )
