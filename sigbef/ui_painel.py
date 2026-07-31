@@ -101,7 +101,11 @@ class PainelPrincipal(tk.Tk):
         corpo = tk.Frame(self, bg=tema.COR_FUNDO)
         corpo.pack(fill="both", expand=True)
 
-        sidebar = tk.Frame(corpo, bg=tema.COR_PRIMARIA, width=240)
+        # 240 cortava a letra final de "Empréstimos abertos" (o rótulo
+        # mais largo da sidebar) em telas com escala do Windows acima de
+        # 100%, porque o Tk não redimensiona frames de largura fixa
+        # junto com a fonte.
+        sidebar = tk.Frame(corpo, bg=tema.COR_PRIMARIA, width=264)
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 

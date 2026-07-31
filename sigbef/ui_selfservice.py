@@ -354,19 +354,28 @@ class TerminalAutoatendimento(tk.Tk):
         wrap = tk.Frame(frame, bg=tema.COR_FUNDO)
         wrap.pack(fill="both", expand=True, padx=40, pady=20)
 
+        hoje = datetime.now().strftime("%Y-%m-%d")
         for emp in emprestimos:
+            # O aluno vê "Há N em atraso" no topo, mas até aqui não
+            # tinha como saber QUAL dos livros da lista é o atrasado —
+            # tinha que comparar a data de cabeça. Mesmo destaque em
+            # vermelho que o balcão já usa para "Empréstimos abertos".
+            atrasado = emp["data_prevista"] < hoje
             card = tk.Frame(wrap, bg=tema.COR_CARD,
-                             highlightbackground=tema.COR_BORDA,
-                             highlightthickness=1)
+                             highlightbackground=(tema.COR_ERRO if atrasado
+                                                  else tema.COR_BORDA),
+                             highlightthickness=(2 if atrasado else 1))
             card.pack(fill="x", pady=8)
             tk.Label(card, bg=tema.COR_CARD, text=emp["titulo"],
                      anchor="w", font=("Segoe UI Semibold", 16)
                      ).pack(fill="x", padx=20, pady=(16, 4))
             info = (f"Código: {emp['codigo_barras']}    "
                     f"Empréstimo: {emp['data_emprestimo'][:10]}    "
-                    f"Devolver até: {emp['data_prevista']}")
+                    f"Devolver até: {emp['data_prevista']}"
+                    + ("    ATRASADO" if atrasado else ""))
             tk.Label(card, bg=tema.COR_CARD, text=info, anchor="w",
-                     fg="#3B4350", font=("Segoe UI", 11)
+                     fg=(tema.COR_ERRO if atrasado else "#3B4350"),
+                     font=("Segoe UI", 11, "bold" if atrasado else "normal")
                      ).pack(fill="x", padx=20, pady=(0, 14))
 
         return frame

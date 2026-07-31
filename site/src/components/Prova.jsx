@@ -60,11 +60,6 @@ export default function Prova() {
           ))}
         </div>
 
-        <p className="text-center text-gray-500 text-sm mb-10">
-          Na versão <span className="font-semibold text-gray-700">1.4.0</span> (jul/2026): importação de
-          acervo por planilha, etiquetas em massa e cartão de biblioteca do aluno.
-        </p>
-
         <figure className="bg-blue-50 border-l-4 border-[#2E75B6] rounded-xl p-6 sm:p-8">
           <blockquote className="text-gray-700 text-lg sm:text-xl italic leading-relaxed mb-4">
             "Antes eu levava 15 minutos pra achar um livro. Agora levo 5 segundos."

@@ -48,7 +48,11 @@ export default function Nav() {
         </button>
       </div>
 
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-72' : 'max-h-0'}`}>
+      {/* inert quando fechado: sem isso, os links continuam focáveis por
+          teclado/leitor de tela mesmo com o menu visualmente recolhido
+          (max-h-0), porque overflow-hidden só corta a exibição. */}
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${open ? 'max-h-72' : 'max-h-0'}`}
+        inert={!open}>
         <div className="border-t border-gray-100 bg-white px-4 py-3 flex flex-col gap-1">
           {links.map(({ to, label }) => (
             <NavLink key={to} to={to} onClick={() => setOpen(false)}
