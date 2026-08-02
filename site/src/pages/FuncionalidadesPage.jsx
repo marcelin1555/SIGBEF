@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Funcionalidades from '../components/Funcionalidades'
+import Plataformas from '../components/Plataformas'
 import Comparativo from '../components/Comparativo'
 
 export default function FuncionalidadesPage() {
@@ -17,6 +18,7 @@ export default function FuncionalidadesPage() {
       </div>
 
       <Funcionalidades />
+      <Plataformas />
       <Comparativo />
 
       {/* cta */}

@@ -2056,7 +2056,7 @@ class SecaoConfig(SecaoBase):
         self.ent_api_porta.grid(row=0, column=1, sticky="w", padx=12)
         ttk.Label(api_form, text="Token completo:", style="Card.TLabel"
                   ).grid(row=1, column=0, sticky="w", pady=3)
-        self.ent_api_token = ttk.Entry(api_form, width=50)
+        self.ent_api_token = ttk.Entry(api_form, width=50, show="•")
         self.ent_api_token.grid(row=1, column=1, sticky="w", padx=12)
         ttk.Label(api_form,
                   text="acervo + dados de leitores e circulação",
@@ -2064,12 +2064,22 @@ class SecaoConfig(SecaoBase):
                   ).grid(row=2, column=1, sticky="w", padx=12)
         ttk.Label(api_form, text="Token de consulta:", style="Card.TLabel"
                   ).grid(row=3, column=0, sticky="w", pady=(8, 3))
-        self.ent_api_token_consulta = ttk.Entry(api_form, width=50)
+        self.ent_api_token_consulta = ttk.Entry(api_form, width=50, show="•")
         self.ent_api_token_consulta.grid(row=3, column=1, sticky="w", padx=12)
         ttk.Label(api_form,
                   text="só o acervo público (sem dados de alunos)",
                   style="CardHint.TLabel"
                   ).grid(row=4, column=1, sticky="w", padx=12)
+        # Os tokens dão acesso a dados de leitores por rede; deixá-los em
+        # texto puro na tela é o tipo de coisa que vaza numa captura de
+        # tela ou por cima do ombro. "Copiar completo" já cobre quem
+        # precisa levar o token pra outro lugar sem nunca precisar lê-lo.
+        self.var_mostrar_token = tk.BooleanVar(value=False)
+        ttk.Checkbutton(api_form, text="Mostrar tokens",
+                        variable=self.var_mostrar_token,
+                        command=self._alternar_visibilidade_token
+                        ).grid(row=5, column=1, sticky="w", padx=12,
+                               pady=(6, 0))
         self._refrescar_token_api()
 
         botoes_api = ttk.Frame(integ, style="CardInner.TFrame")
@@ -2349,6 +2359,16 @@ class SecaoConfig(SecaoBase):
             ent.delete(0, "end")
             ent.insert(0, token or "(gerado ao ativar)")
             ent.configure(state="readonly")
+        # Um token novo some de novo por baixo dos pontinhos: mostrar o
+        # token trocado sem ninguém pedir seria o mesmo vazamento que o
+        # "Mostrar tokens" existe para evitar.
+        self.var_mostrar_token.set(False)
+        self._alternar_visibilidade_token()
+
+    def _alternar_visibilidade_token(self):
+        caractere = "" if self.var_mostrar_token.get() else "•"
+        self.ent_api_token.configure(show=caractere)
+        self.ent_api_token_consulta.configure(show=caractere)
 
     def _refrescar_aparelhos(self):
         from .auth import sessoes_app_ativas
