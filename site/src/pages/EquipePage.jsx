@@ -4,10 +4,16 @@ const linha_do_tempo = [
   { ano: 'jan/26', evento: 'Marcello identifica o problema, a biblioteca do CEFE controlava tudo em planilha, e começa o SIGBEF durante as aulas de Banco de Dados.' },
   { ano: 'mar/26', evento: 'Primeira versão funcional testada na biblioteca do CEFE com a bibliotecária Jaqueline Dantas.' },
   { ano: 'abr/26', evento: 'A equipe DLJ4 se forma: Júlia e Maria Laura entram no projeto para o desafio do Sebrae.' },
-  { ano: 'jun/26', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
+  { ano: 'mai/26', evento: 'SIGBEF v1.2.0 lançado com instalador Windows, kiosk e sistema de multas.' },
   { ano: 'jun/26', evento: 'v1.3.0: site oficial multi-página no ar, com ícones e novo hero.' },
   { ano: 'jul/26', evento: 'v1.4.0: importação de acervo por CSV, cartão do aluno, etiquetas em massa e edição de usuários.' },
   { ano: 'jul/26', evento: 'v1.5.0: distribuição multiplataforma, com pacotes para Windows, Linux e macOS em cada release.' },
+  { ano: 'jul/26', evento: 'v1.6.0: reservas com fila de espera e API REST somente leitura, para outros sistemas da escola consultarem o acervo.' },
+  { ano: 'jul/26', evento: 'v1.6.2: identidade visual completa, com brasão da escola e temas de cor personalizáveis.' },
+  { ano: 'jul/26', evento: 'A equipe apresenta o SIGBEF no V Seminário e II Colóquio de EPT da Rede Estadual do RN, em Natal — e sai de lá com os primeiros convites de outras escolas.' },
+  { ano: 'jul/26', evento: 'v1.7.0: aplicativo Android do aluno — carteirinha digital, empréstimos e prazos no bolso, funcionando offline.' },
+  { ano: 'jul/26', evento: 'v1.8.0: conferência do acervo, baixa de exemplar individual e backup automático do banco de dados.' },
+  { ano: 'jul/26', evento: 'v1.9.0: devolução em lote no balcão e aviso de vencimento no celular do aluno.' },
 ]
 
 export default function EquipePage() {
