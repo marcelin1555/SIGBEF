@@ -68,6 +68,7 @@ db.py
 
 # --- Artefatos locais do Claude/Cowork (não versionar) ---
 .claude/
+.agents/
 skills-lock.json
 .git/index.broken*
 
