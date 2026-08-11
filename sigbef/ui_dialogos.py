@@ -92,6 +92,116 @@ class DialogoSobre(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: resetar o sistema (apaga tudo)
+# ---------------------------------------------------------------------------
+class DialogoResetarSistema(tk.Toplevel):
+    """Confirmação em duas camadas pra ação mais destrutiva do sistema.
+
+    Não basta um "sim/não": exige digitar a frase exata antes do botão
+    de confirmar fazer qualquer coisa. É o único jeito de apagar tudo, e
+    "tudo" inclui a própria conta de quem clicou — por isso o programa
+    fecha logo depois, em vez de tentar continuar numa sessão que já não
+    existe mais no banco.
+    """
+
+    FRASE_CONFIRMACAO = "APAGAR TUDO"
+
+    def __init__(self, parent, sessao: Sessao):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.title("Resetar sistema")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 520, 420)
+        self._construir()
+
+    def _construir(self):
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Resetar sistema",
+                  style="Titulo.TLabel").pack(anchor="w")
+
+        from . import api
+        avisos = [
+            "• Todo o acervo, exemplares e categorias/editoras/autores",
+            "• Todos os usuários e o histórico de empréstimos e reservas",
+            "• Prazos, limites, multas, dados de SMTP e tokens da API "
+            "voltam ao padrão de fábrica",
+            "• O brasão da instituição é removido",
+        ]
+        if api.api_ativa():
+            avisos.append(
+                "• Aparelhos pareados (celulares) vão precisar ser "
+                "pareados de novo")
+        ttk.Label(
+            wrap,
+            text="Isto apaga permanentemente:",
+            style="Card.TLabel", font=("Segoe UI Semibold", 10)
+            ).pack(anchor="w", pady=(12, 4))
+        ttk.Label(wrap, text="\n".join(avisos), style="Hint.TLabel",
+                  justify="left").pack(anchor="w")
+        ttk.Label(
+            wrap,
+            text="Um backup é feito automaticamente antes de apagar "
+            "(as cópias anteriores em \"backups/\" também continuam lá). "
+            "Ainda assim, esta ação não tem \"desfazer\" dentro do "
+            "sistema.",
+            style="Hint.TLabel", wraplength=460, justify="left"
+            ).pack(anchor="w", pady=(12, 4))
+
+        ttk.Label(
+            wrap,
+            text=f'Digite "{self.FRASE_CONFIRMACAO}" para confirmar:',
+            style="Card.TLabel").pack(anchor="w", pady=(16, 4))
+        self.ent_confirmacao = ttk.Entry(wrap, width=30,
+                                          font=("Segoe UI", 10))
+        self.ent_confirmacao.pack(anchor="w")
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(fill="x", pady=(24, 0))
+        ttk.Button(botoes, text="Cancelar", command=self.destroy
+                   ).pack(side="right", padx=(8, 0))
+        ttk.Button(botoes, text="Apagar tudo",
+                   style="Perigo.TButton",
+                   command=self._confirmar).pack(side="right")
+
+    def _confirmar(self):
+        if self.ent_confirmacao.get().strip() != self.FRASE_CONFIRMACAO:
+            messagebox.showwarning(
+                "Confirmação necessária",
+                f'Digite exatamente "{self.FRASE_CONFIRMACAO}" no campo '
+                "para confirmar.",
+                parent=self)
+            return
+
+        from . import reset
+        try:
+            caminho_backup = reset.resetar_sistema()
+        except Exception as e:
+            messagebox.showerror(
+                "Resetar sistema",
+                f"Não foi possível concluir o reset: {e}\n\n"
+                "Nada foi apagado — o backup de segurança não pôde ser "
+                "feito, então a operação parou antes de mexer nos dados.",
+                parent=self)
+            return
+
+        messagebox.showinfo(
+            "Sistema resetado",
+            "Todos os dados foram apagados.\n\n"
+            f"Backup salvo em:\n{caminho_backup}\n\n"
+            "O programa vai fechar agora. Abra o SIGBEF de novo para "
+            "configurar o primeiro administrador.",
+            parent=self)
+        self.destroy()
+        # A sessão atual referencia um usuário que não existe mais no
+        # banco — a única saída limpa é encerrar o processo, não tentar
+        # continuar navegando pelo painel.
+        self.master.destroy()
+
+
+# ---------------------------------------------------------------------------
 # Base reutilizável: modal de busca + tabela + seleção
 # ---------------------------------------------------------------------------
 class DialogoBuscaSelecao(tk.Toplevel):
@@ -389,6 +499,124 @@ class DialogoLivro(tk.Toplevel):
             "exemplar(es).\nUse a aba 'Etiquetas' para imprimir os códigos de barras.",
             parent=self,
         )
+        if self.ao_salvar:
+            self.ao_salvar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: editar livro (só os dados do livro; exemplares têm fluxo próprio)
+# ---------------------------------------------------------------------------
+class DialogoEditarLivro(tk.Toplevel):
+    """Corrige título, autores, ISBN, editora, categoria, ano, edição e
+    sinopse de um livro já cadastrado.
+
+    Não mexe em exemplares, quantidade, tombo ou localização — cada um
+    desses tem seu próprio caminho (adicionar exemplares, baixa), e
+    misturar tudo numa tela só faria a bibliotecária alterar o acervo
+    por engano ao só corrigir um título digitado errado.
+    """
+
+    def __init__(self, parent, sessao: Sessao, livro_id: int,
+                 ao_salvar: Optional[Callable[[], None]] = None):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.livro_id = livro_id
+        self.ao_salvar = ao_salvar
+        try:
+            self.livro = servicos.detalhes_livro(livro_id)
+            if self.livro is None:
+                raise RegraNegocioError("Livro não encontrado.")
+        except RegraNegocioError:
+            # O Toplevel já foi criado por super().__init__(); sem isto,
+            # o livro ter sido excluído por outra sessão entre a
+            # listagem e o clique em "Editar" deixaria uma janela vazia
+            # flutuando na tela.
+            self.destroy()
+            raise
+        self.title("Editar livro")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 600, 660)
+        self._construir()
+
+    def _construir(self):
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Editar livro",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text="Corrige os dados do livro. Exemplares, "
+                  "tombo e quantidade não mudam aqui.",
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 16))
+
+        form = ttk.Frame(wrap)
+        form.pack(fill="x")
+
+        self._campos = {}
+        linhas = [
+            ("titulo", "Título *", 0, self.livro["titulo"]),
+            ("autores", "Autor(es) *  (separe por ;)", 1,
+             "; ".join(self.livro["autores"])),
+            ("isbn", "ISBN", 2, self.livro.get("isbn") or ""),
+            ("editora", "Editora", 3, self.livro.get("editora_nome") or ""),
+            ("categoria", "Categoria", 4, self.livro.get("categoria_nome") or ""),
+            ("ano", "Ano de publicação", 5,
+             str(self.livro["ano_publicacao"]) if self.livro.get("ano_publicacao") else ""),
+            ("edicao", "Edição", 6, self.livro.get("edicao") or ""),
+        ]
+        for chave, rotulo, linha, valor_inicial in linhas:
+            ttk.Label(form, text=rotulo).grid(
+                row=linha, column=0, sticky="w", pady=(8, 2))
+            ent = ttk.Entry(form, width=60, font=("Segoe UI", 10))
+            ent.insert(0, valor_inicial)
+            ent.grid(row=linha, column=1, sticky="ew", pady=(8, 2))
+            form.columnconfigure(1, weight=1)
+            self._campos[chave] = ent
+
+        ttk.Label(form, text="Sinopse").grid(row=7, column=0, sticky="nw",
+                                              pady=(8, 2))
+        self.txt_sinopse = tk.Text(form, height=6, width=50,
+                                    font=("Segoe UI", 10))
+        self.txt_sinopse.insert("1.0", self.livro.get("sinopse") or "")
+        self.txt_sinopse.grid(row=7, column=1, sticky="ew", pady=(8, 2))
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(fill="x", pady=(20, 0))
+        ttk.Button(botoes, text="Cancelar", command=self.destroy
+                   ).pack(side="right", padx=(8, 0))
+        ttk.Button(botoes, text="Salvar alterações",
+                   style="Primario.TButton",
+                   command=self._salvar).pack(side="right")
+
+    def _salvar(self):
+        try:
+            titulo = self._campos["titulo"].get().strip()
+            autores_raw = self._campos["autores"].get().strip()
+            autores = [a.strip() for a in autores_raw.split(";") if a.strip()]
+            ano_raw = self._campos["ano"].get().strip()
+            ano = int(ano_raw) if ano_raw.isdigit() else None
+            servicos.editar_livro(
+                self.livro_id,
+                titulo=titulo,
+                autores=autores,
+                isbn=self._campos["isbn"].get().strip(),
+                editora=self._campos["editora"].get().strip(),
+                categoria=self._campos["categoria"].get().strip(),
+                ano=ano,
+                edicao=self._campos["edicao"].get().strip(),
+                sinopse=self.txt_sinopse.get("1.0", "end").strip(),
+                usuario_id=self.sessao.id,
+            )
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self)
+            return
+        except ValueError:
+            messagebox.showwarning("Atenção",
+                                   "Verifique os campos numéricos.",
+                                   parent=self)
+            return
+
         if self.ao_salvar:
             self.ao_salvar()
         self.destroy()
@@ -935,6 +1163,73 @@ class DialogoBaixaExemplar(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: mudar a prateleira de um exemplar
+# ---------------------------------------------------------------------------
+class DialogoLocalizacaoExemplar(tk.Toplevel):
+    """Muda de lugar um exemplar já cadastrado.
+
+    Vale por exemplar, não pelo título: dois volumes do mesmo livro
+    podem estar em estantes diferentes, e é o exemplar que a pessoa tem
+    na mão quando percebe que ele está no lugar errado.
+    """
+
+    def __init__(self, parent, codigo: str, atual: str = "",
+                 ao_confirmar=None):
+        super().__init__(parent)
+        self.codigo = codigo
+        self.ao_confirmar = ao_confirmar
+        self.title("Mudar prateleira")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 520, 280)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Mudar prateleira",
+                  style="Titulo.TLabel").pack(anchor="w")
+
+        ex = servicos.localizar_exemplar(codigo)
+        titulo = ex["titulo"] if ex else "(exemplar não encontrado)"
+        ttk.Label(wrap, text=f"{titulo}\nTombo/código: {codigo}",
+                  style="Hint.TLabel", justify="left"
+                  ).pack(anchor="w", pady=(4, 16))
+
+        ttk.Label(wrap, text="Onde este exemplar fica agora?"
+                  ).pack(anchor="w")
+        self.ent_local = ttk.Entry(wrap, width=48, font=("Segoe UI", 10))
+        self.ent_local.insert(0, atual)
+        self.ent_local.pack(anchor="w", pady=(4, 2))
+        self.ent_local.focus_set()
+        ttk.Label(wrap, text="Ex.: Estante A, Prateleira 2. Deixe em branco "
+                  "para tirar a localização.",
+                  style="Hint.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text="A nova prateleira sai impressa na etiqueta "
+                  "deste exemplar.",
+                  style="Hint.TLabel", wraplength=460, justify="left"
+                  ).pack(anchor="w", pady=(8, 0))
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(fill="x", pady=(16, 0))
+        ttk.Button(rodape, text="Cancelar",
+                    command=self.destroy).pack(side="right")
+        ttk.Button(rodape, text="Salvar", style="Primario.TButton",
+                    command=self._confirmar).pack(side="right", padx=(0, 8))
+        self.ent_local.bind("<Return>", lambda e: self._confirmar())
+
+    def _confirmar(self):
+        try:
+            servicos.alterar_localizacao_exemplar(
+                self.codigo, self.ent_local.get())
+        except RegraNegocioError as e:
+            messagebox.showwarning("Não foi possível", str(e), parent=self)
+            return
+        if self.ao_confirmar:
+            self.ao_confirmar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
 class DialogoDetalhesLivro(tk.Toplevel):
@@ -1006,6 +1301,9 @@ class DialogoDetalhesLivro(tk.Toplevel):
                    style="Primario.TButton",
                    command=lambda: VisualizadorBarcodes(self, livro)
                    ).pack(side="left")
+        ttk.Button(botoes, text="Mudar prateleira",
+                   command=self._mudar_localizacao
+                   ).pack(side="left", padx=(8, 0))
         ttk.Button(botoes, text="Dar baixa no exemplar",
                    command=self._dar_baixa).pack(side="left", padx=(8, 0))
 
@@ -1033,6 +1331,18 @@ class DialogoDetalhesLivro(tk.Toplevel):
         valores = self.tree.item(sel[0])["values"]
         codigo = str(valores[1])
         DialogoBaixaExemplar(self, codigo, ao_confirmar=self._recarregar)
+
+    def _mudar_localizacao(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um exemplar",
+                                  "Escolha na lista o exemplar que mudou "
+                                  "de lugar.", parent=self)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        codigo, atual = str(valores[1]), str(valores[2] or "")
+        DialogoLocalizacaoExemplar(self, codigo, atual,
+                                    ao_confirmar=self._recarregar)
 
     def _recarregar(self):
         livro = servicos.detalhes_livro(self._livro_id)

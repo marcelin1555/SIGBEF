@@ -22,9 +22,11 @@ from .formato import data_br, data_hora_br, reais
 from .servicos import RegraNegocioError
 from .ui_dialogos import (
     DialogoDetalhesLivro,
+    DialogoEditarLivro,
     DialogoEditarUsuario,
     DialogoImportarCSV,
     DialogoLivro,
+    DialogoResetarSistema,
     DialogoSelecionarExemplar,
     DialogoSelecionarUsuario,
     DialogoUsuario,
@@ -327,6 +329,9 @@ class SecaoLivros(SecaoBase):
         ttk.Button(topo, text="Ver detalhes / código de barras",
                     command=self._detalhes
                     ).pack(side="right", padx=(0, 8))
+        ttk.Button(topo, text="Editar",
+                    command=self._editar
+                    ).pack(side="right", padx=(0, 8))
         ttk.Button(topo, text="Excluir do acervo",
                     command=self._excluir
                     ).pack(side="right", padx=(0, 8))
@@ -408,6 +413,25 @@ class SecaoLivros(SecaoBase):
         livro_id = int(self.tree.item(sel[0])["values"][0])
         DialogoDetalhesLivro(self.painel, livro_id)
 
+    def _editar(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um livro",
+                                  "Escolha um livro na lista.",
+                                  parent=self.painel)
+            return
+        if len(sel) > 1:
+            messagebox.showinfo("Selecione um livro",
+                                  "Escolha apenas um livro para editar.",
+                                  parent=self.painel)
+            return
+        livro_id = int(self.tree.item(sel[0])["values"][0])
+        try:
+            DialogoEditarLivro(self.painel, self.sessao, livro_id,
+                               ao_salvar=self.atualizar)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+
     def _excluir(self):
         sel = self.tree.selection()
         if not sel:
@@ -415,21 +439,58 @@ class SecaoLivros(SecaoBase):
                                   "Escolha um livro na lista.",
                                   parent=self.painel)
             return
-        valores = self.tree.item(sel[0])["values"]
-        livro_id, titulo = int(valores[0]), valores[1]
+
+        itens = [(int(self.tree.item(i)["values"][0]),
+                  self.tree.item(i)["values"][1]) for i in sel]
+
+        if len(itens) == 1:
+            livro_id, titulo = itens[0]
+            if not messagebox.askyesno(
+                    "Excluir do acervo",
+                    f'Excluir "{titulo}" do acervo?\n\n'
+                    "Os exemplares disponíveis serão baixados e o livro "
+                    "deixa de aparecer nas buscas. O histórico de "
+                    "empréstimos é preservado.",
+                    parent=self.painel):
+                return
+            try:
+                servicos.excluir_livro(livro_id, self.sessao.id)
+            except RegraNegocioError as e:
+                messagebox.showwarning("Atenção", str(e), parent=self.painel)
+            self.atualizar()
+            return
+
+        # Vários selecionados: um livro com empréstimo em aberto não pode
+        # travar os outros — cada um é tentado por si, e o resumo no fim
+        # diz o que passou e o que precisa de atenção manual.
         if not messagebox.askyesno(
                 "Excluir do acervo",
-                f'Excluir "{titulo}" do acervo?\n\n'
-                "Os exemplares disponíveis serão baixados e o livro deixa "
-                "de aparecer nas buscas. O histórico de empréstimos é "
-                "preservado.",
+                f"Excluir {len(itens)} livros do acervo?\n\n"
+                "Os exemplares disponíveis serão baixados e os livros "
+                "deixam de aparecer nas buscas. O histórico de "
+                "empréstimos é preservado.",
                 parent=self.painel):
             return
-        try:
-            servicos.excluir_livro(livro_id, self.sessao.id)
-        except RegraNegocioError as e:
-            messagebox.showwarning("Atenção", str(e), parent=self.painel)
+
+        falhas = []
+        excluidos = 0
+        for livro_id, titulo in itens:
+            try:
+                servicos.excluir_livro(livro_id, self.sessao.id)
+                excluidos += 1
+            except RegraNegocioError as e:
+                falhas.append(f"{titulo}: {e}")
+
         self.atualizar()
+        resumo = f"{excluidos} livro(s) excluído(s)."
+        if falhas:
+            resumo += (f"\n{len(falhas)} não excluído(s):\n"
+                       + "\n".join(falhas))
+            messagebox.showwarning("Exclusão em massa", resumo,
+                                   parent=self.painel)
+        else:
+            messagebox.showinfo("Exclusão em massa", resumo,
+                                parent=self.painel)
 
     def _etiquetas_massa(self):
         """Gera etiquetas de todos os exemplares da busca atual (ou do
@@ -2204,6 +2265,34 @@ class SecaoConfig(SecaoBase):
         ttk.Label(body,
                   text="As alterações de cor têm efeito após reiniciar o sistema.",
                   style="Hint.TLabel").pack(anchor="w", pady=(8, 0))
+
+        # ---------------- Zona de risco ----------------
+        # Sempre por último na tela, de propósito: é a última coisa que
+        # a bibliotecária deveria clicar sem pensar duas vezes.
+        ttk.Label(body, text="Zona de risco",
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        risco = ttk.Frame(body, style="Card.TFrame", padding=16)
+        risco.pack(fill="x")
+        linha_risco = ttk.Frame(risco, style="CardInner.TFrame")
+        linha_risco.pack(fill="x")
+        ttk.Label(
+            linha_risco,
+            text="Resetar sistema", style="Card.TLabel",
+            font=("Segoe UI Semibold", 10)
+            ).pack(anchor="w")
+        ttk.Label(
+            linha_risco,
+            text="Apaga acervo, usuários, empréstimos e configurações — "
+            "volta o sistema ao estado de instalação nova. Útil pra "
+            "tirar dados de teste antes de começar a usar de verdade.",
+            style="CardHint.TLabel", wraplength=560
+            ).pack(anchor="w", pady=(2, 10))
+        ttk.Button(linha_risco, text="Resetar sistema (apagar tudo)",
+                   style="Perigo.TButton",
+                   command=self._resetar_sistema).pack(anchor="w")
+
+    def _resetar_sistema(self):
+        DialogoResetarSistema(self.painel, self.sessao)
 
     def _salvar(self):
         from .database import set_config

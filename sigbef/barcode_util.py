@@ -146,14 +146,24 @@ def barcode_svg(codigo: str, altura_mm: float = 13.0, modulo_mm: float = 0.33,
 
 
 def _celula_etiqueta(titulo_e: str, ex: dict) -> str:
-    """Uma etiqueta (título já escapado + código de barras + tombo)."""
+    """Uma etiqueta: título, código de barras, tombo e prateleira.
+
+    A localização entra porque a etiqueta é lida na hora de **guardar** o
+    livro, não só na de emprestar — quem está devolvendo à estante
+    precisa saber para onde ele vai sem ter que abrir o sistema. Some
+    quando o exemplar não tem localização cadastrada, em vez de imprimir
+    um rótulo vazio.
+    """
     cod = ex.get("codigo_barras", "")
     tombo = html.escape(str(ex.get("numero_tombo") or ""))
+    local = html.escape(str(ex.get("localizacao") or "").strip())
+    linha_local = (f'<div class="et-local">{local}</div>' if local else "")
     svg = barcode_svg(cod)
     return ('<div class="etiqueta">'
             f'<div class="et-titulo">{titulo_e}</div>'
             f'<div class="et-barra">{svg}</div>'
             f'<div class="et-tombo">Tombo: {tombo}</div>'
+            f'{linha_local}'
             '</div>')
 
 
@@ -193,6 +203,10 @@ def _pagina_etiquetas(titulo_e: str, cels: list[str]) -> str:
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                margin-bottom: 1.5mm; }}
   .et-tombo {{ font-size: 10px; color: #333; margin-top: 1mm; }}
+  /* Em negrito e um pouco maior que o tombo: na hora de guardar o livro
+     na estante, a prateleira é a informação que a pessoa procura. */
+  .et-local {{ font-size: 11px; color: #111; font-weight: 600;
+              margin-top: 0.5mm; }}
   @media print {{
     body {{ margin: 8mm; }}
     .topo {{ display: none; }}

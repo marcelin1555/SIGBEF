@@ -118,6 +118,30 @@ class TestEtiquetasHtml(unittest.TestCase):
         self.assertIn("window.print()", html_pag)
         self.assertIn("<button", html_pag)
 
+    def test_prateleira_sai_na_etiqueta(self):
+        """Quem guarda o livro na estante lê a etiqueta, não o sistema."""
+        html_pag = barcode_util.etiquetas_html(
+            "Dom Casmurro",
+            [{"codigo_barras": "EX0001", "numero_tombo": "T-1",
+              "localizacao": "Estante A, Prateleira 2"}])
+        self.assertIn("Estante A, Prateleira 2", html_pag)
+
+    def test_sem_prateleira_nao_imprime_rotulo_vazio(self):
+        # A classe existe no CSS de qualquer jeito; o que não pode
+        # aparecer é a div em branco no corpo da etiqueta.
+        html_pag = barcode_util.etiquetas_html(
+            "Dom Casmurro",
+            [{"codigo_barras": "EX0001", "numero_tombo": "T-1"}])
+        self.assertNotIn('<div class="et-local">', html_pag)
+
+    def test_escapa_a_prateleira(self):
+        html_pag = barcode_util.etiquetas_html(
+            "Dom Casmurro",
+            [{"codigo_barras": "EX0001", "numero_tombo": "T-1",
+              "localizacao": "<script>alert(1)</script>"}])
+        self.assertIn("&lt;script&gt;", html_pag)
+        self.assertNotIn("<script>alert(1)</script>", html_pag)
+
 
 class TestEtiquetasLoteHtml(unittest.TestCase):
     """etiquetas_lote_html: etiquetas de vários livros de uma vez."""

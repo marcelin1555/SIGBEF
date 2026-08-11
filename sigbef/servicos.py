@@ -46,6 +46,22 @@ def _codigo_barras_unico(cur, tabela: str, gerador) -> str:
 # ---------------------------------------------------------------------------
 # Livros e Exemplares
 # ---------------------------------------------------------------------------
+def _validar_titulo_autores(titulo: str,
+                             autores: list[str]) -> tuple[str, list[str]]:
+    """Regra comum ao cadastro e à edição: título e ao menos um autor.
+
+    Compartilhada pra não deixar a mensagem de erro divergir entre os
+    dois caminhos com o tempo.
+    """
+    titulo = (titulo or "").strip()
+    if not titulo:
+        raise RegraNegocioError("Título é obrigatório.")
+    autores_limpos = [a.strip() for a in (autores or []) if a and a.strip()]
+    if not autores_limpos:
+        raise RegraNegocioError("Informe pelo menos um autor.")
+    return titulo, autores_limpos
+
+
 def cadastrar_livro(
     *,
     titulo: str,
@@ -111,12 +127,7 @@ def _inserir_livro_cur(
     cada exemplar (na ordem), em vez do tombo gerado automaticamente.
     Deve ter exatamente `quantidade_exemplares` itens.
     """
-    titulo = (titulo or "").strip()
-    if not titulo:
-        raise RegraNegocioError("Título é obrigatório.")
-    autores_limpos = [a.strip() for a in (autores or []) if a and a.strip()]
-    if not autores_limpos:
-        raise RegraNegocioError("Informe pelo menos um autor.")
+    titulo, autores_limpos = _validar_titulo_autores(titulo, autores)
     if quantidade_exemplares < 1:
         raise RegraNegocioError("Cadastre pelo menos um exemplar.")
     tombos_limpos = [t.strip() for t in (tombos or []) if t and t.strip()]
@@ -188,6 +199,66 @@ def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
     registrar_auditoria(usuario_id, "ADD_EXEMPLARES",
                          f"livro_id={livro_id}; novos={len(exemplares)}")
     return exemplares
+
+
+def editar_livro(
+    livro_id: int,
+    *,
+    titulo: str,
+    autores: list[str],
+    isbn: str = "",
+    editora: str = "",
+    categoria: str = "",
+    ano: Optional[int] = None,
+    edicao: str = "",
+    sinopse: str = "",
+    usuario_id: Optional[int] = None,
+) -> None:
+    """Corrige os dados de um livro já cadastrado.
+
+    Só os campos do livro (título, autores, ISBN, editora, categoria,
+    ano, edição, sinopse). Exemplares, quantidade, tombo e localização
+    têm fluxo próprio (`adicionar_exemplares`, baixa) e não são tocados
+    aqui — misturar os dois numa tela só faria a bibliotecária mudar o
+    acervo por engano ao só corrigir um título digitado errado.
+    """
+    titulo, autores_limpos = _validar_titulo_autores(titulo, autores)
+    with db_cursor() as cur:
+        cur.execute("SELECT id FROM livro WHERE id = ? AND ativo = 1",
+                    (livro_id,))
+        if not cur.fetchone():
+            raise RegraNegocioError("Livro não encontrado.")
+
+        editora = (editora or "").strip()
+        categoria = (categoria or "").strip()
+        editora_id = _upsert_nome(cur, "editora", editora) if editora else None
+        categoria_id = (_upsert_nome(cur, "categoria", categoria)
+                         if categoria else None)
+
+        cur.execute(
+            """UPDATE livro
+                  SET titulo = ?, isbn = ?, editora_id = ?, categoria_id = ?,
+                      ano_publicacao = ?, edicao = ?, sinopse = ?
+                WHERE id = ?""",
+            (titulo, isbn or None, editora_id, categoria_id, ano,
+             edicao or None, sinopse or None, livro_id),
+        )
+
+        # Autor não é dado do livro, é associação (N:N) — refaz do zero é
+        # mais simples e seguro que calcular a diferença entre a lista
+        # antiga e a nova. Um autor que ficou sem nenhum livro associado
+        # continua no catálogo (mesmo comportamento de sempre: `autor`
+        # nunca é limpo de órfãos em nenhum outro fluxo do sistema).
+        cur.execute("DELETE FROM livro_autor WHERE livro_id = ?", (livro_id,))
+        for nome_autor in autores_limpos:
+            autor_id = _upsert_nome(cur, "autor", nome_autor)
+            cur.execute(
+                "INSERT OR IGNORE INTO livro_autor(livro_id, autor_id) "
+                "VALUES (?, ?)",
+                (livro_id, autor_id),
+            )
+
+    registrar_auditoria(usuario_id, "EDICAO_LIVRO", f"livro_id={livro_id}")
 
 
 def listar_categorias() -> list[str]:
@@ -655,7 +726,8 @@ def listar_exemplares_para_etiquetas(termo: str = "") -> list[dict]:
     termo_like = f"%{termo.strip()}%" if termo else "%"
     with db_cursor() as cur:
         cur.execute(
-            """SELECT l.titulo, ex.codigo_barras, ex.numero_tombo
+            """SELECT l.titulo, ex.codigo_barras, ex.numero_tombo,
+                      ex.localizacao
                FROM exemplar ex
                JOIN livro l ON l.id = ex.livro_id
                WHERE l.ativo = 1 AND ex.status != 'BAIXADO'
@@ -783,6 +855,40 @@ def baixar_exemplar(codigo: str, motivo: str,
         "motivo": motivo,
         "estava_emprestado": bool(emp),
         "multa": multa,
+    }
+
+
+def alterar_localizacao_exemplar(codigo: str, localizacao: str,
+                                  usuario_id: Optional[int] = None) -> dict:
+    """Muda de prateleira um exemplar já cadastrado.
+
+    A localização era definida uma vez no cadastro e não tinha como
+    corrigir depois — mas estante muda: a biblioteca reorganiza, o livro
+    volta para o lugar errado, ou a prateleira foi digitada errada na
+    importação. Sem isto, o único caminho era excluir e recadastrar,
+    perdendo o histórico de empréstimos do exemplar.
+
+    Vale por exemplar, não pelo título: dois volumes do mesmo livro
+    podem estar em estantes diferentes.
+    """
+    ex = localizar_exemplar(codigo)
+    if not ex:
+        raise RegraNegocioError(
+            "Exemplar não encontrado. Confira o código de barras ou o tombo.")
+
+    localizacao = (localizacao or "").strip()
+    with db_cursor() as cur:
+        cur.execute("UPDATE exemplar SET localizacao = ? WHERE id = ?",
+                    (localizacao or None, ex["id"]))
+
+    registrar_auditoria(
+        usuario_id, "LOCALIZACAO_EXEMPLAR",
+        f"exemplar={ex['codigo_barras']}; localizacao={localizacao or '(vazia)'}")
+    return {
+        "exemplar_id": ex["id"],
+        "codigo_barras": ex["codigo_barras"],
+        "titulo": ex["titulo"],
+        "localizacao": localizacao,
     }
 
 

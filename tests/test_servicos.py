@@ -578,6 +578,130 @@ class TestExcluirLivro(ServicosTestCase):
         with self.assertRaises(RegraNegocioError):
             servicos.excluir_livro(res["livro_id"])
 
+    def test_exclusao_em_lote_um_com_emprestimo_nao_trava_os_outros(self):
+        """Como a tela faz: tenta cada um, um erro no meio não impede
+        os demais de serem excluídos."""
+        livre1 = self.criar_livro(titulo="Livre 1")
+        preso = self.criar_livro(titulo="Com empréstimo")
+        livre2 = self.criar_livro(titulo="Livre 2")
+        u = self.criar_usuario()
+        self.emprestar(preso["exemplares"][0][1], u["matricula"])
+
+        excluidos, falhas = 0, []
+        for res in (livre1, preso, livre2):
+            try:
+                servicos.excluir_livro(res["livro_id"])
+                excluidos += 1
+            except RegraNegocioError as e:
+                falhas.append(str(e))
+
+        self.assertEqual(excluidos, 2)
+        self.assertEqual(len(falhas), 1)
+        self.assertIsNone(servicos.detalhes_livro(livre1["livro_id"]))
+        self.assertIsNone(servicos.detalhes_livro(livre2["livro_id"]))
+        self.assertIsNotNone(servicos.detalhes_livro(preso["livro_id"]))
+
+
+class TestEditarLivro(ServicosTestCase):
+    """Corrigir os dados de um livro já cadastrado."""
+
+    def test_edita_titulo_categoria_e_persiste(self):
+        res = self.criar_livro(titulo="Titulo Errado", categoria="X")
+        servicos.editar_livro(
+            res["livro_id"], titulo="Título Certo",
+            autores=["Autora de Teste"], categoria="Y")
+        livro = servicos.detalhes_livro(res["livro_id"])
+        self.assertEqual(livro["titulo"], "Título Certo")
+        self.assertEqual(livro["categoria_nome"], "Y")
+
+    def test_erro_sem_titulo(self):
+        res = self.criar_livro()
+        with self.assertRaises(RegraNegocioError):
+            servicos.editar_livro(res["livro_id"], titulo="",
+                                  autores=["Alguém"])
+
+    def test_erro_sem_autor(self):
+        res = self.criar_livro()
+        with self.assertRaises(RegraNegocioError):
+            servicos.editar_livro(res["livro_id"], titulo="Título",
+                                  autores=[])
+
+    def test_troca_de_autores_nao_deixa_duplicata(self):
+        """Trocar a lista de autores limpa a associação antiga — não
+        soma a nova com a velha."""
+        res = self.criar_livro(autores=["Autora A", "Autora B"])
+        servicos.editar_livro(res["livro_id"], titulo="Título",
+                              autores=["Autora C"])
+        livro = servicos.detalhes_livro(res["livro_id"])
+        self.assertEqual(livro["autores"], ["Autora C"])
+
+    def test_livro_inexistente(self):
+        with self.assertRaises(RegraNegocioError):
+            servicos.editar_livro(99999, titulo="Título",
+                                  autores=["Alguém"])
+
+    def test_livro_excluido(self):
+        res = self.criar_livro()
+        servicos.excluir_livro(res["livro_id"])
+        with self.assertRaises(RegraNegocioError):
+            servicos.editar_livro(res["livro_id"], titulo="Título",
+                                  autores=["Alguém"])
+
+    def test_nao_mexe_em_exemplares_nem_quantidade(self):
+        res = self.criar_livro(exemplares=3)
+        antes = servicos.detalhes_livro(res["livro_id"])["exemplares"]
+        servicos.editar_livro(res["livro_id"], titulo="Outro Título",
+                              autores=["Autora de Teste"])
+        depois = servicos.detalhes_livro(res["livro_id"])["exemplares"]
+        self.assertEqual(
+            [e["id"] for e in antes], [e["id"] for e in depois])
+
+
+class TestLocalizacaoExemplar(ServicosTestCase):
+    """Mudar um exemplar de prateleira."""
+
+    def localizacoes(self, livro_id):
+        return [e.get("localizacao")
+                for e in servicos.detalhes_livro(livro_id)["exemplares"]]
+
+    def test_muda_a_prateleira(self):
+        res = self.criar_livro(localizacao="Estante A")
+        codigo = res["exemplares"][0][1]
+        servicos.alterar_localizacao_exemplar(codigo, "Estante B, Prat. 3")
+        self.assertEqual(self.localizacoes(res["livro_id"]),
+                          ["Estante B, Prat. 3"])
+
+    def test_so_mexe_no_exemplar_escolhido(self):
+        """Volumes do mesmo título podem ficar em estantes diferentes."""
+        res = self.criar_livro(exemplares=3, localizacao="Estante A")
+        servicos.alterar_localizacao_exemplar(res["exemplares"][1][1],
+                                              "Estante Z")
+        self.assertEqual(sorted(self.localizacoes(res["livro_id"])),
+                          ["Estante A", "Estante A", "Estante Z"])
+
+    def test_em_branco_tira_a_localizacao(self):
+        res = self.criar_livro(localizacao="Estante A")
+        servicos.alterar_localizacao_exemplar(res["exemplares"][0][1], "   ")
+        self.assertEqual(self.localizacoes(res["livro_id"]), [None])
+
+    def test_aceita_o_tombo_alem_do_codigo_de_barras(self):
+        res = self.criar_livro(localizacao="Estante A")
+        tombo = servicos.detalhes_livro(
+            res["livro_id"])["exemplares"][0]["numero_tombo"]
+        servicos.alterar_localizacao_exemplar(tombo, "Estante C")
+        self.assertEqual(self.localizacoes(res["livro_id"]), ["Estante C"])
+
+    def test_exemplar_inexistente(self):
+        with self.assertRaises(RegraNegocioError):
+            servicos.alterar_localizacao_exemplar("NAO-EXISTE", "Estante A")
+
+    def test_prateleira_nova_vai_para_a_etiqueta(self):
+        res = self.criar_livro(titulo="Etiquetado", localizacao="Estante A")
+        servicos.alterar_localizacao_exemplar(res["exemplares"][0][1],
+                                              "Estante B, Prat. 7")
+        etiquetas = servicos.listar_exemplares_para_etiquetas("Etiquetado")
+        self.assertEqual(etiquetas[0]["localizacao"], "Estante B, Prat. 7")
+
 
 # ---------------------------------------------------------------------------
 # Usuários
