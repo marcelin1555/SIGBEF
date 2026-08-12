@@ -4,6 +4,7 @@ visualização de exemplares e código de barras).
 """
 from __future__ import annotations
 
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Callable, Optional
@@ -363,7 +364,7 @@ class DialogoLivro(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 600, 720)
+        tema.centralizar_janela(self, 600, 790)
 
         self._construir()
 
@@ -411,11 +412,24 @@ class DialogoLivro(tk.Toplevel):
         self.spin_qtd.insert(0, "1")
         self.spin_qtd.grid(row=8, column=1, sticky="w", pady=(8, 2))
 
-        ttk.Label(form, text="Sinopse").grid(row=9, column=0, sticky="nw",
+        # O livro físico costuma chegar com o tombo já escrito. Deixar em
+        # branco mantém o comportamento antigo: o sistema gera o número.
+        ttk.Label(form, text="Tombo(s)").grid(
+            row=9, column=0, sticky="w", pady=(8, 2))
+        self.ent_tombos = ttk.Entry(form, width=60, font=("Segoe UI", 10))
+        self.ent_tombos.grid(row=9, column=1, sticky="ew", pady=(8, 2))
+        # wraplength porque a dica é mais larga que a coluna: sem ele o
+        # texto sai cortado na borda da janela
+        ttk.Label(form, style="Hint.TLabel", wraplength=360, justify="left",
+                  text="Opcional. Em branco, o sistema gera. Para vários "
+                       "exemplares, separe por ; na ordem.").grid(
+            row=10, column=1, sticky="w")
+
+        ttk.Label(form, text="Sinopse").grid(row=11, column=0, sticky="nw",
                                               pady=(8, 2))
         self.txt_sinopse = tk.Text(form, height=6, width=50,
                                     font=("Segoe UI", 10))
-        self.txt_sinopse.grid(row=9, column=1, sticky="ew", pady=(8, 2))
+        self.txt_sinopse.grid(row=11, column=1, sticky="ew", pady=(8, 2))
 
         botoes = ttk.Frame(wrap)
         botoes.pack(fill="x", pady=(20, 0))
@@ -471,6 +485,10 @@ class DialogoLivro(tk.Toplevel):
             ano_raw = self._campos["ano"].get().strip()
             ano = int(ano_raw) if ano_raw.isdigit() else None
             qtd = int(self.spin_qtd.get())
+            # Aceita ; ou / como na importação CSV, para quem já está
+            # acostumado com o formato da planilha
+            tombos = [t.strip() for t in re.split(
+                r"[;/]", self.ent_tombos.get()) if t.strip()]
             res = servicos.cadastrar_livro(
                 titulo=titulo,
                 autores=autores,
@@ -482,6 +500,7 @@ class DialogoLivro(tk.Toplevel):
                 sinopse=self.txt_sinopse.get("1.0", "end").strip(),
                 quantidade_exemplares=qtd,
                 localizacao=self._campos["localizacao"].get().strip(),
+                tombos=tombos,
                 usuario_id=self.sessao.id,
             )
         except RegraNegocioError as e:

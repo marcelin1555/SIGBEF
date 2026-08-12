@@ -1501,5 +1501,58 @@ class TestRelatorios(ServicosTestCase):
         self.assertEqual(rel[1], {"titulo": "Menos Emprestado", "emprestimos": 1})
 
 
+class TestTomboNoCadastro(ServicosTestCase):
+    """Informar o tombo já escrito no livro na hora de cadastrar."""
+
+    def tombos(self, livro_id):
+        return [ex["numero_tombo"]
+                for ex in servicos.detalhes_livro(livro_id)["exemplares"]]
+
+    def test_usa_o_tombo_informado(self):
+        res = self.criar_livro(titulo="Com Tombo", tombos=["T-500"])
+        self.assertEqual(self.tombos(res["livro_id"]), ["T-500"])
+
+    def test_um_tombo_por_exemplar_na_ordem(self):
+        res = self.criar_livro(titulo="Tres Copias", exemplares=3,
+                               tombos=["T-1", "T-2", "T-3"])
+        self.assertEqual(sorted(self.tombos(res["livro_id"])),
+                         ["T-1", "T-2", "T-3"])
+
+    def test_sem_tombo_o_sistema_gera(self):
+        """Comportamento antigo: campo em branco não muda nada."""
+        res = self.criar_livro(titulo="Sem Tombo", exemplares=2)
+        gerados = self.tombos(res["livro_id"])
+        self.assertEqual(len(gerados), 2)
+        self.assertTrue(all(t for t in gerados))
+        self.assertEqual(len(set(gerados)), 2)
+
+    def test_recusa_quantidade_diferente(self):
+        with self.assertRaises(RegraNegocioError):
+            self.criar_livro(titulo="Descasado", exemplares=3,
+                             tombos=["T-1", "T-2"])
+
+    def test_recusa_tombo_repetido_no_proprio_cadastro(self):
+        with self.assertRaises(RegraNegocioError):
+            self.criar_livro(titulo="Repetido Interno", exemplares=2,
+                             tombos=["T-9", "T-9"])
+
+    def test_recusa_tombo_ja_usado_por_outro_livro(self):
+        """O balcão casa por código OU tombo: repetido empresta a cópia errada."""
+        self.criar_livro(titulo="Primeiro", tombos=["T-777"])
+        with self.assertRaises(RegraNegocioError) as ctx:
+            self.criar_livro(titulo="Segundo", tombos=["T-777"])
+        self.assertIn("T-777", str(ctx.exception))
+        self.assertIn("Primeiro", str(ctx.exception))
+
+    def test_nada_e_gravado_quando_o_tombo_e_recusado(self):
+        """A recusa acontece antes do INSERT do livro."""
+        self.criar_livro(titulo="Dono do Tombo", tombos=["T-888"])
+        with self.assertRaises(RegraNegocioError):
+            self.criar_livro(titulo="Nao Deve Existir", tombos=["T-888"])
+        achados = servicos.listar_livros(termo="Nao Deve Existir")
+        itens = achados["itens"] if isinstance(achados, dict) else achados
+        self.assertEqual(len(itens), 0)
+
+
 if __name__ == "__main__":
     unittest.main()

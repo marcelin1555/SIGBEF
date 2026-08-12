@@ -74,9 +74,15 @@ def cadastrar_livro(
     sinopse: str = "",
     quantidade_exemplares: int = 1,
     localizacao: str = "",
+    tombos: Optional[list[str]] = None,
     usuario_id: Optional[int] = None,
 ) -> dict:
     """Cadastra um livro com seus autores e exemplares iniciais.
+
+    `tombos`, quando informado, dá a cada exemplar o número que já está
+    escrito no livro físico, na ordem, em vez do tombo gerado pelo
+    sistema. Precisa ter exatamente `quantidade_exemplares` itens, e
+    nenhum deles pode já estar em uso.
 
     Retorna um dict com `livro_id` e `exemplares` (lista de tuplas
     (id, codigo_barras)).
@@ -86,7 +92,7 @@ def cadastrar_livro(
             cur, titulo=titulo, autores=autores, isbn=isbn, editora=editora,
             categoria=categoria, ano=ano, edicao=edicao, sinopse=sinopse,
             quantidade_exemplares=quantidade_exemplares,
-            localizacao=localizacao,
+            localizacao=localizacao, tombos=tombos,
         )
     registrar_auditoria(usuario_id, "CADASTRO_LIVRO",
                          f"livro_id={res['livro_id']}; "
@@ -135,6 +141,31 @@ def _inserir_livro_cur(
         raise RegraNegocioError(
             f"Número de tombos ({len(tombos_limpos)}) diferente da "
             f"quantidade de exemplares ({quantidade_exemplares}).")
+    if tombos_limpos:
+        # Mesmo motivo de `alterar_tombo_exemplar`: o balcão procura por
+        # `codigo_barras OR numero_tombo` com LIMIT 1, então dois
+        # exemplares com o mesmo tombo fazem o empréstimo pegar a cópia
+        # errada em silêncio. A coluna tem índice, mas não tem UNIQUE, e
+        # a importação CSV valida no laço dela. Aqui a checagem vale para
+        # todo mundo que cadastra livro, inclusive pela tela.
+        repetido_no_lote = next(
+            (t for t in tombos_limpos if tombos_limpos.count(t) > 1), None)
+        if repetido_no_lote:
+            raise RegraNegocioError(
+                f"O tombo {repetido_no_lote} foi informado mais de uma vez. "
+                "Cada exemplar precisa do seu próprio número.")
+        marcadores = ", ".join("?" * len(tombos_limpos))
+        cur.execute(
+            f"""SELECT l.titulo, ex.numero_tombo
+                   FROM exemplar ex JOIN livro l ON l.id = ex.livro_id
+                   WHERE ex.numero_tombo IN ({marcadores}) LIMIT 1""",
+            tombos_limpos)
+        em_uso = cur.fetchone()
+        if em_uso:
+            raise RegraNegocioError(
+                f"O tombo {em_uso['numero_tombo']} já está com "
+                f"\"{em_uso['titulo']}\". Cada exemplar precisa do seu "
+                "próprio número.")
 
     editora = (editora or "").strip()
     categoria = (categoria or "").strip()
