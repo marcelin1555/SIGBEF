@@ -21,9 +21,19 @@ function Badge({ texto }) {
 
 const versoes = [
   {
-    numero: '1.10.1',
+    numero: '1.10.2',
     data: '12 de agosto de 2026',
     destaque: true,
+    categorias: ['Acervo'],
+    itens: [
+      { cat: 'Acervo', texto: 'O tombo pode ser informado já no cadastro do livro. O exemplar costuma chegar com o número escrito, e antes era preciso cadastrar, deixar o sistema gerar e corrigir depois, um por um' },
+      { cat: 'Acervo', texto: 'O campo é opcional: em branco, o sistema continua gerando o número. Para vários exemplares, separe por ; na ordem, como na importação por planilha' },
+      { cat: 'Acervo', texto: 'Tombo repetido continua sendo recusado, dizendo qual livro já está com aquele número' },
+    ],
+  },
+  {
+    numero: '1.10.1',
+    data: '12 de agosto de 2026',
     categorias: ['Acervo', 'Robustez'],
     itens: [
       { cat: 'Acervo', texto: 'Corrigir o tombo do exemplar: botão novo nos detalhes do livro. O código de barras, os empréstimos e o histórico ficam como estavam, só o número muda' },

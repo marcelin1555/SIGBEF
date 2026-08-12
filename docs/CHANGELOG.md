@@ -2,6 +2,32 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.10.2] — 2026-08-12
+
+O tombo agora pode ser informado na hora de cadastrar o livro, e não só
+corrigido depois.
+
+### Tombo no cadastro do livro
+
+- Campo **Tombo(s)** na tela de cadastrar livro. O livro físico costuma
+  chegar com o número já escrito, e antes era preciso cadastrar, deixar o
+  sistema gerar um número e corrigir em seguida, um exemplar por vez
+- **Opcional.** Em branco, nada muda: o sistema gera como sempre
+- Para vários exemplares, separe por `;` na ordem, do mesmo jeito que na
+  importação por planilha
+- Tombo repetido continua sendo recusado, dizendo qual livro já está com
+  o número
+
+### Por trás
+
+- A checagem de tombo repetido saiu do laço da importação por planilha e
+  passou para dentro da função que grava o livro. Agora vale para todo
+  mundo que cadastra, e não só para quem importa. Sem essa mudança, o
+  campo novo teria reaberto o defeito corrigido na 1.10.1: o balcão casa
+  o exemplar por código de barras **ou** por tombo e usa o primeiro que
+  encontra, então dois iguais fazem o empréstimo registrar a cópia errada
+  sem avisar
+
 ## [1.10.1] — 2026-08-12
 
 Mais duas da lista da bibliotecária Laiane, ambas sobre a mesma dor: o
