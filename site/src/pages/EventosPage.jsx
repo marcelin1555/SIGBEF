@@ -1,5 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 
+// Eventos que ainda vão acontecer. Não têm galeria: quando o evento
+// passar, é só mover a entrada pro array `eventos` de baixo e soltar as
+// fotos em public/eventos/<id>/.
+const proximos = [
+  {
+    id: 'ficts-fecets-2026',
+    titulo: 'III FICTS e I FECETS — Etapa Caicó',
+    data: '16 de setembro de 2026',
+    local: 'Caicó/RN',
+    descricao:
+      'A equipe apresenta o SIGBEF na III Feira de Iniciação Científica e Tecnológica do ' +
+      'Seridó, na categoria Juvenil, área de Base Tecnológica. Realização da 10ª DIREC, ' +
+      'da FAPERN e da UERN. Vai ter demonstração do sistema rodando com o acervo real da ' +
+      'biblioteca do CEFE.',
+  },
+]
+
 // Cada evento tem uma pasta em public/eventos/<id>/ com as fotos.
 // Pra adicionar fotos: solta os arquivos na pasta e lista aqui embaixo.
 const eventos = [
@@ -76,9 +93,38 @@ export default function EventosPage() {
         </div>
       </div>
 
+      {/* próximos eventos */}
+      {proximos.length > 0 && (
+        <section className="py-14 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-[#2E75B6] mb-6">
+              Próximos eventos
+            </h2>
+            <div className="space-y-6">
+              {proximos.map(ev => (
+                <article key={ev.id}
+                  className="border-l-4 border-[#2E75B6] bg-blue-50/60 rounded-r-2xl p-6 sm:p-8">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">
+                    <span className="bg-[#2E75B6] text-white px-2.5 py-1 rounded-full">Em breve</span>
+                    <time className="text-[#1F4E79]" dateTime="2026-09-16">{ev.data}</time>
+                    <span className="text-gray-300" aria-hidden="true">•</span>
+                    <span className="text-gray-500">{ev.local}</span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#1F4E79] mb-3">{ev.titulo}</h3>
+                  <p className="text-gray-600 leading-relaxed">{ev.descricao}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* lista de eventos */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto space-y-10">
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+            Já aconteceram
+          </h2>
           {eventos.map(ev => (
             <article key={ev.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">

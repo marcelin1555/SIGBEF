@@ -14,6 +14,8 @@ const linha_do_tempo = [
   { ano: 'jul/26', evento: 'v1.7.0: aplicativo Android do aluno — carteirinha digital, empréstimos e prazos no bolso, funcionando offline.' },
   { ano: 'jul/26', evento: 'v1.8.0: conferência do acervo, baixa de exemplar individual e backup automático do banco de dados.' },
   { ano: 'jul/26', evento: 'v1.9.0: devolução em lote no balcão e aviso de vencimento no celular do aluno.' },
+  { ano: 'ago/26', evento: 'Cinco funções pedidas pela bibliotecária Laiane Ramos: reiniciar o sistema para instalar em outra escola, editar livros do acervo, excluir em massa, editar a localização do exemplar e mostrar a prateleira na etiqueta.' },
+  { ano: 'ago/26', evento: 'A equipe prepara a inscrição na III FICTS e I FECETS, feira de iniciação científica do Seridó, com apresentação presencial em Caicó no dia 16 de setembro.' },
 ]
 
 export default function EquipePage() {
