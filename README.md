@@ -653,12 +653,54 @@ Para gerar o APK assinado que vai para os alunos, veja
 
 Funcionalidades planejadas para versões futuras:
 
+> O sistema está congelado até a III FICTS, em 16 de setembro de 2026.
+> Mexer no que vai ser demonstrado ao vivo, às vésperas da feira, é risco
+> sem retorno. A única candidata a entrar antes é a tela de auditoria,
+> por ser leitura pura.
+
 ### Próxima versão
 
+- [ ] **Tela de auditoria** — o registro de quem fez o quê existe desde a
+      v1.0 e nunca teve tela. "Quem excluiu esse livro?" passou a ser uma
+      pergunta séria depois da exclusão em massa e do apagar tudo. É
+      leitura pura: não muda regra de negócio nenhuma
+- [ ] **Restaurar uma cópia de segurança pela tela** — hoje o sistema faz
+      backup todo dia e não tem como usar. Recuperar exige fechar o
+      programa, achar a pasta e sobrescrever o arquivo na mão. Backup que
+      não se restaura é meio backup. É a segunda operação mais destrutiva
+      do sistema, então merece o mesmo cuidado do apagar tudo: cópia do
+      estado atual antes, e confirmação digitada
+- [ ] **Isentar multa, com motivo** — hoje só existe quitar. Perdoar uma
+      multa obriga a bibliotecária a registrar como paga, ou seja, a
+      gravar no histórico uma coisa que não aconteceu
 - [ ] **Empréstimo de coleção para o professor** — livro-texto para a
-      turma inteira num registro só, em vez de trinta. Depende de
-      definir com a bibliotecária se o exemplar fica no nome do
-      professor ou de cada aluno
+      turma inteira num registro só, em vez de trinta. A dúvida que
+      travava isso era em nome de quem fica o exemplar; a proposta é
+      **no nome do professor, com a turma anotada**, porque é ele quem
+      responde pelos trinta livros
+
+### Para outra escola conseguir adotar sozinha
+
+A conclusão do relatório de pesquisa registra que a replicação está
+tecnicamente estabelecida mas ainda não foi testada em campo. Estes são
+os obstáculos concretos:
+
+- [ ] **Importação com mapa de colunas** — hoje o CSV precisa de nomes
+      que o sistema reconheça, e cada escola tem a planilha dela. Uma
+      etapa para dizer "esta coluna é o título" resolve o caso geral, que
+      é o maior obstáculo real de quem chega de fora
+- [ ] **Modo de demonstração reversível** — popular dados de exemplo e
+      apagar tudo já existem separados; falta amarrar os dois no caminho
+      de quem está avaliando o sistema antes de usar pra valer
+
+### Para medir melhor o efeito do sistema
+
+- [ ] **Tempo real de atendimento** — os quinze minutos da planilha são
+      estimativa da bibliotecária, e os 5 ms do experimento são medida de
+      máquina. Nenhum dos dois mede o balcão. O autoatendimento já sabe
+      quando a sessão abre e fecha: gravar isso dá o antes e depois
+      medido, que é o que falta para fechar a hipótese com dado e não com
+      percepção
 
 ### Aproximação de normas de biblioteconomia
 
@@ -682,9 +724,29 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 - [ ] Migração opcional para PostgreSQL para ambientes em rede com múltiplos postos
 - [ ] Internacionalização (i18n) — espanhol e inglês como primeiros idiomas adicionais
 - [ ] Versão web hospedada (SaaS) para escolas sem servidor local
-- [ ] Avaliar uma reescrita em Java como exercício de aprendizado
-      (POO mais rígida) — ideia em aberto, sem compromisso de
-      substituir a stack atual (Python + Tkinter + SQLite)
+
+### Saúde do próprio projeto
+
+- [ ] **Capturas de tela de verdade no README** — as imagens em
+      `docs/screenshots/` são mockups, e o aviso embaixo da tabela diz
+      isso. O risco é alguém reaproveitar aquilo como evidência sem ler o
+      aviso, o que num trabalho de pesquisa seria apresentar prova falsa
+- [ ] **Teste da camada de interface** — a suíte cobre bem serviço e
+      dados, mas os diálogos não têm teste. Os dois últimos defeitos de
+      tela (dica cortada na borda e campo que não aparecia) foram achados
+      no olho, rodando o programa
+
+### Descartado, e por quê
+
+- **Reescrita em Java.** Esteve no roadmap como ideia em aberto.
+  Reescrever um sistema em produção, com 471 testes e uma biblioteca
+  dependendo dele, para exercitar POO mais rígida custaria um semestre e
+  não entregaria nada para quem usa. O objetivo de aprendizado já está
+  atendido pelo aplicativo Android em Kotlin, que também é orientado a
+  objetos e está em produção.
+- **MARC21, CDD/CDU e Z39.50 como obrigatórios.** Continuam fora por
+  decisão de escopo; os passos opt-in acima seguem valendo para quem
+  quiser se aproximar desses padrões.
 
 ### Concluído recentemente
 
