@@ -14,6 +14,7 @@ perfil de usuário — vá direto para a seção que interessa.
 - [Para o Bibliotecário](#para-o-bibliotecário)
   - [Cadastrar um livro](#cadastrar-um-livro)
   - [Imprimir etiquetas de código de barras](#imprimir-etiquetas-de-código-de-barras)
+  - [Corrigir o tombo de um exemplar](#corrigir-o-tombo-de-um-exemplar)
   - [Cadastrar um usuário](#cadastrar-um-usuário)
   - [Realizar um empréstimo](#realizar-um-empréstimo)
   - [Registrar uma devolução](#registrar-uma-devolução)
@@ -97,6 +98,27 @@ exemplar.
 3. Clique em **Imprimir etiquetas (visualizar)**.
 4. Use a função "Imprimir" do navegador/captura de tela ou tire foto da
    tela para preparar a impressão real em uma impressora de etiquetas.
+
+Para imprimir de vários livros de uma vez, veja **Etiquetas em massa**
+nas perguntas frequentes.
+
+### Corrigir o tombo de um exemplar
+
+O tombo é o número escrito no livro físico. Ele chega errado com
+frequência: a importação da planilha trouxe o número trocado, ou o
+dígito escrito à mão estava ilegível.
+
+1. Abra o livro em **Ver detalhes**.
+2. Na lista de exemplares, clique no exemplar errado.
+3. Clique em **Corrigir tombo**, digite o número certo e salve.
+
+O exemplar mantém o código de barras, os empréstimos e o histórico: só o
+número muda, e ele sai atualizado na próxima etiqueta.
+
+**O tombo não pode se repetir.** Se você digitar um número que já está em
+outro exemplar, o sistema recusa e diz qual livro está usando. Isso não é
+frescura: o balcão procura o exemplar pelo código de barras ou pelo
+tombo, e dois iguais fariam o empréstimo registrar o livro errado.
 
 ### Cadastrar um usuário
 
@@ -522,10 +544,16 @@ para PostgreSQL (consulte o desenvolvedor).
   manualmente (ex.: `00001-001`).
 
 **Como imprimir etiquetas de código de barras em massa?**
-A versão 1.0 mostra as etiquetas em tela. Para imprimir em rolo, será
-necessário integrar uma biblioteca de geração de PNG/SVG (planejado para
-1.1) ou exportar o relatório de Acervo e usar um software de etiquetas
-externo.
+Em **Livros e exemplares**, botão **Etiquetas em massa**. A página abre
+no navegador, e daí é Ctrl+P para imprimir ou salvar em PDF.
+
+O que entra na impressão depende do que está marcado na lista:
+
+- **Livros marcados**: só eles. É o caso de chegarem seis livros novos
+- **Nada marcado, com busca preenchida**: tudo o que a busca encontrou
+- **Nada marcado, busca vazia**: o acervo inteiro
+
+Exemplar baixado não recebe etiqueta.
 
 **O sistema funciona em rede?**
 Não nesta versão. Mas o banco pode ficar em pasta compartilhada e ser

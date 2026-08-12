@@ -14,7 +14,7 @@ import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 from .auth import gerar_hash
 from .barcode_util import gerar_codigo_exemplar, gerar_codigo_usuario
@@ -719,10 +719,39 @@ def importar_acervo_csv(caminho: str,
             "pulados": pulados, "erros": erros, "ajustes": ajustes}
 
 
-def listar_exemplares_para_etiquetas(termo: str = "") -> list[dict]:
+def listar_exemplares_para_etiquetas(
+    termo: str = "", livro_ids: Optional[Sequence[int]] = None,
+) -> list[dict]:
     """Exemplares ativos (não baixados) com o título do livro, para a
-    impressão de etiquetas em massa. O filtro segue a mesma semântica
-    da busca do acervo (título, ISBN ou autor); termo vazio = tudo."""
+    impressão de etiquetas.
+
+    Sem `livro_ids`, o filtro segue a busca do acervo (título, ISBN ou
+    autor), e termo vazio significa o acervo inteiro.
+
+    Com `livro_ids`, sai só o que a bibliotecária marcou na lista. É o
+    caso comum na prática: chegaram seis livros novos, e reimprimir a
+    etiqueta do acervo todo para colar seis é desperdício de papel.
+    Nesse caso o termo da busca é ignorado, porque a seleção é mais
+    específica do que ele.
+    """
+    if livro_ids is not None:
+        ids = list(dict.fromkeys(int(i) for i in livro_ids))
+        if not ids:
+            return []
+        marcadores = ", ".join("?" * len(ids))
+        with db_cursor() as cur:
+            cur.execute(
+                f"""SELECT l.titulo, ex.codigo_barras, ex.numero_tombo,
+                           ex.localizacao
+                    FROM exemplar ex
+                    JOIN livro l ON l.id = ex.livro_id
+                    WHERE l.ativo = 1 AND ex.status != 'BAIXADO'
+                      AND l.id IN ({marcadores})
+                    ORDER BY l.titulo, ex.numero_tombo""",
+                ids,
+            )
+            return [dict(r) for r in cur.fetchall()]
+
     termo_like = f"%{termo.strip()}%" if termo else "%"
     with db_cursor() as cur:
         cur.execute(
@@ -889,6 +918,59 @@ def alterar_localizacao_exemplar(codigo: str, localizacao: str,
         "codigo_barras": ex["codigo_barras"],
         "titulo": ex["titulo"],
         "localizacao": localizacao,
+    }
+
+
+def alterar_tombo_exemplar(codigo: str, tombo: str,
+                            usuario_id: Optional[int] = None) -> dict:
+    """Corrige o número de tombo de um exemplar já cadastrado.
+
+    O tombo é o número que está escrito no livro físico, e chegou errado
+    em muito registro: a importação da planilha trouxe tombo trocado, e
+    livro tombado à mão tem dígito ilegível. Sem isto, corrigir exigia
+    excluir e recadastrar, perdendo o histórico de empréstimos.
+
+    O tombo **não pode repetir**. Não é preciosismo: `localizar_exemplar`
+    procura por `codigo_barras OR numero_tombo` e devolve o primeiro que
+    achar, então dois exemplares com o mesmo tombo fazem o balcão
+    emprestar ou devolver a cópia errada, sem avisar ninguém. O banco não
+    tem UNIQUE nessa coluna (só índice), então a checagem é aqui.
+    """
+    ex = localizar_exemplar(codigo)
+    if not ex:
+        raise RegraNegocioError(
+            "Exemplar não encontrado. Confira o código de barras ou o tombo.")
+
+    tombo = (tombo or "").strip()
+    if tombo:
+        with db_cursor() as cur:
+            cur.execute(
+                """SELECT l.titulo
+                   FROM exemplar ex JOIN livro l ON l.id = ex.livro_id
+                   WHERE ex.numero_tombo = ? AND ex.id != ?
+                   LIMIT 1""",
+                (tombo, ex["id"]),
+            )
+            conflito = cur.fetchone()
+        if conflito:
+            raise RegraNegocioError(
+                f'O tombo "{tombo}" já está em uso por outro exemplar '
+                f'("{conflito["titulo"]}"). Dois exemplares com o mesmo '
+                "tombo fazem o empréstimo pegar o livro errado.")
+
+    with db_cursor() as cur:
+        cur.execute("UPDATE exemplar SET numero_tombo = ? WHERE id = ?",
+                    (tombo or None, ex["id"]))
+
+    registrar_auditoria(
+        usuario_id, "TOMBO_EXEMPLAR",
+        f"exemplar={ex['codigo_barras']}; "
+        f"tombo={ex.get('numero_tombo') or '(vazio)'} -> {tombo or '(vazio)'}")
+    return {
+        "exemplar_id": ex["id"],
+        "codigo_barras": ex["codigo_barras"],
+        "titulo": ex["titulo"],
+        "numero_tombo": tombo,
     }
 
 

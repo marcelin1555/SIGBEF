@@ -2,6 +2,38 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.10.1] — 2026-08-12
+
+Mais duas da lista da bibliotecária Laiane, ambas sobre a mesma dor: o
+acervo veio da planilha com número errado, e a etiqueta é o que conserta
+isso no livro físico.
+
+### Corrigir o tombo do exemplar
+
+- Botão **Corrigir tombo** nos detalhes do livro. O exemplar mantém o
+  código de barras, os empréstimos e o histórico: só o número muda
+- **O tombo não pode repetir.** O balcão procura o exemplar por código de
+  barras ou por tombo e usa o primeiro que encontra, então dois iguais
+  fariam o empréstimo registrar o livro errado, sem avisar. O banco não
+  tem restrição de unicidade nessa coluna, então quem recusa é o serviço,
+  dizendo qual livro já está com aquele número
+- O tombo novo sai na próxima etiqueta
+
+### Imprimir etiqueta só dos livros escolhidos
+
+- **Etiquetas em massa** passa a respeitar o que está marcado na lista.
+  Chegaram seis livros novos: marca os seis e imprime seis
+- Sem nada marcado, continua como era: a busca atual, ou o acervo inteiro
+  se a busca estiver vazia
+- A janela de confirmação diz qual dos três casos vai imprimir, para não
+  gastar papel por engano
+
+### Correção na documentação
+
+- O manual dizia que a impressão em massa era "planejada para a 1.1". Ela
+  existe desde a 1.4.0, e a resposta ficou desatualizada por seis
+  versões. Agora descreve o comportamento real, com os três casos
+
 ## [1.10.0] — 2026-08-11
 
 Cinco funções pedidas pela bibliotecária Laiane Ramos, todas nascidas de
