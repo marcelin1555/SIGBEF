@@ -21,9 +21,22 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.10.0',
+    data: '11 de agosto de 2026',
+    destaque: true,
+    categorias: ['Acervo', 'Robustez', 'Site'],
+    itens: [
+      { cat: 'Acervo', texto: 'Editar livros do acervo: dá para corrigir título, autores, ISBN, editora, categoria, ano e sinopse de um livro já cadastrado, sem perder exemplares nem histórico' },
+      { cat: 'Acervo', texto: 'Excluir vários livros de uma vez. Um livro com exemplar emprestado é barrado sozinho, sem cancelar os outros, e no fim aparece o resumo do que saiu e do que ficou' },
+      { cat: 'Acervo', texto: 'A localização do exemplar pode ser editada, e a etiqueta de código de barras passa a imprimir a prateleira: a estante certa vai colada no livro' },
+      { cat: 'Robustez', texto: 'Reiniciar o sistema: apaga acervo, usuários e empréstimos de teste e volta ao estado de instalação nova, para começar a usar de verdade ou instalar em outra escola' },
+      { cat: 'Robustez', texto: 'A reinicialização exige digitar APAGAR TUDO por extenso e faz backup antes. Se o backup falhar, nada é apagado' },
+      { cat: 'Site', texto: 'A página de Eventos passa a mostrar os próximos eventos, começando pela III FICTS e I FECETS de 16 de setembro, em Caicó' },
+    ],
+  },
+  {
     numero: '1.9.0',
     data: '27 de julho de 2026',
-    destaque: true,
     categorias: ['Acervo', 'Multiplataforma'],
     itens: [
       { cat: 'Acervo', texto: 'Devolução em lote: no fim do ano, vá passando o leitor na pilha inteira — cada leitura devolve na hora, sem confirmar um por um' },

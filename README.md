@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.9.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.10.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -688,6 +688,14 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Editar livros do acervo**, para corrigir o que veio errado da
+      importação da planilha, sem perder exemplares nem histórico (v1.10.0)
+- [x] **Exclusão em massa**, com o livro emprestado sendo barrado sozinho
+      em vez de cancelar a operação inteira (v1.10.0)
+- [x] **Localização do exemplar editável**, e a prateleira impressa na
+      etiqueta de código de barras (v1.10.0)
+- [x] **Reiniciar o sistema**: apaga o dado de teste e volta ao estado de
+      instalação nova, com backup obrigatório antes (v1.10.0)
 - [x] **Devolução em lote** no balcão, para a pilha do fim de ano (v1.9.0)
 - [x] **Aviso de devolução no celular**, calculado localmente: funciona
       sem internet e com a biblioteca fechada (v1.9.0)
@@ -779,7 +787,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.9.0** — Julho/2026
+**SIGBEF v1.10.0** — Agosto/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

@@ -2,6 +2,56 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.10.0] — 2026-08-11
+
+Cinco funções pedidas pela bibliotecária Laiane Ramos, todas nascidas de
+uma coisa que só aparece com o sistema em uso: o acervo importado da
+planilha veio com erro junto, e não tinha como consertar pela tela.
+
+### Editar livros do acervo
+
+- Botão **Editar** em Livros e exemplares. Corrige título, autores, ISBN,
+  editora, categoria, ano, edição e sinopse de um livro já cadastrado
+- Os exemplares e o histórico de empréstimo do livro são preservados: a
+  edição mexe na ficha da obra, não nas cópias físicas
+- A validação é a mesma do cadastro. Título vazio ou livro sem nenhum
+  autor continuam sendo recusados
+
+### Exclusão em massa
+
+- **Excluir do acervo** passa a aceitar vários livros selecionados de uma
+  vez, em vez de um por vez
+- **Um livro recusado não cancela os outros.** Livro com exemplar
+  emprestado é barrado individualmente, e no fim aparece um resumo do que
+  saiu e do que ficou, com o motivo
+
+### Localização do exemplar
+
+- Dá para editar a prateleira de um exemplar sem recadastrar nada
+- A **etiqueta de código de barras passa a imprimir a localização**, o que
+  significa que a estante certa vai colada no próprio livro
+
+### Reiniciar o sistema
+
+Para quem terminou de testar e quer começar a usar de verdade, ou para
+instalar numa escola nova sem carregar dado de demonstração.
+
+- Apaga acervo, usuários, empréstimos, reservas e auditoria, e devolve as
+  configurações ao padrão de fábrica. Na abertura seguinte o sistema cai
+  no assistente de primeira configuração, como numa instalação nova
+- É a operação mais destrutiva do sistema, e o cuidado é proporcional:
+  exige digitar **APAGAR TUDO** por extenso e faz uma cópia de segurança
+  antes
+- **Se o backup falhar, nada é apagado.** É o oposto do backup automático
+  do fechamento, que nunca interrompe nada de propósito: aqui, sem cópia
+  válida, a operação não começa
+
+### Também nesta versão
+
+- Página de **Eventos** do site ganha a seção "Próximos eventos", com a
+  III FICTS e I FECETS de 16 de setembro, em Caicó
+- A linha do tempo da página Equipe vai até agosto de 2026
+
 ## [1.9.0] — 2026-07-27
 
 Duas funções para os dois extremos do ano letivo: a pilha de devoluções
