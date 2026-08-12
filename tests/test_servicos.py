@@ -703,6 +703,71 @@ class TestLocalizacaoExemplar(ServicosTestCase):
         self.assertEqual(etiquetas[0]["localizacao"], "Estante B, Prat. 7")
 
 
+class TestTomboDoExemplar(ServicosTestCase):
+    """Corrigir o número de tombo escrito no livro físico."""
+
+    def tombos(self, livro_id):
+        return [ex["numero_tombo"]
+                for ex in servicos.detalhes_livro(livro_id)["exemplares"]]
+
+    def test_corrige_o_tombo(self):
+        res = self.criar_livro()
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "T-0042")
+        self.assertEqual(self.tombos(res["livro_id"]), ["T-0042"])
+
+    def test_so_mexe_no_exemplar_escolhido(self):
+        res = self.criar_livro(exemplares=3)
+        antes = self.tombos(res["livro_id"])
+        servicos.alterar_tombo_exemplar(res["exemplares"][1][1], "T-999")
+        depois = self.tombos(res["livro_id"])
+        self.assertIn("T-999", depois)
+        self.assertEqual(len([t for t in depois if t in antes]), 2)
+
+    def test_em_branco_tira_o_tombo(self):
+        res = self.criar_livro()
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "   ")
+        self.assertEqual(self.tombos(res["livro_id"]), [None])
+
+    def test_recusa_tombo_ja_usado(self):
+        """Tombo repetido faz o balcão emprestar o exemplar errado.
+
+        `localizar_exemplar` casa por código de barras OU tombo e devolve
+        o primeiro que achar, então a duplicata precisa ser barrada aqui:
+        o banco não tem UNIQUE nessa coluna.
+        """
+        a = self.criar_livro(titulo="Livro A")
+        b = self.criar_livro(titulo="Livro B")
+        servicos.alterar_tombo_exemplar(a["exemplares"][0][1], "T-100")
+        with self.assertRaises(RegraNegocioError):
+            servicos.alterar_tombo_exemplar(b["exemplares"][0][1], "T-100")
+        # o exemplar de B ficou como estava
+        self.assertNotIn("T-100", self.tombos(b["livro_id"]))
+
+    def test_pode_regravar_o_proprio_tombo(self):
+        """Salvar sem mudar nada não pode ser lido como duplicata."""
+        res = self.criar_livro()
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "T-77")
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "T-77")
+        self.assertEqual(self.tombos(res["livro_id"]), ["T-77"])
+
+    def test_tombo_novo_encontra_o_exemplar_no_balcao(self):
+        res = self.criar_livro()
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "T-555")
+        achado = servicos.localizar_exemplar("T-555")
+        self.assertIsNotNone(achado)
+        self.assertEqual(achado["codigo_barras"], res["exemplares"][0][1])
+
+    def test_exemplar_inexistente(self):
+        with self.assertRaises(RegraNegocioError):
+            servicos.alterar_tombo_exemplar("NAO-EXISTE", "T-1")
+
+    def test_tombo_novo_vai_para_a_etiqueta(self):
+        res = self.criar_livro(titulo="Tombado")
+        servicos.alterar_tombo_exemplar(res["exemplares"][0][1], "T-321")
+        etiquetas = servicos.listar_exemplares_para_etiquetas("Tombado")
+        self.assertEqual(etiquetas[0]["numero_tombo"], "T-321")
+
+
 # ---------------------------------------------------------------------------
 # Usuários
 # ---------------------------------------------------------------------------
@@ -1354,6 +1419,42 @@ class TestListagensExemplares(ServicosTestCase):
         filtrados = servicos.listar_exemplares_para_etiquetas("Casmurro")
         self.assertEqual(len(filtrados), 2)
         self.assertTrue(all(r["titulo"] == "Dom Casmurro" for r in filtrados))
+
+    def test_etiquetas_dos_livros_selecionados(self):
+        """Imprimir só o que foi marcado na lista, e não o acervo todo."""
+        so_um = servicos.listar_exemplares_para_etiquetas(
+            livro_ids=[self.livro_b["livro_id"]])
+        self.assertEqual(len(so_um), 1)
+        self.assertEqual(so_um[0]["titulo"], "Python para Todos")
+
+        os_dois = servicos.listar_exemplares_para_etiquetas(
+            livro_ids=[self.livro_a["livro_id"], self.livro_b["livro_id"]])
+        self.assertEqual(len(os_dois), 3)
+
+    def test_selecao_ignora_o_termo_de_busca(self):
+        """A marcação na lista é mais específica que a caixa de busca."""
+        etiquetas = servicos.listar_exemplares_para_etiquetas(
+            "Casmurro", livro_ids=[self.livro_b["livro_id"]])
+        self.assertEqual([e["titulo"] for e in etiquetas],
+                          ["Python para Todos"])
+
+    def test_selecao_vazia_nao_imprime_o_acervo_inteiro(self):
+        """Lista vazia é lista vazia, e não 'sem filtro'."""
+        self.assertEqual(servicos.listar_exemplares_para_etiquetas(
+            livro_ids=[]), [])
+
+    def test_selecao_ignora_exemplar_baixado(self):
+        codigo = self.livro_a["exemplares"][0][1]
+        servicos.baixar_exemplar(codigo, "EXTRAVIADO")
+        etiquetas = servicos.listar_exemplares_para_etiquetas(
+            livro_ids=[self.livro_a["livro_id"]])
+        self.assertEqual(len(etiquetas), 1)
+        self.assertNotIn(codigo, [e["codigo_barras"] for e in etiquetas])
+
+    def test_selecao_repetida_nao_duplica_etiqueta(self):
+        etiquetas = servicos.listar_exemplares_para_etiquetas(
+            livro_ids=[self.livro_b["livro_id"], self.livro_b["livro_id"]])
+        self.assertEqual(len(etiquetas), 1)
 
     def test_disponiveis_filtro_por_termo_e_status(self):
         u = self.criar_usuario()

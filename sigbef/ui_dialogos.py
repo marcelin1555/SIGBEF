@@ -1229,6 +1229,72 @@ class DialogoLocalizacaoExemplar(tk.Toplevel):
         self.destroy()
 
 
+class DialogoTomboExemplar(tk.Toplevel):
+    """Corrige o número de tombo escrito no livro físico.
+
+    Diferente da prateleira, o tombo não pode repetir: o balcão procura o
+    exemplar por código de barras ou tombo, então dois iguais fazem o
+    empréstimo pegar a cópia errada. Quem recusa a duplicata é o serviço;
+    aqui o aviso só é mostrado.
+    """
+
+    def __init__(self, parent, codigo: str, atual: str = "",
+                 ao_confirmar=None):
+        super().__init__(parent)
+        self.codigo = codigo
+        self.ao_confirmar = ao_confirmar
+        self.title("Corrigir tombo")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 520, 300)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Corrigir tombo",
+                  style="Titulo.TLabel").pack(anchor="w")
+
+        ex = servicos.localizar_exemplar(codigo)
+        titulo = ex["titulo"] if ex else "(exemplar não encontrado)"
+        ttk.Label(wrap, text=f"{titulo}\nCódigo de barras: {codigo}",
+                  style="Hint.TLabel", justify="left"
+                  ).pack(anchor="w", pady=(4, 16))
+
+        ttk.Label(wrap, text="Qual o número de tombo deste exemplar?"
+                  ).pack(anchor="w")
+        self.ent_tombo = ttk.Entry(wrap, width=48, font=("Segoe UI", 10))
+        self.ent_tombo.insert(0, atual)
+        self.ent_tombo.pack(anchor="w", pady=(4, 2))
+        self.ent_tombo.focus_set()
+        self.ent_tombo.select_range(0, "end")
+        ttk.Label(wrap, text="É o número escrito no próprio livro. Deixe em "
+                  "branco para tirar o tombo.",
+                  style="Hint.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text="O tombo não pode se repetir no acervo: o balcão "
+                  "acha o exemplar pelo tombo, e dois iguais fazem emprestar "
+                  "o livro errado. A nova numeração sai impressa na etiqueta.",
+                  style="Hint.TLabel", wraplength=460, justify="left"
+                  ).pack(anchor="w", pady=(8, 0))
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(fill="x", pady=(16, 0))
+        ttk.Button(rodape, text="Cancelar",
+                    command=self.destroy).pack(side="right")
+        ttk.Button(rodape, text="Salvar", style="Primario.TButton",
+                    command=self._confirmar).pack(side="right", padx=(0, 8))
+        self.ent_tombo.bind("<Return>", lambda e: self._confirmar())
+
+    def _confirmar(self):
+        try:
+            servicos.alterar_tombo_exemplar(self.codigo, self.ent_tombo.get())
+        except RegraNegocioError as e:
+            messagebox.showwarning("Não foi possível", str(e), parent=self)
+            return
+        if self.ao_confirmar:
+            self.ao_confirmar()
+        self.destroy()
+
+
 # ---------------------------------------------------------------------------
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
@@ -1301,6 +1367,9 @@ class DialogoDetalhesLivro(tk.Toplevel):
                    style="Primario.TButton",
                    command=lambda: VisualizadorBarcodes(self, livro)
                    ).pack(side="left")
+        ttk.Button(botoes, text="Corrigir tombo",
+                   command=self._corrigir_tombo
+                   ).pack(side="left", padx=(8, 0))
         ttk.Button(botoes, text="Mudar prateleira",
                    command=self._mudar_localizacao
                    ).pack(side="left", padx=(8, 0))
@@ -1331,6 +1400,18 @@ class DialogoDetalhesLivro(tk.Toplevel):
         valores = self.tree.item(sel[0])["values"]
         codigo = str(valores[1])
         DialogoBaixaExemplar(self, codigo, ao_confirmar=self._recarregar)
+
+    def _corrigir_tombo(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um exemplar",
+                                  "Escolha na lista o exemplar cujo tombo "
+                                  "está errado.", parent=self)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        codigo, atual = str(valores[1]), str(valores[0] or "")
+        DialogoTomboExemplar(self, codigo, atual,
+                              ao_confirmar=self._recarregar)
 
     def _mudar_localizacao(self):
         sel = self.tree.selection()

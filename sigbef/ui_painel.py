@@ -493,19 +493,34 @@ class SecaoLivros(SecaoBase):
                                 parent=self.painel)
 
     def _etiquetas_massa(self):
-        """Gera etiquetas de todos os exemplares da busca atual (ou do
-        acervo inteiro) e abre no navegador para Ctrl+P / Salvar PDF."""
+        """Gera etiquetas e abre no navegador para Ctrl+P / Salvar PDF.
+
+        Se houver livros marcados na lista, imprime só os marcados. É o
+        caso comum: chegaram seis livros novos, e reimprimir a etiqueta
+        do acervo inteiro para colar seis é desperdício de papel. Sem
+        seleção, mantém o comportamento antigo e usa a busca atual.
+        """
+        sel = self.tree.selection()
         termo = self.ent_busca.get()
-        exemplares = servicos.listar_exemplares_para_etiquetas(termo)
+        if sel:
+            ids = [int(self.tree.item(i)["values"][0]) for i in sel]
+            exemplares = servicos.listar_exemplares_para_etiquetas(
+                livro_ids=ids)
+            escopo = f"dos {len(ids)} livro(s) selecionado(s)"
+            rotulo = f"{len(ids)} livro(s) selecionado(s)"
+            vazio = ("Os livros selecionados não têm exemplar ativo. "
+                     "Exemplares baixados não recebem etiqueta.")
+        else:
+            exemplares = servicos.listar_exemplares_para_etiquetas(termo)
+            escopo = ("da busca atual" if termo.strip()
+                      else "do acervo inteiro")
+            rotulo = "acervo" if not termo.strip() else f'busca "{termo}"'
+            vazio = "Nenhum exemplar encontrado para a busca atual."
+
         if not exemplares:
-            messagebox.showinfo("Nada a imprimir",
-                                  "Nenhum exemplar encontrado para a busca "
-                                  "atual.",
-                                  parent=self.painel)
+            messagebox.showinfo("Nada a imprimir", vazio, parent=self.painel)
             return
         titulos = len({ex["titulo"] for ex in exemplares})
-        escopo = ("da busca atual" if termo.strip()
-                  else "do acervo inteiro")
         if not messagebox.askyesno(
                 "Etiquetas em massa",
                 f"Gerar etiquetas de {len(exemplares)} exemplar(es) de "
@@ -515,8 +530,7 @@ class SecaoLivros(SecaoBase):
             return
         import tempfile
         import webbrowser
-        doc = barcode_util.etiquetas_lote_html(
-            exemplares, "acervo" if not termo.strip() else f'busca "{termo}"')
+        doc = barcode_util.etiquetas_lote_html(exemplares, rotulo)
         destino = Path(tempfile.gettempdir()) / "sigbef_etiquetas_lote.html"
         destino.write_text(doc, encoding="utf-8")
         webbrowser.open(destino.as_uri())
