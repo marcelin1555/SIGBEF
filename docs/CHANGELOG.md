@@ -2,7 +2,7 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado]
+## [1.10.1] — 2026-08-12
 
 Mais duas da lista da bibliotecária Laiane, ambas sobre a mesma dor: o
 acervo veio da planilha com número errado, e a etiqueta é o que conserta

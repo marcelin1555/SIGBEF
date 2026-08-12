@@ -21,9 +21,20 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.10.1',
+    data: '12 de agosto de 2026',
+    destaque: true,
+    categorias: ['Acervo', 'Robustez'],
+    itens: [
+      { cat: 'Acervo', texto: 'Corrigir o tombo do exemplar: botão novo nos detalhes do livro. O código de barras, os empréstimos e o histórico ficam como estavam, só o número muda' },
+      { cat: 'Robustez', texto: 'O tombo não pode repetir. O balcão procura o exemplar por código de barras ou por tombo, então dois iguais fariam o empréstimo registrar o livro errado sem avisar. Agora o sistema recusa e diz qual livro já está com aquele número' },
+      { cat: 'Acervo', texto: 'Etiquetas em massa passa a respeitar o que está marcado na lista: chegaram seis livros novos, marca os seis e imprime seis. Sem nada marcado, continua imprimindo a busca atual' },
+      { cat: 'Acervo', texto: 'A confirmação diz qual dos três casos vai imprimir, para não gastar papel por engano' },
+    ],
+  },
+  {
     numero: '1.10.0',
     data: '11 de agosto de 2026',
-    destaque: true,
     categorias: ['Acervo', 'Robustez', 'Site'],
     itens: [
       { cat: 'Acervo', texto: 'Editar livros do acervo: dá para corrigir título, autores, ISBN, editora, categoria, ano e sinopse de um livro já cadastrado, sem perder exemplares nem histórico' },
