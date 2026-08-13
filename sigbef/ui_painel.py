@@ -125,6 +125,7 @@ class PainelPrincipal(tk.Tk):
                 ("uso", "Uso do acervo", "grafico"),
                 ("inventario", "Conferir acervo", "busca"),
                 ("relatorios", "Relatórios", "grafico"),
+                ("auditoria", "Auditoria", "relogio"),
             ]
         if self.sessao.is_admin:
             itens.append(("config", "Configurações", "engrenagem"))
@@ -169,6 +170,8 @@ class PainelPrincipal(tk.Tk):
             self._secoes[chave] = SecaoInventario(self._principal, self)
         elif chave == "relatorios":
             self._secoes[chave] = SecaoRelatorios(self._principal, self)
+        elif chave == "auditoria":
+            self._secoes[chave] = SecaoAuditoria(self._principal, self)
         elif chave == "config":
             self._secoes[chave] = SecaoConfig(self._principal, self)
         elif chave == "pesquisa_aluno":
@@ -1910,6 +1913,111 @@ class SecaoRelatorios(SecaoBase):
             f"{len(pendentes)} leitor(es) com pendência.\n\n"
             f"Arquivo salvo em:\n{nome}",
             parent=self.painel)
+
+
+# ---------------------------------------------------------------------------
+# Auditoria — quem fez o quê
+# ---------------------------------------------------------------------------
+AUDITORIA_POR_BLOCO = 200
+
+
+class SecaoAuditoria(SecaoBase):
+    """Leitura do registro de auditoria. Sem escrita nenhuma: a tela só
+    mostra o que `registrar_auditoria` já grava desde a v1.0."""
+
+    def __init__(self, parent, painel):
+        super().__init__(parent, painel)
+        ttk.Label(self, text="Auditoria",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(self, text=("Quem fez o quê no sistema, mais recente "
+                               "primeiro."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        filtros = ttk.Frame(self, padding=(0, 0, 0, 12))
+        filtros.pack(fill="x")
+        ttk.Label(filtros, text="Buscar:").pack(side="left")
+        self.ent_busca = ttk.Entry(filtros, width=32)
+        self.ent_busca.pack(side="left", padx=8)
+        self.ent_busca.bind("<Return>", lambda e: self.atualizar())
+        ttk.Label(filtros, text="Ação:").pack(side="left")
+        self.cbo_acao = ttk.Combobox(filtros, width=22, state="readonly")
+        self.cbo_acao.pack(side="left", padx=(4, 8))
+        self.cbo_acao.bind("<<ComboboxSelected>>", lambda e: self.atualizar())
+        ttk.Button(filtros, text="Pesquisar",
+                    command=self.atualizar).pack(side="left")
+
+        cols = ("quando", "usuario", "acao", "detalhes")
+        self.tree = ttk.Treeview(self, columns=cols, show="headings",
+                                  height=18)
+        self.tree.heading("quando", text="Quando")
+        self.tree.heading("usuario", text="Quem")
+        self.tree.heading("acao", text="Ação")
+        self.tree.heading("detalhes", text="Detalhes")
+        self.tree.column("quando", width=140, anchor="w")
+        self.tree.column("usuario", width=160, anchor="w")
+        self.tree.column("acao", width=160, anchor="w")
+        self.tree.column("detalhes", width=420, anchor="w")
+        self.tree.pack(fill="both", expand=True)
+
+        rodape = ttk.Frame(self, padding=(0, 8, 0, 0))
+        rodape.pack(fill="x")
+        self.lbl_contagem = ttk.Label(rodape, style="Hint.TLabel")
+        self.lbl_contagem.pack(side="left")
+        self.btn_mais = ttk.Button(rodape, text="Carregar mais",
+                                    command=self._carregar_mais)
+
+        self._carregados = 0
+        self._total = 0
+
+    def atualizar(self):
+        self._recarregar_acoes()
+        for it in self.tree.get_children():
+            self.tree.delete(it)
+        self._carregados = 0
+        self._total = servicos.contar_auditoria(
+            self.ent_busca.get(), acao=self.cbo_acao.get() or None)
+        self._carregar_mais()
+
+    def _carregar_mais(self):
+        for reg in servicos.listar_auditoria(
+                self.ent_busca.get(), acao=self.cbo_acao.get() or None,
+                limite=AUDITORIA_POR_BLOCO, offset=self._carregados):
+            self.tree.insert("", "end", values=(
+                data_hora_br(reg["timestamp"]),
+                reg["usuario"] or "Sistema",
+                reg["acao"],
+                reg["detalhes"] or "",
+            ))
+            self._carregados += 1
+        tema.aplicar_zebra(self.tree)
+        self._atualizar_rodape()
+
+    def _atualizar_rodape(self):
+        if self._total == 0:
+            self.lbl_contagem.config(text="Nenhum registro encontrado.")
+        elif self._carregados >= self._total:
+            self.lbl_contagem.config(text=f"{self._total} registro(s).")
+        else:
+            self.lbl_contagem.config(
+                text=f"Mostrando {self._carregados} de {self._total} "
+                      f"registro(s).")
+        if self._carregados < self._total:
+            self.btn_mais.pack(side="right")
+        else:
+            self.btn_mais.pack_forget()
+
+    def _recarregar_acoes(self):
+        """Mantém o combo de ações em dia (opção vazia = Todas).
+
+        Dinâmico igual ao combo de categorias de `SecaoLivros`: uma
+        lista fixa aqui ficaria desatualizada a cada ação nova.
+        """
+        atual = self.cbo_acao.get()
+        valores = [""] + servicos.listar_acoes_auditoria()
+        if list(self.cbo_acao["values"]) != valores:
+            self.cbo_acao["values"] = valores
+            if atual not in valores:
+                self.cbo_acao.set("")
 
 
 # ---------------------------------------------------------------------------
