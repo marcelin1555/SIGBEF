@@ -1554,5 +1554,70 @@ class TestTomboNoCadastro(ServicosTestCase):
         self.assertEqual(len(itens), 0)
 
 
+class TestAuditoria(ServicosTestCase):
+    """Leitura do que `registrar_auditoria` já grava desde a v1.0."""
+
+    def test_cadastro_de_livro_gera_registro(self):
+        self.criar_livro(titulo="Livro Auditado")
+        regs = servicos.listar_auditoria()
+        self.assertTrue(any(r["acao"] == "CADASTRO_LIVRO" for r in regs))
+
+    def test_mais_recente_primeiro(self):
+        self.criar_livro(titulo="Primeiro")
+        self.criar_livro(titulo="Segundo")
+        regs = servicos.listar_auditoria(limite=2)
+        # o registro mais novo tem o maior id, e vem na frente da lista
+        self.assertGreater(regs[0]["id"], regs[1]["id"])
+
+    def test_filtro_por_termo_busca_em_acao_detalhes_e_usuario(self):
+        usuario = self.criar_usuario(matricula="bibliotecaria1",
+                                     perfil="BIBLIOTECARIO",
+                                     nome="Bibliotecária Teste")
+        self.criar_livro(titulo="Filtrado Por Termo",
+                         usuario_id=usuario["id"])
+        por_nome = servicos.listar_auditoria(termo="Bibliotecária Teste")
+        self.assertTrue(any(r["acao"] == "CADASTRO_LIVRO" for r in por_nome))
+
+    def test_filtro_por_acao_exata(self):
+        self.criar_livro(titulo="Vai Ser Excluido")
+        livro = servicos.listar_livros(termo="Vai Ser Excluido")[0]
+        servicos.excluir_livro(livro["id"])
+        so_exclusoes = servicos.listar_auditoria(acao="EXCLUSAO_LIVRO")
+        self.assertTrue(all(r["acao"] == "EXCLUSAO_LIVRO"
+                            for r in so_exclusoes))
+        self.assertTrue(len(so_exclusoes) >= 1)
+
+    def test_contagem_bate_com_a_lista_sem_limite(self):
+        self.criar_livro(titulo="Um")
+        self.criar_livro(titulo="Dois")
+        total = servicos.contar_auditoria()
+        self.assertEqual(total, len(servicos.listar_auditoria()))
+
+    def test_paginacao_nao_repete_nem_pula(self):
+        for i in range(5):
+            self.criar_livro(titulo=f"Paginado {i}")
+        pagina1 = servicos.listar_auditoria(limite=3, offset=0)
+        pagina2 = servicos.listar_auditoria(limite=3, offset=3)
+        ids1 = {r["id"] for r in pagina1}
+        ids2 = {r["id"] for r in pagina2}
+        self.assertEqual(len(pagina1), 3)
+        self.assertTrue(ids1.isdisjoint(ids2))
+
+    def test_acao_do_sistema_sem_usuario_aparece_como_none(self):
+        """Backup automático e afins gravam usuario_id nulo."""
+        from sigbef.database import registrar_auditoria
+        registrar_auditoria(None, "BACKUP_AUTOMATICO", "teste")
+        reg = next(r for r in servicos.listar_auditoria()
+                  if r["acao"] == "BACKUP_AUTOMATICO")
+        self.assertIsNone(reg["usuario"])
+        self.assertIsNone(reg["usuario_id"])
+
+    def test_listar_acoes_e_distinto_e_ordenado(self):
+        self.criar_livro(titulo="Um Cadastro")
+        acoes = servicos.listar_acoes_auditoria()
+        self.assertEqual(acoes, sorted(set(acoes)))
+        self.assertIn("CADASTRO_LIVRO", acoes)
+
+
 if __name__ == "__main__":
     unittest.main()
