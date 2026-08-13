@@ -21,9 +21,19 @@ function Badge({ texto }) {
 
 const versoes = [
   {
-    numero: '1.10.2',
+    numero: '1.10.3',
     data: '12 de agosto de 2026',
     destaque: true,
+    categorias: ['Robustez'],
+    itens: [
+      { cat: 'Robustez', texto: 'Tela de auditoria: quem fez o quê no sistema, mais recente primeiro. O registro é gravado desde a v1.0; até agora não havia como consultar' },
+      { cat: 'Robustez', texto: 'Busca livre por ação, detalhes ou nome de quem fez, mais um filtro por uma ação específica' },
+      { cat: 'Robustez', texto: 'Só leitura: nenhuma regra do sistema muda, a tela só mostra o que já era gravado' },
+    ],
+  },
+  {
+    numero: '1.10.2',
+    data: '12 de agosto de 2026',
     categorias: ['Acervo'],
     itens: [
       { cat: 'Acervo', texto: 'O tombo pode ser informado já no cadastro do livro. O exemplar costuma chegar com o número escrito, e antes era preciso cadastrar, deixar o sistema gerar e corrigir depois, um por um' },

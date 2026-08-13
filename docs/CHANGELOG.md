@@ -2,6 +2,23 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.10.3] — 2026-08-12
+
+Tela de auditoria: a única entrada do roadmap liberada antes da FICTS,
+por ser leitura pura.
+
+### Auditoria
+
+- Seção nova, visível para bibliotecário e admin, no mesmo nível de
+  Relatórios. `registrar_auditoria` grava desde a v1.0; até agora não
+  havia como ler
+- Busca livre por ação, detalhes ou nome de quem fez, mais filtro por uma
+  ação exata. Paginada com "Carregar mais", no mesmo padrão da tela de
+  Livros
+- O filtro de ação é lido do banco, não fixo no código: uma lista fixa
+  ficaria desatualizada a cada ação nova, o mesmo defeito que o manual do
+  usuário teve por seis versões num ponto parecido
+
 ## [1.10.2] — 2026-08-12
 
 O tombo agora pode ser informado na hora de cadastrar o livro, e não só

@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.10.2-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.10.3-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -655,15 +655,11 @@ Funcionalidades planejadas para versões futuras:
 
 > O sistema está congelado até a III FICTS, em 16 de setembro de 2026.
 > Mexer no que vai ser demonstrado ao vivo, às vésperas da feira, é risco
-> sem retorno. A única candidata a entrar antes é a tela de auditoria,
-> por ser leitura pura.
+> sem retorno. A tela de auditoria já saiu, por ser leitura pura; o resto
+> desta lista fica para depois da feira.
 
 ### Próxima versão
 
-- [ ] **Tela de auditoria** — o registro de quem fez o quê existe desde a
-      v1.0 e nunca teve tela. "Quem excluiu esse livro?" passou a ser uma
-      pergunta séria depois da exclusão em massa e do apagar tudo. É
-      leitura pura: não muda regra de negócio nenhuma
 - [ ] **Restaurar uma cópia de segurança pela tela** — hoje o sistema faz
       backup todo dia e não tem como usar. Recuperar exige fechar o
       programa, achar a pasta e sobrescrever o arquivo na mão. Backup que
@@ -750,6 +746,11 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Tela de auditoria**, com busca por ação, detalhes ou nome de quem
+      fez, e filtro por ação (v1.10.3)
+- [x] **Tombo informado já no cadastro** do livro, opcional (v1.10.2)
+- [x] **Corrigir o tombo do exemplar** e imprimir etiqueta só do que foi
+      marcado na lista (v1.10.1)
 - [x] **Editar livros do acervo**, para corrigir o que veio errado da
       importação da planilha, sem perder exemplares nem histórico (v1.10.0)
 - [x] **Exclusão em massa**, com o livro emprestado sendo barrado sozinho
@@ -849,7 +850,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.10.2** — Agosto/2026
+**SIGBEF v1.10.3** — Agosto/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 
