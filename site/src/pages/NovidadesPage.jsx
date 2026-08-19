@@ -21,9 +21,19 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.10.4',
+    data: '18 de agosto de 2026',
+    destaque: true,
+    categorias: ['Interface', 'Robustez'],
+    itens: [
+      { cat: 'Interface', texto: 'Formulário de cadastrar livro mais compacto: Editora/Categoria, Ano/Edição e Localização/Quantidade lado a lado, sinopse menor. A janela cai de 790 para 600 pixels de altura' },
+      { cat: 'Robustez', texto: 'Nenhum diálogo do sistema nasce maior que a tela do computador — corrigido para os 14 diálogos que existem, não só o de cadastro' },
+      { cat: 'Robustez', texto: 'O formulário de cadastrar livro ganhou rolagem com os botões sempre visíveis, como reforço para telas ainda menores' },
+    ],
+  },
+  {
     numero: '1.10.3',
     data: '12 de agosto de 2026',
-    destaque: true,
     categorias: ['Robustez'],
     itens: [
       { cat: 'Robustez', texto: 'Tela de auditoria: quem fez o quê no sistema, mais recente primeiro. O registro é gravado desde a v1.0; até agora não havia como consultar' },

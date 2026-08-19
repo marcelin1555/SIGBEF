@@ -101,6 +101,6 @@ if sys.platform == 'darwin':
         info_plist={
             'NSHighResolutionCapable': True,
             'CFBundleDisplayName': 'SIGBEF',
-            'CFBundleShortVersionString': '1.10.3',
+            'CFBundleShortVersionString': '1.10.4',
         },
     )

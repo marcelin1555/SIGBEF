@@ -2,6 +2,31 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.10.4] — 2026-08-18
+
+Correção reportada direto do uso real: na escola, a janela de cadastrar
+livro nascia maior que a tela do computador, com os botões Salvar e
+Cancelar fora da área visível.
+
+### Formulário de cadastrar livro mais compacto
+
+- Editora/Categoria, Ano/Edição e Localização/Quantidade passam a ficar
+  lado a lado, em vez de uma linha por campo
+- Sinopse cai de 6 para 3 linhas visíveis; a dica do campo Tombo fica
+  mais curta, cabendo numa linha só
+- A janela cai de 790 para 600 pixels de altura
+
+### Nenhuma janela nasce maior que a tela
+
+- `centralizar_janela`, usada por 14 diálogos diferentes no sistema,
+  nunca conferia se o tamanho pedido cabia na tela do computador. Agora
+  trava no que a tela realmente comporta, com folga para a barra de
+  tarefas — protege qualquer diálogo do mesmo problema, não só o de
+  cadastro
+- De segurança, o formulário de cadastrar livro ganhou rolagem com os
+  botões sempre visíveis fora da área rolável: mesmo numa tela ainda
+  menor, dá para rolar até o fim em vez de perder o acesso a Salvar
+
 ## [1.10.3] — 2026-08-12
 
 Tela de auditoria: a única entrada do roadmap liberada antes da FICTS,
