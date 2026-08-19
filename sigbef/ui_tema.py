@@ -309,9 +309,21 @@ def linha_separadora(parent, cor=None):
 
 
 def centralizar_janela(janela, largura, altura):
+    """Centraliza, sem deixar a janela nascer maior que a tela.
+
+    Sem o limite, uma janela pedida maior que a tela do computador da
+    escola (comum em laboratório com monitor pequeno) nasce com o topo
+    ou o rodapé fora da área visível — e como cada diálogo pede um
+    tamanho fixo, o rodapé cortado costuma ser justo onde ficam os
+    botões Salvar/Cancelar.
+    """
     janela.update_idletasks()
     sw = janela.winfo_screenwidth()
     sh = janela.winfo_screenheight()
-    x = (sw - largura) // 2
-    y = (sh - altura) // 3
+    # Folga pra barra de tarefas e pra moldura da janela, que a API de
+    # tela não inclui.
+    largura = min(largura, sw - 40)
+    altura = min(altura, sh - 80)
+    x = max(0, (sw - largura) // 2)
+    y = max(0, (sh - altura) // 3)
     janela.geometry(f"{largura}x{altura}+{x}+{y}")

@@ -364,80 +364,136 @@ class DialogoLivro(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 600, 790)
+        # Duas colunas de campos (ver _construir) cabem numa janela bem
+        # mais baixa que a versão anterior, de 790 px — que em tela de
+        # laboratório escolar (comum em 768 px de altura) nascia com o
+        # rodapé, onde ficam os botões, fora da área visível.
+        tema.centralizar_janela(self, 660, 600)
 
         self._construir()
 
     def _construir(self):
-        wrap = ttk.Frame(self, padding=24)
+        wrap = ttk.Frame(self, padding=(24, 20, 24, 16))
         wrap.pack(fill="both", expand=True)
         ttk.Label(wrap, text="Cadastrar livro",
                   style="Titulo.TLabel").pack(anchor="w")
         ttk.Label(wrap, text="Preencha os dados do livro e a quantidade "
                   "de exemplares iniciais.",
-                  style="Hint.TLabel").pack(anchor="w", pady=(2, 16))
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 12))
 
-        form = ttk.Frame(wrap)
-        form.pack(fill="x")
-
-        self._campos = {}
-        linhas = [
-            ("titulo", "Título *", 0),
-            ("autores", "Autor(es) *  (separe por ;)", 1),
-            ("isbn", "ISBN", 2),
-            ("editora", "Editora", 3),
-            ("categoria", "Categoria", 4),
-            ("ano", "Ano de publicação", 5),
-            ("edicao", "Edição", 6),
-            ("localizacao", "Localização", 7),
-        ]
-        for chave, rotulo, linha in linhas:
-            ttk.Label(form, text=rotulo).grid(
-                row=linha, column=0, sticky="w", pady=(8, 2))
-            ent = ttk.Entry(form, width=60, font=("Segoe UI", 10))
-            ent.grid(row=linha, column=1, sticky="ew", pady=(8, 2))
-            form.columnconfigure(1, weight=1)
-            self._campos[chave] = ent
-
-        if servicos.isbn_lookup_ativo():
-            ttk.Button(form, text="Buscar online",
-                       command=self._buscar_isbn).grid(
-                           row=2, column=2, padx=(6, 0), pady=(8, 2))
-
-        ttk.Label(form, text="Quantidade de exemplares *").grid(
-            row=8, column=0, sticky="w", pady=(8, 2))
-        self.spin_qtd = tk.Spinbox(form, from_=1, to=50, width=6,
-                                   font=("Segoe UI", 10))
-        self.spin_qtd.delete(0, "end")
-        self.spin_qtd.insert(0, "1")
-        self.spin_qtd.grid(row=8, column=1, sticky="w", pady=(8, 2))
-
-        # O livro físico costuma chegar com o tombo já escrito. Deixar em
-        # branco mantém o comportamento antigo: o sistema gera o número.
-        ttk.Label(form, text="Tombo(s)").grid(
-            row=9, column=0, sticky="w", pady=(8, 2))
-        self.ent_tombos = ttk.Entry(form, width=60, font=("Segoe UI", 10))
-        self.ent_tombos.grid(row=9, column=1, sticky="ew", pady=(8, 2))
-        # wraplength porque a dica é mais larga que a coluna: sem ele o
-        # texto sai cortado na borda da janela
-        ttk.Label(form, style="Hint.TLabel", wraplength=360, justify="left",
-                  text="Opcional. Em branco, o sistema gera. Para vários "
-                       "exemplares, separe por ; na ordem.").grid(
-            row=10, column=1, sticky="w")
-
-        ttk.Label(form, text="Sinopse").grid(row=11, column=0, sticky="nw",
-                                              pady=(8, 2))
-        self.txt_sinopse = tk.Text(form, height=6, width=50,
-                                    font=("Segoe UI", 10))
-        self.txt_sinopse.grid(row=11, column=1, sticky="ew", pady=(8, 2))
-
+        # Botões primeiro (side="bottom"), pra reservar o rodapé antes do
+        # scroll ocupar o resto — assim Salvar/Cancelar nunca ficam
+        # escondidos atrás do conteúdo, nem em tela pequena.
         botoes = ttk.Frame(wrap)
-        botoes.pack(fill="x", pady=(20, 0))
+        botoes.pack(side="bottom", fill="x", pady=(12, 0))
         ttk.Button(botoes, text="Cancelar", command=self.destroy
                    ).pack(side="right", padx=(8, 0))
         ttk.Button(botoes, text="Salvar livro",
                    style="Primario.TButton",
                    command=self._salvar).pack(side="right")
+
+        # Área com rolagem: mesmo padrão de SecaoConfig. Com o formulário
+        # já compacto isso raramente aciona, mas é rede de segurança pra
+        # telas ainda menores ou campos futuros.
+        canvas = tk.Canvas(wrap, bg=tema.COR_FUNDO, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(wrap, orient="vertical",
+                                  command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        form = ttk.Frame(canvas)
+        inner_window = canvas.create_window((0, 0), window=form, anchor="nw")
+
+        def _on_canvas_configure(e):
+            canvas.itemconfig(inner_window, width=e.width)
+        canvas.bind("<Configure>", _on_canvas_configure)
+
+        def _on_form_configure(e):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        form.bind("<Configure>", _on_form_configure)
+
+        def _on_mousewheel(e):
+            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
+        canvas.bind("<Enter>",
+                    lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
+        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+
+        form.columnconfigure(1, weight=1)
+        form.columnconfigure(3, weight=1)
+
+        def campo(chave, rotulo, linha, coluna=0, largura=26, **kw):
+            col_rotulo, col_campo = (0, 1) if coluna == 0 else (2, 3)
+            padx = (0, 8) if coluna == 0 else (16, 0)
+            ttk.Label(form, text=rotulo).grid(
+                row=linha, column=col_rotulo, sticky="w",
+                pady=(8, 2), padx=padx)
+            ent = ttk.Entry(form, width=largura, font=("Segoe UI", 10), **kw)
+            ent.grid(row=linha, column=col_campo, sticky="ew", pady=(8, 2))
+            self._campos[chave] = ent
+            return ent
+
+        self._campos = {}
+
+        # Título e autores seguem em linha inteira: costumam ser o campo
+        # mais longo do formulário, e partir eles em coluna estreita
+        # atrapalharia mais do que ajudaria.
+        ttk.Label(form, text="Título *").grid(
+            row=0, column=0, sticky="w", pady=(8, 2))
+        ent_titulo = ttk.Entry(form, font=("Segoe UI", 10))
+        ent_titulo.grid(row=0, column=1, columnspan=3, sticky="ew",
+                        pady=(8, 2))
+        self._campos["titulo"] = ent_titulo
+
+        ttk.Label(form, text="Autor(es) *  (separe por ;)").grid(
+            row=1, column=0, sticky="w", pady=(8, 2))
+        ent_autores = ttk.Entry(form, font=("Segoe UI", 10))
+        ent_autores.grid(row=1, column=1, columnspan=3, sticky="ew",
+                         pady=(8, 2))
+        self._campos["autores"] = ent_autores
+
+        ttk.Label(form, text="ISBN").grid(
+            row=2, column=0, sticky="w", pady=(8, 2))
+        ent_isbn = ttk.Entry(form, font=("Segoe UI", 10))
+        ent_isbn.grid(row=2, column=1, sticky="ew", pady=(8, 2),
+                      columnspan=1 if servicos.isbn_lookup_ativo() else 3)
+        self._campos["isbn"] = ent_isbn
+        if servicos.isbn_lookup_ativo():
+            ttk.Button(form, text="Buscar online",
+                       command=self._buscar_isbn).grid(
+                           row=2, column=2, columnspan=2, sticky="w",
+                           padx=(8, 0), pady=(8, 2))
+
+        campo("editora", "Editora", 3, coluna=0)
+        campo("categoria", "Categoria", 3, coluna=1)
+        campo("ano", "Ano de publicação", 4, coluna=0)
+        campo("edicao", "Edição", 4, coluna=1)
+        campo("localizacao", "Localização", 5, coluna=0)
+
+        ttk.Label(form, text="Quantidade de exemplares *").grid(
+            row=5, column=2, sticky="w", pady=(8, 2), padx=(16, 0))
+        self.spin_qtd = tk.Spinbox(form, from_=1, to=50, width=6,
+                                   font=("Segoe UI", 10))
+        self.spin_qtd.delete(0, "end")
+        self.spin_qtd.insert(0, "1")
+        self.spin_qtd.grid(row=5, column=3, sticky="w", pady=(8, 2))
+
+        # O livro físico costuma chegar com o tombo já escrito. Deixar em
+        # branco mantém o comportamento antigo: o sistema gera o número.
+        ttk.Label(form, text="Tombo(s)").grid(
+            row=6, column=0, sticky="w", pady=(8, 2))
+        self.ent_tombos = ttk.Entry(form, font=("Segoe UI", 10))
+        self.ent_tombos.grid(row=6, column=1, columnspan=3, sticky="ew",
+                             pady=(8, 2))
+        ttk.Label(form, style="Hint.TLabel",
+                  text="Opcional — em branco, o sistema gera. Vários "
+                       "exemplares: separe por ;").grid(
+            row=7, column=1, columnspan=3, sticky="w")
+
+        ttk.Label(form, text="Sinopse").grid(row=8, column=0, sticky="nw",
+                                              pady=(8, 2))
+        self.txt_sinopse = tk.Text(form, height=3, font=("Segoe UI", 10))
+        self.txt_sinopse.grid(row=8, column=1, columnspan=3, sticky="ew",
+                              pady=(8, 2))
 
     def _set_campo(self, chave, valor):
         ent = self._campos.get(chave)
