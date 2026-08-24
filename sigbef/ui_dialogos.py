@@ -1172,15 +1172,16 @@ class DialogoBaixaExemplar(tk.Toplevel):
     hora de repor a estante.
     """
 
-    def __init__(self, parent, codigo: str, ao_confirmar=None):
+    def __init__(self, parent, codigo: str, sessao=None, ao_confirmar=None):
         super().__init__(parent)
         self.codigo = codigo
+        self.sessao = sessao
         self.ao_confirmar = ao_confirmar
         self.title("Dar baixa no exemplar")
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 520, 340)
+        tema.centralizar_janela(self, 520, 380)
 
         wrap = ttk.Frame(self, padding=20)
         wrap.pack(fill="both", expand=True)
@@ -1201,6 +1202,22 @@ class DialogoBaixaExemplar(tk.Toplevel):
                             variable=self.var_motivo).pack(anchor="w",
                                                              pady=2)
 
+        # O tombo do exemplar baixado continua ocupado, de propósito: se
+        # ele liberasse sozinho, dois exemplares (o baixado e o novo)
+        # ficariam com o mesmo número por um instante, e é exatamente
+        # essa dupla que faz o balcão emprestar a cópia errada em
+        # silêncio. Aqui é o oposto: ação explícita, e só depois que a
+        # baixa em si já foi confirmada.
+        self._tombo_atual = ex.get("numero_tombo") if ex else None
+        self.var_liberar_tombo = tk.BooleanVar(value=False)
+        if self._tombo_atual:
+            ttk.Checkbutton(
+                wrap,
+                text=f'Liberar o tombo "{self._tombo_atual}" para usar em '
+                     "outro exemplar",
+                variable=self.var_liberar_tombo,
+            ).pack(anchor="w", pady=(12, 0))
+
         self.lbl_aviso = ttk.Label(wrap, text="", style="Hint.TLabel",
                                      wraplength=460, justify="left")
         self.lbl_aviso.pack(anchor="w", pady=(10, 0))
@@ -1219,8 +1236,10 @@ class DialogoBaixaExemplar(tk.Toplevel):
                     command=self._confirmar).pack(side="right", padx=(0, 8))
 
     def _confirmar(self):
+        usuario_id = self.sessao.id if self.sessao else None
         try:
-            r = servicos.baixar_exemplar(self.codigo, self.var_motivo.get())
+            r = servicos.baixar_exemplar(self.codigo, self.var_motivo.get(),
+                                         usuario_id=usuario_id)
         except RegraNegocioError as e:
             messagebox.showwarning("Não foi possível", str(e), parent=self)
             return
@@ -1229,6 +1248,18 @@ class DialogoBaixaExemplar(tk.Toplevel):
             extra = "\n\nO empréstimo foi encerrado."
             if r["multa"]:
                 extra += f" Multa lançada: {reais(r['multa'])}."
+        if self.var_liberar_tombo.get() and self._tombo_atual:
+            try:
+                servicos.alterar_tombo_exemplar(self.codigo, "",
+                                                usuario_id=usuario_id)
+                extra += (f'\n\nO tombo "{self._tombo_atual}" foi liberado '
+                          "e já pode ser usado em outro exemplar.")
+            except RegraNegocioError as e:
+                # A baixa em si já foi feita; isto é só um passo a mais
+                # que falhou, então avisa em vez de derrubar a operação
+                # que já teve sucesso.
+                extra += (f"\n\nA baixa foi registrada, mas não foi "
+                          f"possível liberar o tombo: {e}")
         messagebox.showinfo(
             "Baixa registrada",
             f"'{r['titulo']}' saiu do acervo.{extra}", parent=self)
@@ -1249,9 +1280,10 @@ class DialogoLocalizacaoExemplar(tk.Toplevel):
     """
 
     def __init__(self, parent, codigo: str, atual: str = "",
-                 ao_confirmar=None):
+                 sessao=None, ao_confirmar=None):
         super().__init__(parent)
         self.codigo = codigo
+        self.sessao = sessao
         self.ao_confirmar = ao_confirmar
         self.title("Mudar prateleira")
         self.transient(parent)
@@ -1295,7 +1327,8 @@ class DialogoLocalizacaoExemplar(tk.Toplevel):
     def _confirmar(self):
         try:
             servicos.alterar_localizacao_exemplar(
-                self.codigo, self.ent_local.get())
+                self.codigo, self.ent_local.get(),
+                usuario_id=self.sessao.id if self.sessao else None)
         except RegraNegocioError as e:
             messagebox.showwarning("Não foi possível", str(e), parent=self)
             return
@@ -1314,9 +1347,10 @@ class DialogoTomboExemplar(tk.Toplevel):
     """
 
     def __init__(self, parent, codigo: str, atual: str = "",
-                 ao_confirmar=None):
+                 sessao=None, ao_confirmar=None):
         super().__init__(parent)
         self.codigo = codigo
+        self.sessao = sessao
         self.ao_confirmar = ao_confirmar
         self.title("Corrigir tombo")
         self.transient(parent)
@@ -1361,7 +1395,9 @@ class DialogoTomboExemplar(tk.Toplevel):
 
     def _confirmar(self):
         try:
-            servicos.alterar_tombo_exemplar(self.codigo, self.ent_tombo.get())
+            servicos.alterar_tombo_exemplar(
+                self.codigo, self.ent_tombo.get(),
+                usuario_id=self.sessao.id if self.sessao else None)
         except RegraNegocioError as e:
             messagebox.showwarning("Não foi possível", str(e), parent=self)
             return
@@ -1376,6 +1412,10 @@ class DialogoTomboExemplar(tk.Toplevel):
 class DialogoDetalhesLivro(tk.Toplevel):
     def __init__(self, parent, livro_id: int):
         super().__init__(parent)
+        # parent é o PainelPrincipal: sempre tem sessao. As três ações
+        # de exemplar abaixo (baixa, tombo, prateleira) usam isso para
+        # atribuir a ação certa na auditoria, em vez de "Sistema".
+        self.sessao = getattr(parent, "sessao", None)
         self.title("Detalhes do livro")
         self.transient(parent)
         self.grab_set()
@@ -1474,7 +1514,8 @@ class DialogoDetalhesLivro(tk.Toplevel):
             return
         valores = self.tree.item(sel[0])["values"]
         codigo = str(valores[1])
-        DialogoBaixaExemplar(self, codigo, ao_confirmar=self._recarregar)
+        DialogoBaixaExemplar(self, codigo, sessao=self.sessao,
+                             ao_confirmar=self._recarregar)
 
     def _corrigir_tombo(self):
         sel = self.tree.selection()
@@ -1485,7 +1526,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
             return
         valores = self.tree.item(sel[0])["values"]
         codigo, atual = str(valores[1]), str(valores[0] or "")
-        DialogoTomboExemplar(self, codigo, atual,
+        DialogoTomboExemplar(self, codigo, atual, sessao=self.sessao,
                               ao_confirmar=self._recarregar)
 
     def _mudar_localizacao(self):
@@ -1497,7 +1538,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
             return
         valores = self.tree.item(sel[0])["values"]
         codigo, atual = str(valores[1]), str(valores[2] or "")
-        DialogoLocalizacaoExemplar(self, codigo, atual,
+        DialogoLocalizacaoExemplar(self, codigo, atual, sessao=self.sessao,
                                     ao_confirmar=self._recarregar)
 
     def _recarregar(self):
