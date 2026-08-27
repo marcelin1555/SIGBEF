@@ -449,15 +449,6 @@ class SigbefRepository(
         return null
     }
 
-    /**
-     * Data de hoje em ISO (yyyy-MM-dd), no mesmo formato que o SQLite
-     * devolve — assim a comparação de texto já ordena corretamente e o
-     * app não precisa de java.time (que exigiria desugaring no minSdk 24).
-     */
-    private fun hojeIso(): String =
-        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
-            .format(java.util.Date())
-
     companion object {
         /** Estado antes de o aluno entrar: nenhum dado inventado. */
         val usuarioVazio = Usuario()
@@ -543,12 +534,36 @@ fun LivroEntity.toDomain() = Livro(
     spineColorHex = spineColorHex
 )
 
+/**
+ * Data de hoje em ISO (yyyy-MM-dd), no mesmo formato que o SQLite
+ * devolve — assim a comparação de texto já ordena corretamente e o app
+ * não precisa de java.time (que exigiria desugaring no minSdk 24).
+ *
+ * Fica no nível do arquivo, e não dentro do repositório, porque o
+ * `toDomain` abaixo também precisa dela.
+ */
+internal fun hojeIso(): String =
+    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        .format(java.util.Date())
+
 fun EmprestimoEntity.toDomain() = Emprestimo(
     id = id,
     livroTitulo = livroTitulo,
     autor = autor,
     dataDevolucao = dataDevolucao,
-    atrasado = atrasado,
+    // Calculado na LEITURA, não lido do cache.
+    //
+    // O campo `atrasado` da entidade é uma fotografia do momento da
+    // sincronização. O aluno que ficou três dias sem rede continuava
+    // vendo "Em dia" com selo verde num livro que venceu ontem — e, ao
+    // mesmo tempo, "prazo vencido" na tela inicial, porque HomeScreen e
+    // o aviso de devolução sempre calcularam pela data. O app se
+    // contradizia em duas telas sobre o mesmo livro.
+    //
+    // Derivar aqui faz as três leituras concordarem sem depender de o
+    // aluno ter aberto o app com internet.
+    atrasado = !devolvido && dataDevolucao.isNotEmpty() &&
+        dataDevolucao.take(10) < hojeIso(),
     devolvido = devolvido,
     dataDevolvido = dataDevolvido,
     spineColorHex = spineColorHex,

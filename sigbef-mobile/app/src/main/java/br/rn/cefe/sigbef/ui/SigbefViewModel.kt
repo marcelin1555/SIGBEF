@@ -12,6 +12,9 @@ import br.rn.cefe.sigbef.model.Reserva
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +26,45 @@ import kotlinx.coroutines.launch
 class SigbefViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = SigbefRepository.getInstance(application)
+
+    // ------------------------------------------- sincronizacoes em voo
+    /**
+     * Toda sincronizacao roda sob este Job, e nao solta no escopo da
+     * tela.
+     *
+     * Sem isso havia uma corrida com consequencia seria num celular
+     * compartilhado -- que e o caso comum na escola, onde poucos alunos
+     * tem aparelho proprio. `sair()` limpava o cache, mas nao cancelava
+     * a sincronizacao ja em voo: a resposta chegava depois e regravava
+     * nome, matricula, emprestimos e reservas no banco recem-limpo. O
+     * aluno seguinte entrava e via a carteirinha do anterior.
+     *
+     * O Job e filho do escopo da tela, entao continua morrendo junto com
+     * a ViewModel; a diferenca e poder ser cancelado sozinho, sem
+     * derrubar o escopo inteiro.
+     */
+    private var sincronizacoes = novoJobDeSincronizacao()
+
+    private fun novoJobDeSincronizacao() =
+        SupervisorJob(viewModelScope.coroutineContext[Job])
+
+    /** Lanca uma sincronizacao sob o Job que `sair()` sabe cancelar. */
+    private fun sincronizando(bloco: suspend () -> Unit) {
+        viewModelScope.launch(sincronizacoes) { bloco() }
+    }
+
+    /**
+     * Para toda sincronizacao em voo e **espera** ela parar de verdade.
+     *
+     * O `join` e a parte que importa: cancelar so pede para parar. Sem
+     * esperar, a limpeza do cache poderia acontecer no meio de uma
+     * gravacao que ainda estava a caminho -- exatamente o defeito que
+     * isto conserta.
+     */
+    private suspend fun pararSincronizacoes() {
+        sincronizacoes.cancelAndJoin()
+        sincronizacoes = novoJobDeSincronizacao()
+    }
 
     // ------------------------------------------------------ navegação
     private val _currentScreen = MutableStateFlow(
@@ -114,13 +156,16 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
         // A recomendação é a consulta mais cara do servidor; buscada só
         // quando a tela abre, nunca junto das sincronizações de rotina.
         if (screen == Screen.READING) {
-            viewModelScope.launch {
+            sincronizando {
                 _carregando.value = true
-                if (repository.sincronizarLeitura()) {
-                    _isOffline.value = false
-                    marcarSincronizacao()
+                try {
+                    if (repository.sincronizarLeitura()) {
+                        _isOffline.value = false
+                        marcarSincronizacao()
+                    }
+                } finally {
+                    _carregando.value = false
                 }
-                _carregando.value = false
             }
         }
     }
@@ -140,14 +185,14 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     fun selecionarLivroPorId(livroId: Int) {
         _selectedBookId.value = livroId
         navigateTo(Screen.BOOK_DETAIL)
-        viewModelScope.launch { repository.sincronizarDetalheLivro(livroId) }
+        sincronizando { repository.sincronizarDetalheLivro(livroId) }
     }
 
     fun selectBook(book: Livro) {
         _selectedBookId.value = book.id
         navigateTo(Screen.BOOK_DETAIL)
         // Sinopse e tombo só existem na ficha completa
-        viewModelScope.launch { repository.sincronizarDetalheLivro(book.id) }
+        sincronizando { repository.sincronizarDetalheLivro(book.id) }
     }
 
     /**
@@ -187,6 +232,7 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     /** Sai da conta, mantendo o pareamento com a escola. */
     fun sair() {
         viewModelScope.launch {
+            pararSincronizacoes()
             repository.sair()
             navigateTo(Screen.LOGIN)
         }
@@ -195,6 +241,7 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
     /** Esquece a biblioteca e volta ao pareamento (trocar de escola). */
     fun trocarBiblioteca() {
         viewModelScope.launch {
+            pararSincronizacoes()
             repository.desparear()
             navigateTo(Screen.CONNECT)
         }
@@ -229,13 +276,20 @@ class SigbefViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Atualiza acervo e situação do leitor a partir da biblioteca. */
     fun sincronizar() {
-        viewModelScope.launch {
+        sincronizando {
             _carregando.value = true
-            val acervo = repository.sincronizarAcervo()
-            val situacao = repository.sincronizarSituacao()
-            _isOffline.value = !(acervo || situacao)
-            if (acervo || situacao) marcarSincronizacao()
-            _carregando.value = false
+            // `finally` porque agora a sincronizacao pode mesmo ser
+            // cancelada no meio (ao sair da conta). Sem ele, o
+            // cancelamento pularia a linha que desliga o indicador e a
+            // tela ficaria carregando para sempre.
+            try {
+                val acervo = repository.sincronizarAcervo()
+                val situacao = repository.sincronizarSituacao()
+                _isOffline.value = !(acervo || situacao)
+                if (acervo || situacao) marcarSincronizacao()
+            } finally {
+                _carregando.value = false
+            }
         }
     }
 

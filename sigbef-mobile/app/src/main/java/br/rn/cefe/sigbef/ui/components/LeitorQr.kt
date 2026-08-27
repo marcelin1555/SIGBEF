@@ -152,6 +152,19 @@ private fun SemCamera(
  * KEEP_ONLY_LATEST: se a análise de um quadro demorar, os quadros
  * seguintes são descartados em vez de acumularem uma fila crescente.
  */
+/**
+ * O que precisa ser desligado quando a tela do leitor sai.
+ *
+ * Não é estado de Compose de propósito: trocar estes valores não deve
+ * recompor nada. Existe só para o `onDispose` ter o que soltar — sem
+ * isso, a referência à câmera se perde dentro do listener e não há como
+ * desligá-la depois.
+ */
+private class RecursosDaCamera {
+    var provider: ProcessCameraProvider? = null
+    var analise: ImageAnalysis? = null
+}
+
 @Composable
 private fun CameraDoQr(
     aoLer: (String) -> Unit,
@@ -171,10 +184,30 @@ private fun CameraDoQr(
     // a tela seguinte ainda não substituiu esta.
     var jaLeu by remember { mutableStateOf(false) }
 
+    val recursos = remember { RecursosDaCamera() }
+
     DisposableEffect(Unit) {
         onDispose {
-            leitor.close()
+            // A ordem aqui é o conserto, não detalhe de estilo.
+            //
+            // Antes isto só fechava o leitor e matava o executor, e
+            // nunca desligava a câmera. Como `bindToLifecycle` recebe o
+            // lifecycle da Activity, sair desta tela não desfaz o
+            // vínculo: a Activity continua viva, a câmera continua
+            // aberta com a luz acesa, e o analisador continua recebendo
+            // quadros — entregando cada um a um leitor já fechado e a um
+            // executor já encerrado. Dava exceção a cada quadro, para
+            // sempre, com a tela do QR nem aparecendo mais.
+            //
+            // Primeiro para de receber quadro, depois solta a câmera, e
+            // só então encerra quem processaria o quadro. Inverter isso
+            // reabre exatamente o mesmo defeito.
+            recursos.analise?.clearAnalyzer()
+            recursos.provider?.unbindAll()
+            recursos.analise = null
+            recursos.provider = null
             executor.shutdown()
+            leitor.close()
         }
     }
 
@@ -210,6 +243,11 @@ private fun CameraDoQr(
                             preview,
                             analise
                         )
+                        // Só guarda depois que o vínculo deu certo: o
+                        // onDispose não deve tentar soltar uma câmera
+                        // que nunca chegou a ser presa.
+                        recursos.provider = provider
+                        recursos.analise = analise
                     }
                 }, androidx.core.content.ContextCompat.getMainExecutor(ctx))
                 previewView
