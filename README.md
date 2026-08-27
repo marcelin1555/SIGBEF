@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.10.4-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.11.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -762,9 +762,12 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
       etiqueta de código de barras (v1.10.0)
 - [x] **Reiniciar o sistema**: apaga o dado de teste e volta ao estado de
       instalação nova, com backup obrigatório antes (v1.10.0)
-- [x] **Devolução em lote** no balcão, para a pilha do fim de ano (v1.9.0)
+- [x] **Devolução em lote** no balcão, para a pilha do fim de ano
+      (anunciada na v1.9.0, mas o botão levantava erro e nunca chegou a
+      funcionar; corrigida de fato na v1.11.0)
 - [x] **Aviso de devolução no celular**, calculado localmente: funciona
-      sem internet e com a biblioteca fechada (v1.9.0)
+      sem internet e com a biblioteca fechada (v1.9.0; quebrava no
+      Android 7 até a v1.11.0)
 - [x] **Conferência do acervo (inventário)**: passar o leitor na estante
       e receber a lista do que não foi encontrado, do que está
       emprestado e do que apareceu sem estar previsto (v1.8.0)
