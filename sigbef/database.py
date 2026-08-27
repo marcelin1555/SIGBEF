@@ -156,7 +156,18 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     data_emprestimo TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     data_prevista TEXT NOT NULL,
     data_devolucao TEXT,
+    -- `multa` e o valor LANCADO na devolucao e nunca muda depois: e o
+    -- historico. O que foi recebido vai em `multa_paga`, o que foi
+    -- perdoado vai em `multa_isenta`, e o saldo devedor e a diferenca.
+    -- Ate a v1.10.4 existia so `multa`, servindo de valor lancado E de
+    -- saldo ao mesmo tempo -- entao quitar apagava o registro de que a
+    -- multa existiu, e o relatorio da direcao somava so o que ninguem
+    -- tinha pagado sob o rotulo "Multas lancadas".
     multa REAL NOT NULL DEFAULT 0,
+    multa_paga REAL NOT NULL DEFAULT 0,
+    multa_isenta REAL NOT NULL DEFAULT 0,
+    multa_motivo_isencao TEXT,
+    multa_quitada_em TEXT,
     origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO')),
     renovacoes INTEGER NOT NULL DEFAULT 0
 );
@@ -317,6 +328,20 @@ def _migrar_schema(cur) -> None:
     if "renovacoes" not in colunas:
         cur.execute("ALTER TABLE emprestimo "
                     "ADD COLUMN renovacoes INTEGER NOT NULL DEFAULT 0")
+
+    if "multa_paga" not in colunas:
+        # Bancos anteriores tem so `multa`. Nada a converter: o valor que
+        # esta la e, por definicao, o que ainda estava em aberto, entao
+        # pago e isento nascem zerados e o saldo continua o mesmo. O que
+        # ja foi quitado antes desta versao esta perdido -- `quitar_multa`
+        # zerava a coluna -- e nao da para reconstruir.
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_paga REAL NOT NULL DEFAULT 0")
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_isenta REAL NOT NULL DEFAULT 0")
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_motivo_isencao TEXT")
+        cur.execute("ALTER TABLE emprestimo ADD COLUMN multa_quitada_em TEXT")
 
     cur.execute("PRAGMA table_info(exemplar)")
     colunas = {r["name"] for r in cur.fetchall()}

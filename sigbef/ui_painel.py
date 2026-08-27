@@ -10,7 +10,7 @@ import csv
 import tkinter as tk
 from datetime import date, datetime
 from pathlib import Path
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 
 from . import barcode_util
 from . import icones
@@ -858,6 +858,8 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._renovar).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Quitar multa",
                     command=self._quitar).pack(side="left")
+        ttk.Button(op, text="Isentar multa",
+                    command=self._isentar).pack(side="left", padx=(8, 0))
         ttk.Button(op, text="Devolver em lote",
                     command=self._devolver_em_lote).pack(side="left",
                                                           padx=(8, 0))
@@ -995,20 +997,80 @@ class SecaoEmprestimos(SecaoBase):
                               parent=self.painel)
         self.atualizar()
 
-    def _quitar(self):
+    def _emprestimo_selecionado(self, acao):
+        """Id da linha selecionada, ou None (com aviso) se não houver."""
         sel = self.tree.selection()
         if not sel:
             messagebox.showinfo(
                 "Selecione um empréstimo",
-                "Clique numa linha da tabela antes de quitar a multa.",
+                f"Clique numa linha da tabela antes de {acao}.",
+                parent=self.painel)
+            return None
+        return int(self.tree.item(sel[0])["values"][0])
+
+    def _quitar(self):
+        emp_id = self._emprestimo_selecionado("quitar a multa")
+        if emp_id is None:
+            return
+        try:
+            saldo = servicos.saldo_multa(emp_id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Quitar multa", str(e), parent=self.painel)
+            return
+        if saldo <= 0:
+            messagebox.showinfo(
+                "Sem multa em aberto",
+                "Este empréstimo não tem multa a receber.",
                 parent=self.painel)
             return
-        emp_id = int(self.tree.item(sel[0])["values"][0])
-        if messagebox.askyesno("Quitar multa",
-                                "Deseja quitar a multa deste empréstimo?",
-                                parent=self.painel):
+        if not messagebox.askyesno(
+                "Quitar multa",
+                f"Registrar o recebimento de {reais(saldo)}?\n\n"
+                "O valor lançado continua no histórico e no relatório — "
+                "quitar registra que o dinheiro entrou, não apaga a multa.",
+                parent=self.painel):
+            return
+        try:
             servicos.quitar_multa(emp_id, self.sessao.id)
-            self.atualizar()
+        except RegraNegocioError as e:
+            messagebox.showwarning("Quitar multa", str(e), parent=self.painel)
+            return
+        self.atualizar()
+
+    def _isentar(self):
+        """Perdoa a multa — com motivo, que é o que diferencia de quitar.
+
+        Sem isto, a única forma de perdoar era clicar em "Quitar multa" e
+        deixar registrado que a escola recebeu um dinheiro que nunca
+        entrou.
+        """
+        emp_id = self._emprestimo_selecionado("isentar a multa")
+        if emp_id is None:
+            return
+        try:
+            saldo = servicos.saldo_multa(emp_id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Isentar multa", str(e), parent=self.painel)
+            return
+        if saldo <= 0:
+            messagebox.showinfo(
+                "Sem multa em aberto",
+                "Este empréstimo não tem multa a isentar.",
+                parent=self.painel)
+            return
+        motivo = simpledialog.askstring(
+            "Isentar multa",
+            f"Isentar {reais(saldo)} deste empréstimo.\n\n"
+            "Motivo da isenção (obrigatório):",
+            parent=self.painel)
+        if motivo is None:
+            return
+        try:
+            servicos.isentar_multa(emp_id, motivo, self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Isentar multa", str(e), parent=self.painel)
+            return
+        self.atualizar()
 
     def atualizar(self):
         for it in self.tree.get_children():
@@ -1870,6 +1932,10 @@ class SecaoRelatorios(SecaoBase):
             ["Devoluções com atraso", mov["com_atraso"],
              f"{mov['taxa_atraso']}%"],
             ["Multas lançadas (R$)", f"{mov['multa_total']:.2f}", ""],
+            ["  das quais recebidas (R$)",
+             f"{mov['multa_recebida']:.2f}", ""],
+            ["  das quais isentas (R$)", f"{mov['multa_isenta']:.2f}", ""],
+            ["  ainda em aberto (R$)", f"{mov['multa_em_aberto']:.2f}", ""],
             ["Leitores diferentes", mov["leitores"], ""],
             ["", "", ""],
             ["POR MÊS", "Empréstimos", ""],

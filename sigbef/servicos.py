@@ -1246,8 +1246,9 @@ def status_usuario(usuario_id: int) -> StatusUsuario:
         )
         em_aberto = cur.fetchone()["qt"]
         cur.execute(
-            "SELECT IFNULL(SUM(multa),0) AS m FROM emprestimo "
-            "WHERE usuario_id = ? AND multa > 0",
+            "SELECT IFNULL(SUM(multa - multa_paga - multa_isenta),0) AS m "
+            "FROM emprestimo WHERE usuario_id = ? "
+            "AND multa - multa_paga - multa_isenta > 0",
             (usuario_id,),
         )
         multa_aberta = float(cur.fetchone()["m"] or 0)
@@ -1589,10 +1590,87 @@ def listar_emprestimos_em_aberto() -> list[dict]:
         return [dict(r) for r in cur.fetchall()]
 
 
-def quitar_multa(emprestimo_id: int, operador_id: Optional[int] = None) -> None:
+def saldo_multa(emprestimo_id: int) -> float:
+    """Quanto ainda falta receber deste emprestimo."""
     with db_cursor() as cur:
-        cur.execute("UPDATE emprestimo SET multa = 0 WHERE id = ?", (emprestimo_id,))
-    registrar_auditoria(operador_id, "QUITAR_MULTA", f"emp_id={emprestimo_id}")
+        cur.execute(
+            "SELECT multa - multa_paga - multa_isenta AS saldo "
+            "FROM emprestimo WHERE id = ?", (emprestimo_id,))
+        row = cur.fetchone()
+    if row is None:
+        raise RegraNegocioError("Emprestimo nao encontrado.")
+    return round(float(row["saldo"] or 0), 2)
+
+
+def quitar_multa(emprestimo_id: int, operador_id: Optional[int] = None,
+                 valor: Optional[float] = None) -> float:
+    """Registra o recebimento da multa. Devolve o saldo que sobrou.
+
+    Antes desta versao isto fazia `UPDATE emprestimo SET multa = 0`, o que
+    apagava o valor lancado junto com a divida: depois de quitar, nao havia
+    mais como saber que a multa existiu, e o relatorio da direcao — que
+    somava a mesma coluna sob o rotulo "Multas lancadas" — passava a
+    contar so o que **nao** tinha sido pago.
+
+    `multa` agora nunca muda depois do lancamento. O recebimento vai para
+    `multa_paga`. Sem `valor`, quita o saldo inteiro; com `valor`, aceita
+    pagamento parcial.
+    """
+    saldo = saldo_multa(emprestimo_id)
+    if saldo <= 0:
+        raise RegraNegocioError("Este emprestimo nao tem multa em aberto.")
+    pago = saldo if valor is None else round(float(valor), 2)
+    if pago <= 0:
+        raise RegraNegocioError("O valor recebido precisa ser maior que zero.")
+    if pago > saldo:
+        raise RegraNegocioError(
+            f"O valor recebido (R$ {pago:.2f}) passa do saldo devedor "
+            f"(R$ {saldo:.2f}).")
+
+    quitou = abs(pago - saldo) < 0.005
+    with db_cursor() as cur:
+        cur.execute(
+            "UPDATE emprestimo SET multa_paga = ROUND(multa_paga + ?, 2), "
+            "multa_quitada_em = CASE WHEN ? THEN datetime('now','localtime') "
+            "ELSE multa_quitada_em END WHERE id = ?",
+            (pago, 1 if quitou else 0, emprestimo_id))
+    registrar_auditoria(
+        operador_id, "QUITAR_MULTA",
+        f"emp_id={emprestimo_id}; recebido={pago:.2f}; "
+        f"saldo_restante={saldo - pago:.2f}")
+    return round(saldo - pago, 2)
+
+
+def isentar_multa(emprestimo_id: int, motivo: str,
+                  operador_id: Optional[int] = None) -> None:
+    """Perdoa o saldo da multa, com motivo obrigatorio.
+
+    Existe porque perdoar acontece de verdade — livro danificado por
+    problema da propria escola, aluno em situacao dificil, atraso causado
+    por feriado nao previsto. Antes so dava para fingir que a multa nunca
+    existiu, usando o mesmo botao de quitar. Isentar e receber sao coisas
+    diferentes e agora aparecem diferentes no relatorio.
+
+    O motivo e obrigatorio de proposito: isencao sem justificativa
+    escrita e exatamente o registro que ninguem consegue defender depois.
+    """
+    motivo = (motivo or "").strip()
+    if not motivo:
+        raise RegraNegocioError(
+            "Informe o motivo da isencao. Multa perdoada sem justificativa "
+            "nao tem como ser explicada depois.")
+    saldo = saldo_multa(emprestimo_id)
+    if saldo <= 0:
+        raise RegraNegocioError("Este emprestimo nao tem multa em aberto.")
+    with db_cursor() as cur:
+        cur.execute(
+            "UPDATE emprestimo SET multa_isenta = ROUND(multa_isenta + ?, 2), "
+            "multa_motivo_isencao = ?, "
+            "multa_quitada_em = datetime('now','localtime') WHERE id = ?",
+            (saldo, motivo, emprestimo_id))
+    registrar_auditoria(
+        operador_id, "ISENTAR_MULTA",
+        f"emp_id={emprestimo_id}; isentado={saldo:.2f}; motivo={motivo}")
 
 
 # ---------------------------------------------------------------------------
@@ -1643,8 +1721,15 @@ def relatorio_inadimplentes() -> list[dict]:
             """SELECT u.id, u.nome, u.matricula,
                        COALESCE(NULLIF(TRIM(u.turma), ''), '') AS turma,
                        COALESCE(u.email, '') AS email,
-                       IFNULL(SUM(CASE WHEN e.multa > 0 THEN e.multa END), 0)
-                           AS multa,
+                       -- Alias `multa_aberta`, e não `multa`: dentro de
+                       -- HAVING o SQLite resolve o nome `multa` para a
+                       -- COLUNA da tabela, não para o alias. Com a coluna
+                       -- passando a sobreviver à quitação, quem já pagou
+                       -- continuaria aparecendo como inadimplente.
+                       IFNULL(SUM(CASE
+                           WHEN e.multa - e.multa_paga - e.multa_isenta > 0
+                           THEN e.multa - e.multa_paga - e.multa_isenta
+                       END), 0) AS multa_aberta,
                        SUM(CASE WHEN e.data_devolucao IS NULL
                                  AND date(e.data_prevista) < date('now','localtime')
                                 THEN 1 ELSE 0 END) AS em_atraso,
@@ -1655,9 +1740,9 @@ def relatorio_inadimplentes() -> list[dict]:
                  JOIN emprestimo e ON e.usuario_id = u.id
                 WHERE u.ativo = 1
                 GROUP BY u.id
-               HAVING multa > 0 OR em_atraso > 0
+               HAVING multa_aberta > 0 OR em_atraso > 0
                 ORDER BY vencimento_antigo IS NULL, vencimento_antigo,
-                         multa DESC, u.nome""",
+                         multa_aberta DESC, u.nome""",
         )
         linhas = [dict(r) for r in cur.fetchall()]
 
@@ -1672,7 +1757,10 @@ def relatorio_inadimplentes() -> list[dict]:
                 linha["dias_atraso"] = 0
         else:
             linha["dias_atraso"] = 0
-        linha["multa"] = round(float(linha["multa"] or 0), 2)
+        # Volta a se chamar `multa` para fora: quem consome a lista quer
+        # saber quanto a pessoa deve, e o alias interno só existe para
+        # desfazer a ambiguidade com a coluna dentro do HAVING.
+        linha["multa"] = round(float(linha.pop("multa_aberta") or 0), 2)
     return linhas
 
 
@@ -1752,12 +1840,19 @@ def relatorio_movimentacao(inicio: Optional[str] = None,
                           SUM(CASE WHEN date(e.data_devolucao)
                                       > date(e.data_prevista)
                                    THEN 1 ELSE 0 END),
-                          IFNULL(SUM(e.multa), 0)
+                          IFNULL(SUM(e.multa), 0),
+                          IFNULL(SUM(e.multa_paga), 0),
+                          IFNULL(SUM(e.multa_isenta), 0)
                         FROM emprestimo e
                        WHERE e.data_devolucao IS NOT NULL {onde_dev}""",
                     p_dev)
         linha = cur.fetchone()
         com_atraso, multa_total = (linha[0] or 0), (linha[1] or 0.0)
+        # Lancado, recebido e isento sao tres numeros diferentes. Ate a
+        # v1.10.4 existia so um, e ele mudava de significado dependendo de
+        # alguem ter clicado em "quitar" -- o rotulo dizia "Multas
+        # lancadas" e o valor era "multas que ninguem pagou".
+        multa_recebida, multa_isenta = (linha[2] or 0.0), (linha[3] or 0.0)
 
         cur.execute(f"""SELECT strftime('%Y-%m', e.data_emprestimo) AS mes,
                                COUNT(*) AS total
@@ -1786,6 +1881,10 @@ def relatorio_movimentacao(inicio: Optional[str] = None,
         "devolucoes": devolucoes,
         "com_atraso": com_atraso,
         "multa_total": round(multa_total, 2),
+        "multa_recebida": round(multa_recebida, 2),
+        "multa_isenta": round(multa_isenta, 2),
+        "multa_em_aberto": round(
+            multa_total - multa_recebida - multa_isenta, 2),
         "leitores": leitores,
         "taxa_atraso": round(com_atraso * 100 / devolucoes, 1) if devolucoes
                        else 0.0,
