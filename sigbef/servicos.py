@@ -2254,3 +2254,133 @@ def listar_acoes_auditoria() -> list[str]:
         cur.execute(
             "SELECT DISTINCT acao FROM auditoria ORDER BY acao")
         return [r["acao"] for r in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Configurações do sistema
+# ---------------------------------------------------------------------------
+# Até a v1.10.4 a tela de Configurações gravava direto com `set_config`, sem
+# validar nada e sem passar por aqui. Dois problemas reais vinham disso:
+#
+# 1. Digitar "0,50" na multa era aceito com um "Salvo com sucesso" — mas
+#    `_config_float` não converte vírgula, cai no `except` e volta para o
+#    padrão. A bibliotecária achava que tinha baixado a multa e o sistema
+#    seguia cobrando R$ 1,50 por dia.
+# 2. Mudança de prazo, de limite e de multa não deixava **nenhum** rastro na
+#    auditoria. Quem alterou o prazo de 7 para 30 dias era invisível.
+
+#: chave -> (rótulo na tela, tipo, mínimo, máximo)
+CAMPOS_CONFIG: dict[str, tuple[str, str, float, float]] = {
+    "PRAZO_ALUNO_DIAS": ("Prazo padrão para alunos (dias)",
+                         "inteiro", 1, 365),
+    "PRAZO_PROFESSOR_DIAS": ("Prazo padrão para professores (dias)",
+                             "inteiro", 1, 365),
+    "LIMITE_ALUNO": ("Limite de empréstimos simultâneos (aluno)",
+                     "inteiro", 1, 50),
+    "LIMITE_PROFESSOR": ("Limite de empréstimos simultâneos (professor)",
+                         "inteiro", 1, 50),
+    "MULTA_POR_DIA": ("Multa por dia de atraso (R$)", "dinheiro", 0, 100),
+    "MULTA_TETO": ("Teto máximo de multa (R$)", "dinheiro", 0, 1000),
+    "NOME_INSTITUICAO": ("Nome da instituição", "texto", 1, 120),
+}
+
+#: Chaves cujo valor nunca pode ir para a auditoria em texto claro.
+CHAVES_SIGILOSAS = {"SMTP_SENHA", "API_TOKEN", "API_TOKEN_CONSULTA"}
+
+
+def normalizar_config(chave: str, bruto: str) -> str:
+    """Valida e converte um valor digitado para a forma canônica gravada.
+
+    Aceita vírgula como separador decimal — é o que se digita num teclado
+    brasileiro, e recusar isso sem avisar foi exatamente o defeito.
+    Levanta `RegraNegocioError` com o rótulo da tela na mensagem, para o
+    aviso apontar o campo errado em vez de um nome de chave interno.
+    """
+    if chave not in CAMPOS_CONFIG:
+        raise RegraNegocioError(f"Configuração desconhecida: {chave}.")
+    rotulo, tipo, minimo, maximo = CAMPOS_CONFIG[chave]
+    texto = (bruto or "").strip()
+
+    if tipo == "texto":
+        if len(texto) < minimo:
+            raise RegraNegocioError(f"“{rotulo}” não pode ficar em branco.")
+        if len(texto) > maximo:
+            raise RegraNegocioError(
+                f"“{rotulo}” passa de {int(maximo)} caracteres.")
+        return texto
+
+    if not texto:
+        raise RegraNegocioError(f"“{rotulo}” não pode ficar em branco.")
+
+    if tipo == "inteiro":
+        try:
+            n = int(texto)
+        except ValueError:
+            raise RegraNegocioError(
+                f"“{rotulo}” precisa ser um número inteiro. "
+                f"Recebido: “{texto}”.")
+        if not (minimo <= n <= maximo):
+            raise RegraNegocioError(
+                f"“{rotulo}” precisa estar entre {int(minimo)} e "
+                f"{int(maximo)}. Recebido: {n}.")
+        return str(n)
+
+    # dinheiro
+    try:
+        valor = float(texto.replace(".", "").replace(",", ".")
+                      if "," in texto else texto)
+    except ValueError:
+        raise RegraNegocioError(
+            f"“{rotulo}” precisa ser um valor em reais, como 1,50 ou 1.50. "
+            f"Recebido: “{texto}”.")
+    if not (minimo <= valor <= maximo):
+        raise RegraNegocioError(
+            f"“{rotulo}” precisa estar entre {minimo:.2f} e {maximo:.2f}. "
+            f"Recebido: {valor:.2f}.")
+    return f"{valor:.2f}"
+
+
+def salvar_configuracoes(valores: dict[str, str],
+                         executor_id: int | None = None) -> list[str]:
+    """Valida tudo, grava o que mudou e registra na auditoria.
+
+    Valida **antes** de gravar qualquer coisa: um campo errado no meio do
+    formulário não pode deixar metade das configurações trocadas e a outra
+    metade não. Devolve a lista de rótulos alterados — vazia se nada mudou.
+    """
+    normalizados = {chave: normalizar_config(chave, bruto)
+                    for chave, bruto in valores.items()}
+
+    alterados: list[str] = []
+    for chave, novo in normalizados.items():
+        antigo = get_config(chave)
+        if antigo == novo:
+            continue
+        set_config(chave, novo)
+        rotulo = CAMPOS_CONFIG[chave][0]
+        alterados.append(rotulo)
+        registrar_auditoria(
+            executor_id, "CONFIG_ALTERADA",
+            f"{chave}: '{antigo if antigo is not None else ''}' -> '{novo}'")
+    return alterados
+
+
+def definir_config_auditada(chave: str, valor: str,
+                            executor_id: int | None = None,
+                            acao: str = "CONFIG_ALTERADA") -> bool:
+    """Grava uma chave avulsa deixando rastro. Devolve True se mudou.
+
+    Para as chaves que não têm formulário validado (cores do tema, SMTP,
+    porta da API). O valor de chave sigilosa nunca vai para o detalhe: a
+    auditoria registra que a senha do e-mail mudou, não qual é ela.
+    """
+    antigo = get_config(chave)
+    if antigo == valor:
+        return False
+    set_config(chave, valor)
+    if chave in CHAVES_SIGILOSAS:
+        detalhe = f"{chave}: valor alterado"
+    else:
+        detalhe = f"{chave}: '{antigo if antigo is not None else ''}' -> '{valor}'"
+    registrar_auditoria(executor_id, acao, detalhe)
+    return True

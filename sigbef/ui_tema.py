@@ -67,28 +67,38 @@ def carregar_personalizacao():
         pass
 
 
-def aplicar_preset(chave_preset):
+#: Ordem fixa das chaves de cor — usada pelas três funções abaixo.
+CHAVES_COR = ("tema.cor_primaria", "tema.cor_secundaria",
+              "tema.cor_destaque", "tema.cor_fundo")
+
+
+def _gravar_cores(cores, executor_id=None):
+    """Grava as quatro cores deixando rastro na auditoria.
+
+    Passa por `servicos.definir_config_auditada` em vez de `set_config`
+    direto: mudança de aparência é mudança de configuração do sistema e
+    precisa aparecer no histórico como qualquer outra.
+    """
+    from .servicos import definir_config_auditada
+    for chave, valor in zip(CHAVES_COR, cores):
+        definir_config_auditada(chave, valor, executor_id, "TEMA_ALTERADO")
+
+
+def aplicar_preset(chave_preset, executor_id=None):
     preset = PRESETS.get(chave_preset)
     if not preset:
         return False
-    from .database import set_config
-    set_config("tema.cor_primaria", preset["primaria"])
-    set_config("tema.cor_secundaria", preset["secundaria"])
-    set_config("tema.cor_destaque", preset["destaque"])
-    set_config("tema.cor_fundo", preset["fundo"])
+    _gravar_cores((preset["primaria"], preset["secundaria"],
+                   preset["destaque"], preset["fundo"]), executor_id)
     return True
 
 
-def salvar_cores(primaria, secundaria, destaque, fundo):
-    from .database import set_config
-    set_config("tema.cor_primaria", primaria)
-    set_config("tema.cor_secundaria", secundaria)
-    set_config("tema.cor_destaque", destaque)
-    set_config("tema.cor_fundo", fundo)
+def salvar_cores(primaria, secundaria, destaque, fundo, executor_id=None):
+    _gravar_cores((primaria, secundaria, destaque, fundo), executor_id)
 
 
-def restaurar_padrao():
-    aplicar_preset("padrao")
+def restaurar_padrao(executor_id=None):
+    aplicar_preset("padrao", executor_id)
 
 
 def _ajustar_cor(cor_hex: str, fator: float) -> str:
@@ -308,7 +318,7 @@ def linha_separadora(parent, cor=None):
     return f
 
 
-def centralizar_janela(janela, largura, altura):
+def centralizar_janela(janela, largura, altura, minimo=None):
     """Centraliza, sem deixar a janela nascer maior que a tela.
 
     Sem o limite, uma janela pedida maior que a tela do computador da
@@ -316,14 +326,30 @@ def centralizar_janela(janela, largura, altura):
     ou o rodapé fora da área visível — e como cada diálogo pede um
     tamanho fixo, o rodapé cortado costuma ser justo onde ficam os
     botões Salvar/Cancelar.
+
+    `minimo`, quando informado, é a tupla (largura, altura) abaixo da
+    qual a janela não deve encolher — e é aplicado **aqui**, limitado ao
+    tamanho da tela, em vez de por um `minsize()` do lado de quem chama.
+
+    O motivo é concreto: até a v1.10.4 as janelas principais faziam
+    `centralizar_janela(...)` e logo abaixo `self.minsize(1180, 700)`.
+    O `minsize` desfazia o limite — num laboratório de 1366x768 a 125%
+    de escala (cerca de 1093x614 úteis), a janela ficava presa em
+    1180x700, com a faixa de botões fora da tela e sem como
+    redimensionar nem rolar. Um limite que pode ser desfeito pela linha
+    seguinte não é limite.
     """
     janela.update_idletasks()
     sw = janela.winfo_screenwidth()
     sh = janela.winfo_screenheight()
     # Folga pra barra de tarefas e pra moldura da janela, que a API de
     # tela não inclui.
-    largura = min(largura, sw - 40)
-    altura = min(altura, sh - 80)
+    max_larg = max(320, sw - 40)
+    max_alt = max(240, sh - 80)
+    largura = min(largura, max_larg)
+    altura = min(altura, max_alt)
     x = max(0, (sw - largura) // 2)
     y = max(0, (sh - altura) // 3)
     janela.geometry(f"{largura}x{altura}+{x}+{y}")
+    if minimo:
+        janela.minsize(min(minimo[0], max_larg), min(minimo[1], max_alt))

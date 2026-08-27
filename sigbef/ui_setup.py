@@ -29,8 +29,7 @@ class JanelaPrimeiraExecucao(tk.Tk):
         self.title("SIGBEF - Configuração inicial")
         tema.aplicar_tema(self)
         icones.aplicar_icone_janela(self)
-        tema.centralizar_janela(self, 1000, 680)
-        self.minsize(960, 640)
+        tema.centralizar_janela(self, 1000, 680, minimo=(960, 640))
 
         self._passo_atual = 0
         self._dados = {

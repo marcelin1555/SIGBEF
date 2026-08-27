@@ -26,8 +26,7 @@ class JanelaLogin(tk.Tk):
         tema.aplicar_tema(self)
         icones.aplicar_icone_janela(self)
         self._construir()
-        tema.centralizar_janela(self, 1000, 620)
-        self.minsize(960, 600)
+        tema.centralizar_janela(self, 1000, 620, minimo=(960, 600))
         self.bind("<Return>", lambda e: self._fazer_login())
 
     # ------------------------------------------------------------------

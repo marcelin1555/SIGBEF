@@ -327,6 +327,49 @@ def _migrar_schema(cur) -> None:
         cur.execute("ALTER TABLE exemplar ADD COLUMN motivo_baixa TEXT")
         cur.execute("ALTER TABLE exemplar ADD COLUMN data_baixa TEXT")
 
+    _reparar_numeros_de_config(cur)
+
+
+#: Chaves numéricas que a tela de Configurações grava. Repetidas aqui, e não
+#: importadas de `servicos`, porque `servicos` importa este módulo.
+_CONFIG_NUMERICAS = ("MULTA_POR_DIA", "MULTA_TETO", "PRAZO_ALUNO_DIAS",
+                     "PRAZO_PROFESSOR_DIAS", "LIMITE_ALUNO",
+                     "LIMITE_PROFESSOR")
+
+
+def _reparar_numeros_de_config(cur) -> None:
+    """Conserta valores numéricos gravados com vírgula decimal.
+
+    Até a v1.10.4 a tela gravava direto o que foi digitado, sem validar.
+    Quem digitou `0,50` na multa recebeu "Salvo com sucesso" e ficou com
+    `'0,50'` no banco — que `float()` não converte, então o cálculo caía
+    no padrão e seguia cobrando o valor antigo, sem nenhum aviso.
+
+    A partir daqui a tela valida antes de gravar, mas os bancos que já
+    estão rodando na escola podem estar com o valor quebrado agora. Isto
+    conserta uma vez, na subida: só troca vírgula por ponto, e só quando
+    o resultado realmente vira número. Valor que não vira número fica
+    como está — chutar um valor de multa seria pior que não mexer.
+    """
+    for chave in _CONFIG_NUMERICAS:
+        cur.execute("SELECT valor FROM configuracao WHERE chave = ?", (chave,))
+        row = cur.fetchone()
+        if not row or not row["valor"] or "," not in row["valor"]:
+            continue
+        candidato = row["valor"].replace(".", "").replace(",", ".")
+        try:
+            float(candidato)
+        except ValueError:
+            continue
+        cur.execute("UPDATE configuracao SET valor = ? WHERE chave = ?",
+                    (candidato, chave))
+        cur.execute(
+            "INSERT INTO auditoria(usuario_id, acao, detalhes) "
+            "VALUES (NULL, ?, ?)",
+            ("CONFIG_REPARADA",
+             f"{chave}: '{row['valor']}' -> '{candidato}' "
+             "(vírgula decimal corrigida na atualização)"))
+
 
 # ---------------------------------------------------------------------------
 # Helpers de acesso (consultas curtas usadas em vários lugares)
