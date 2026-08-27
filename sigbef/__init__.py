@@ -6,6 +6,6 @@ Pacote principal. Veja LICENSE na raiz do projeto para os termos
 completos da licença MIT.
 """
 
-__version__ = "1.10.4"
+__version__ = "1.11.0"
 __author__ = "Marcello Melo de Medeiros Costa"
 __license__ = "MIT"

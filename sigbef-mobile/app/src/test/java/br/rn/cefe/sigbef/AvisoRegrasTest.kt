@@ -2,7 +2,7 @@ package br.rn.cefe.sigbef
 
 import br.rn.cefe.sigbef.aviso.AvisoRegras
 import br.rn.cefe.sigbef.data.local.EmprestimoEntity
-import java.time.LocalDate
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -17,7 +17,7 @@ import org.junit.Test
  */
 class AvisoRegrasTest {
 
-    private val hoje = LocalDate.of(2026, 7, 27)
+    private val hoje = "2026-07-27"
 
     private fun emprestimo(titulo: String, prazo: String) = EmprestimoEntity(
         livroTitulo = titulo,
@@ -147,19 +147,51 @@ class AvisoRegrasTest {
         assertTrue(aviso.texto, aviso.texto.contains("1 outro vencendo"))
     }
 
+    @Test
+    fun `janela que cruza a virada do mes conta certo`() {
+        // Somar dias em texto ISO so funciona com aritmetica de
+        // calendario; concatenar numero no dia daria "2026-07-32".
+        val fimDeJulho = "2026-07-30"
+        val emprestimos = listOf(emprestimo("Primeiro de agosto", "2026-08-01"))
+        assertTrue(AvisoRegras.aVencer(emprestimos, fimDeJulho, 1).isEmpty())
+        assertEquals(1, AvisoRegras.aVencer(emprestimos, fimDeJulho, 2).size)
+    }
+
+    @Test
+    fun `prazo distante diz em quantos dias vence`() {
+        val vencendo = AvisoRegras.aVencer(
+            listOf(emprestimo("Longe", "2026-08-01")), hoje, 5)
+        val aviso = AvisoRegras.montarMensagem(vencendo, hoje)!!
+        assertTrue(aviso.texto, aviso.texto.contains("vence em 5 dias"))
+    }
+
     // ------------------------------------------------------------ data
     @Test
     fun `entende o formato do servidor e o brasileiro`() {
-        assertEquals(LocalDate.of(2026, 7, 28),
-                     AvisoRegras.interpretarData("2026-07-28"))
-        assertEquals(LocalDate.of(2026, 7, 28),
-                     AvisoRegras.interpretarData("28/07/2026"))
+        assertEquals("2026-07-28", AvisoRegras.interpretarData("2026-07-28"))
+        assertEquals("2026-07-28", AvisoRegras.interpretarData("28/07/2026"))
     }
 
     @Test
     fun `data com hora junto tambem serve`() {
-        assertEquals(LocalDate.of(2026, 7, 28),
+        assertEquals("2026-07-28",
                      AvisoRegras.interpretarData("2026-07-28 14:30:00"))
+    }
+
+    @Test
+    fun `data com forma certa e valor impossivel e recusada`() {
+        // SimpleDateFormat e leniente por padrao e converteria
+        // 2026-02-31 em 3 de marco sem reclamar -- o app avisaria o
+        // aluno na data errada em vez de ficar calado.
+        assertNull(AvisoRegras.interpretarData("2026-02-31"))
+        assertNull(AvisoRegras.interpretarData("2026-13-01"))
+        assertNull(AvisoRegras.interpretarData("31/02/2026"))
+    }
+
+    @Test
+    fun `hoje sai no mesmo formato que o resto do app produz`() {
+        assertTrue(AvisoRegras.hoje(),
+                   AvisoRegras.hoje().matches(Regex("""\d{4}-\d{2}-\d{2}""")))
     }
 
     @Test

@@ -1,3 +1,3 @@
 // Versão atual do SIGBEF exibida no site.
 // Fonte única: atualize aqui e Hero, Footer e demais telas acompanham.
-export const VERSAO = '1.10.4'
+export const VERSAO = '1.11.0'

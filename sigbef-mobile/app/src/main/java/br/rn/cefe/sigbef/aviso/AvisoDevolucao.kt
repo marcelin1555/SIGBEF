@@ -21,8 +21,6 @@ import br.rn.cefe.sigbef.MainActivity
 import br.rn.cefe.sigbef.R
 import br.rn.cefe.sigbef.data.local.EmprestimoEntity
 import br.rn.cefe.sigbef.data.local.SigbefDatabase
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
 /**
@@ -152,21 +150,42 @@ object AvisoRegras {
     data class Aviso(val titulo: String, val texto: String)
 
     /**
+     * Datas andam por aqui como texto ISO (`yyyy-MM-dd`), não como
+     * objeto de data.
+     *
+     * Este arquivo usava `java.time`, que só existe a partir da API 26.
+     * Com `minSdk = 24` e sem desugaring ligado, o aviso **quebrava no
+     * Android 7** — e o Android 7 é justamente o aparelho antigo que
+     * este app foi feito para atender. O resto do app já evitava
+     * `java.time` por esse mesmo motivo, com a justificativa escrita em
+     * `Repository.hojeIso`, `Marca` e `HomeScreen.proximoVencimento`;
+     * a regra existia e só este arquivo passou por fora dela.
+     *
+     * ISO tem uma propriedade que faz o texto bastar: ordem alfabética
+     * é ordem cronológica. Então comparar prazo com limite é comparar
+     * String, e só a aritmética de dias precisa de `Calendar`.
+     */
+    private fun formato() =
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+
+    /**
      * Escolhe os empréstimos que merecem aviso hoje.
      *
      * Entra o que vence dentro de `diasAntes` **e também o que já está
      * atrasado**: quem esqueceu ontem precisa mais do lembrete que quem
      * vence amanhã.
+     *
+     * `hoje` chega em ISO, como o resto do app produz.
      */
     fun aVencer(
         abertos: List<EmprestimoEntity>,
-        hoje: LocalDate,
+        hoje: String,
         diasAntes: Int
-    ): List<Pair<EmprestimoEntity, LocalDate>> {
-        val limite = hoje.plusDays(diasAntes.toLong())
+    ): List<Pair<EmprestimoEntity, String>> {
+        val limite = somarDias(hoje, diasAntes)
         return abertos.mapNotNull { emp ->
             val prazo = interpretarData(emp.dataDevolucao) ?: return@mapNotNull null
-            if (!prazo.isAfter(limite)) emp to prazo else null
+            if (prazo <= limite) emp to prazo else null
         }
     }
 
@@ -176,17 +195,17 @@ object AvisoRegras {
      * abrir o app de qualquer jeito.
      */
     fun montarMensagem(
-        vencendo: List<Pair<EmprestimoEntity, LocalDate>>,
-        hoje: LocalDate
+        vencendo: List<Pair<EmprestimoEntity, String>>,
+        hoje: String
     ): Aviso? {
         if (vencendo.isEmpty()) return null
         if (vencendo.size == 1) {
             val (emp, prazo) = vencendo.first()
             val quando = when {
-                prazo.isBefore(hoje) -> "está atrasado"
+                prazo < hoje -> "está atrasado"
                 prazo == hoje -> "vence hoje"
-                prazo == hoje.plusDays(1) -> "vence amanhã"
-                else -> "vence em ${java.time.temporal.ChronoUnit.DAYS.between(hoje, prazo)} dias"
+                prazo == somarDias(hoje, 1) -> "vence amanhã"
+                else -> "vence em ${diasEntre(hoje, prazo)} dias"
             }
             return Aviso("Devolução de livro", "\"${emp.livroTitulo}\" $quando.")
         }
@@ -194,7 +213,7 @@ object AvisoRegras {
         // chegando" com um livro já vencido no meio subestima o
         // problema, e foi o que apareceu no teste em aparelho: o título
         // avisava "Livros atrasados" e o texto falava em prazo chegando.
-        val atrasados = vencendo.count { (_, prazo) -> prazo.isBefore(hoje) }
+        val atrasados = vencendo.count { (_, prazo) -> prazo < hoje }
         val aVencer = vencendo.size - atrasados
         return when {
             atrasados == 0 -> Aviso(
@@ -214,20 +233,71 @@ object AvisoRegras {
     private fun plural(n: Int, singular: String, plural: String) =
         if (n == 1) "$n $singular" else "$n $plural"
 
-    /** O cache guarda a data como texto; aceita os formatos que aparecem. */
-    fun interpretarData(texto: String): LocalDate? {
+    /** Hoje em ISO, no mesmo formato que o resto do app usa. */
+    fun hoje(): String = formato().format(java.util.Date())
+
+    /**
+     * O cache guarda a data como texto; aceita os formatos que aparecem
+     * e devolve sempre ISO, para que a comparação de String valha.
+     */
+    fun interpretarData(texto: String): String? {
         if (texto.isBlank()) return null
-        val formatos = listOf(
-            DateTimeFormatter.ISO_LOCAL_DATE,
-            DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        )
-        for (f in formatos) {
-            try {
-                return LocalDate.parse(texto.take(10), f)
-            } catch (_: Exception) {
-            }
+        val recorte = texto.take(10)
+        // Já vem em ISO: o caso comum, e não precisa de parse nenhum.
+        if (recorte.matches(Regex("""\d{4}-\d{2}-\d{2}"""))) {
+            return if (valida(recorte)) recorte else null
+        }
+        if (recorte.matches(Regex("""\d{2}/\d{2}/\d{4}"""))) {
+            val (d, m, a) = recorte.split("/")
+            val iso = "$a-$m-$d"
+            return if (valida(iso)) iso else null
         }
         return null
+    }
+
+    /**
+     * Recusa data com forma certa e valor impossível (13 de mês, 31 de
+     * fevereiro). `SimpleDateFormat` é leniente por padrão e
+     * converteria `2026-02-31` em 3 de março sem reclamar — o que faria
+     * o app avisar o aluno na data errada em vez de ficar calado.
+     */
+    private fun valida(iso: String): Boolean = try {
+        val fmt = formato().apply { isLenient = false }
+        fmt.parse(iso)
+        true
+    } catch (_: java.text.ParseException) {
+        false
+    }
+
+    private fun somarDias(iso: String, dias: Int): String {
+        val fmt = formato()
+        val base = try {
+            fmt.parse(iso)
+        } catch (_: java.text.ParseException) {
+            null
+        } ?: return iso
+        val cal = java.util.Calendar.getInstance()
+        cal.time = base
+        cal.add(java.util.Calendar.DAY_OF_MONTH, dias)
+        return fmt.format(cal.time)
+    }
+
+    /**
+     * Diferença em dias entre duas datas ISO.
+     *
+     * Arredonda em vez de truncar: se o aparelho estiver num fuso com
+     * horário de verão, o intervalo entre duas meia-noites pode dar 23
+     * ou 25 horas, e a divisão inteira erraria um dia para menos.
+     */
+    private fun diasEntre(de: String, ate: String): Long {
+        val fmt = formato()
+        return try {
+            val a = fmt.parse(de) ?: return 0
+            val b = fmt.parse(ate) ?: return 0
+            Math.round((b.time - a.time) / 86_400_000.0)
+        } catch (_: java.text.ParseException) {
+            0
+        }
     }
 }
 
@@ -246,7 +316,7 @@ class AvisoWorker(
         if (!AvisoDevolucao.ligado(ctx)) return Result.success()
 
         return try {
-            val hoje = LocalDate.now()
+            val hoje = AvisoRegras.hoje()
             val abertos = SigbefDatabase.getDatabase(ctx)
                 .emprestimoDao().listarAbertosUmaVez()
             val vencendo = AvisoRegras.aVencer(

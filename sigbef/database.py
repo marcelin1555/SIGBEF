@@ -156,7 +156,18 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     data_emprestimo TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     data_prevista TEXT NOT NULL,
     data_devolucao TEXT,
+    -- `multa` e o valor LANCADO na devolucao e nunca muda depois: e o
+    -- historico. O que foi recebido vai em `multa_paga`, o que foi
+    -- perdoado vai em `multa_isenta`, e o saldo devedor e a diferenca.
+    -- Ate a v1.10.4 existia so `multa`, servindo de valor lancado E de
+    -- saldo ao mesmo tempo -- entao quitar apagava o registro de que a
+    -- multa existiu, e o relatorio da direcao somava so o que ninguem
+    -- tinha pagado sob o rotulo "Multas lancadas".
     multa REAL NOT NULL DEFAULT 0,
+    multa_paga REAL NOT NULL DEFAULT 0,
+    multa_isenta REAL NOT NULL DEFAULT 0,
+    multa_motivo_isencao TEXT,
+    multa_quitada_em TEXT,
     origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO')),
     renovacoes INTEGER NOT NULL DEFAULT 0
 );
@@ -318,6 +329,20 @@ def _migrar_schema(cur) -> None:
         cur.execute("ALTER TABLE emprestimo "
                     "ADD COLUMN renovacoes INTEGER NOT NULL DEFAULT 0")
 
+    if "multa_paga" not in colunas:
+        # Bancos anteriores tem so `multa`. Nada a converter: o valor que
+        # esta la e, por definicao, o que ainda estava em aberto, entao
+        # pago e isento nascem zerados e o saldo continua o mesmo. O que
+        # ja foi quitado antes desta versao esta perdido -- `quitar_multa`
+        # zerava a coluna -- e nao da para reconstruir.
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_paga REAL NOT NULL DEFAULT 0")
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_isenta REAL NOT NULL DEFAULT 0")
+        cur.execute("ALTER TABLE emprestimo "
+                    "ADD COLUMN multa_motivo_isencao TEXT")
+        cur.execute("ALTER TABLE emprestimo ADD COLUMN multa_quitada_em TEXT")
+
     cur.execute("PRAGMA table_info(exemplar)")
     colunas = {r["name"] for r in cur.fetchall()}
     if "motivo_baixa" not in colunas:
@@ -326,6 +351,49 @@ def _migrar_schema(cur) -> None:
         # contam histórias diferentes na hora de repor o acervo.
         cur.execute("ALTER TABLE exemplar ADD COLUMN motivo_baixa TEXT")
         cur.execute("ALTER TABLE exemplar ADD COLUMN data_baixa TEXT")
+
+    _reparar_numeros_de_config(cur)
+
+
+#: Chaves numéricas que a tela de Configurações grava. Repetidas aqui, e não
+#: importadas de `servicos`, porque `servicos` importa este módulo.
+_CONFIG_NUMERICAS = ("MULTA_POR_DIA", "MULTA_TETO", "PRAZO_ALUNO_DIAS",
+                     "PRAZO_PROFESSOR_DIAS", "LIMITE_ALUNO",
+                     "LIMITE_PROFESSOR")
+
+
+def _reparar_numeros_de_config(cur) -> None:
+    """Conserta valores numéricos gravados com vírgula decimal.
+
+    Até a v1.10.4 a tela gravava direto o que foi digitado, sem validar.
+    Quem digitou `0,50` na multa recebeu "Salvo com sucesso" e ficou com
+    `'0,50'` no banco — que `float()` não converte, então o cálculo caía
+    no padrão e seguia cobrando o valor antigo, sem nenhum aviso.
+
+    A partir daqui a tela valida antes de gravar, mas os bancos que já
+    estão rodando na escola podem estar com o valor quebrado agora. Isto
+    conserta uma vez, na subida: só troca vírgula por ponto, e só quando
+    o resultado realmente vira número. Valor que não vira número fica
+    como está — chutar um valor de multa seria pior que não mexer.
+    """
+    for chave in _CONFIG_NUMERICAS:
+        cur.execute("SELECT valor FROM configuracao WHERE chave = ?", (chave,))
+        row = cur.fetchone()
+        if not row or not row["valor"] or "," not in row["valor"]:
+            continue
+        candidato = row["valor"].replace(".", "").replace(",", ".")
+        try:
+            float(candidato)
+        except ValueError:
+            continue
+        cur.execute("UPDATE configuracao SET valor = ? WHERE chave = ?",
+                    (candidato, chave))
+        cur.execute(
+            "INSERT INTO auditoria(usuario_id, acao, detalhes) "
+            "VALUES (NULL, ?, ?)",
+            ("CONFIG_REPARADA",
+             f"{chave}: '{row['valor']}' -> '{candidato}' "
+             "(vírgula decimal corrigida na atualização)"))
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Verbia Seridó — sistemas para a biblioteca da escola pública</title>
+<meta name="description" content="Três estudantes de Jardim do Seridó construíram o SIGBEF: sistema de biblioteca escolar que funciona sem internet, em produção numa escola pública do RN." />
+<meta name="theme-color" content="#14201B" />
+<meta property="og:title" content="Verbia Seridó" />
+<meta property="og:description" content="Toda escola pública tem uma biblioteca. Quase nenhuma sabe o que tem dentro dela." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Verbia Seridó
+   Paleta tirada do Seridó na estiagem: granito claro, tinta
+   escura, verde de caatinga. O acento é violeta de tinta de
+   carimbo — a cor do carimbo de data da ficha de empréstimo,
+   que é o artefato que estrutura a página inteira.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --granito:#E3E2DD;
+  --papel:#F3F2EE;
+  --tinta:#14201B;
+  --tinta-70:rgba(20,32,27,.70);
+  --tinta-45:rgba(20,32,27,.45);
+  --tinta-15:rgba(20,32,27,.15);
+  --caatinga:#2F5D3F;
+  --carimbo:#5A3B8C;
+  --atraso:#9E2B18;
+
+  --display:'Bricolage Grotesque',system-ui,sans-serif;
+  --corpo:'Source Serif 4',Georgia,serif;
+  --dado:'DM Mono',ui-monospace,monospace;
+
+  --medida:68ch;
+  --gutter:clamp(1.25rem,5vw,4rem);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--granito);color:var(--tinta);
+  font-family:var(--corpo);font-size:clamp(1rem,.96rem + .2vw,1.125rem);
+  line-height:1.6;font-synthesis-weight:none;
+}
+h1,h2,h3{font-family:var(--display);font-weight:800;line-height:1.02;
+  letter-spacing:-.02em;margin:0;text-wrap:balance}
+p{margin:0 0 1em;max-width:var(--medida);text-wrap:pretty}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--carimbo);outline-offset:3px;border-radius:2px}
+
+.env{max-width:78rem;margin-inline:auto;padding-inline:var(--gutter)}
+section{padding-block:clamp(3.5rem,9vw,7rem)}
+
+/* Marcador de seção: número + nome, em mono. É um índice de
+   ficha, não decoração — a ordem das seções é a ordem em que a
+   banca precisa ler. */
+.marca{font-family:var(--dado);font-size:.75rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--tinta-45);
+  display:flex;align-items:center;gap:.75rem;margin-bottom:1.75rem}
+.marca::after{content:"";flex:1;height:1px;background:var(--tinta-15)}
+
+/* ── Cabeçalho ───────────────────────────────────────────── */
+.topo{padding-block:1.5rem;display:flex;justify-content:space-between;
+  align-items:baseline;gap:1rem;flex-wrap:wrap}
+.marcaNome{font-family:var(--display);font-weight:800;font-size:1.05rem;
+  letter-spacing:-.01em}
+.marcaNome span{color:var(--tinta-45);font-weight:500}
+.local{font-family:var(--dado);font-size:.75rem;color:var(--tinta-45);
+  letter-spacing:.06em}
+
+/* ── Abertura ────────────────────────────────────────────── */
+.abertura{padding-top:clamp(2rem,6vw,4rem)}
+.tese{font-size:clamp(2.1rem,1.1rem + 4.4vw,4.6rem)}
+.tese em{font-style:normal;color:var(--caatinga)}
+.linhaFina{font-size:clamp(1.05rem,1rem + .35vw,1.35rem);
+  color:var(--tinta-70);margin-top:1.5rem;max-width:52ch}
+.grelhaAbertura{display:grid;gap:clamp(2.5rem,5vw,4rem);
+  grid-template-columns:1fr}
+@media(min-width:62rem){.grelhaAbertura{grid-template-columns:1.15fr .85fr;
+  align-items:start}}
+
+/* ── A ficha (elemento-assinatura) ───────────────────────── */
+.ficha{background:var(--papel);border:1px solid var(--tinta-15);
+  padding:1.5rem 1.5rem 1.75rem;box-shadow:0 1px 0 rgba(20,32,27,.06),
+  0 14px 34px -18px rgba(20,32,27,.5);position:relative}
+.ficha::before{content:"";position:absolute;inset:.45rem;
+  border:1px solid var(--tinta-15);pointer-events:none}
+.fichaTopo{font-family:var(--dado);font-size:.7rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--tinta-45);
+  border-bottom:1px solid var(--tinta-15);padding-bottom:.7rem;
+  margin-bottom:.25rem;display:flex;justify-content:space-between;gap:1rem}
+.fichaLegenda{font-family:var(--dado);font-size:.68rem;color:var(--tinta-45);
+  margin-top:1rem;line-height:1.5}
+.linhaFicha{display:grid;grid-template-columns:6.5rem 1fr;gap:1rem;
+  align-items:baseline;padding-block:.6rem;
+  border-bottom:1px dotted var(--tinta-15)}
+.carimbo{font-family:var(--dado);font-size:.78rem;font-weight:500;
+  color:var(--carimbo);border:1.5px solid var(--carimbo);
+  padding:.15rem .35rem;text-align:center;letter-spacing:.02em;
+  transform:rotate(-1.2deg);white-space:nowrap}
+.linhaFicha:nth-child(even) .carimbo{transform:rotate(.9deg)}
+.linhaFicha .rotulo{font-size:.95rem}
+.vazio .carimbo{color:var(--tinta-45);border-style:dashed;
+  border-color:var(--tinta-15);transform:none}
+.vazio .rotulo{color:var(--tinta-45)}
+
+/* Carimbagem: uma sequência só, no carregamento. */
+@media(prefers-reduced-motion:no-preference){
+  .carimbo{animation:carimbar .34s cubic-bezier(.2,.9,.3,1.3) backwards}
+  .linhaFicha:nth-child(1) .carimbo{animation-delay:.15s}
+  .linhaFicha:nth-child(2) .carimbo{animation-delay:.28s}
+  .linhaFicha:nth-child(3) .carimbo{animation-delay:.41s}
+  .linhaFicha:nth-child(4) .carimbo{animation-delay:.54s}
+  .linhaFicha:nth-child(5) .carimbo{animation-delay:.67s}
+  .linhaFicha:nth-child(6) .carimbo{animation-delay:.80s}
+}
+@keyframes carimbar{
+  from{opacity:0;transform:scale(1.5) rotate(-1.2deg)}
+  to{opacity:1}
+}
+
+/* ── Blocos de texto ─────────────────────────────────────── */
+.tituloSecao{font-size:clamp(1.6rem,1.2rem + 1.6vw,2.5rem);margin-bottom:1.25rem}
+.duasColunas{display:grid;gap:clamp(1.5rem,4vw,3.5rem);grid-template-columns:1fr}
+@media(min-width:52rem){.duasColunas{grid-template-columns:1fr 1fr}}
+
+/* ── Superfícies ─────────────────────────────────────────── */
+.superficies{display:grid;gap:1px;background:var(--tinta-15);
+  border:1px solid var(--tinta-15);grid-template-columns:1fr}
+@media(min-width:52rem){.superficies{grid-template-columns:repeat(3,1fr)}}
+.superficie{background:var(--granito);padding:1.75rem 1.5rem}
+.superficie h3{font-size:1.15rem;margin-bottom:.6rem}
+.superficie .quem{font-family:var(--dado);font-size:.7rem;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--caatinga);
+  margin-bottom:.9rem}
+.superficie p{font-size:.95rem;color:var(--tinta-70);margin:0}
+
+/* ── Provas ──────────────────────────────────────────────── */
+.provas{display:grid;gap:1.5rem 2.5rem;grid-template-columns:repeat(2,1fr)}
+@media(min-width:52rem){.provas{grid-template-columns:repeat(4,1fr)}}
+.prova .n{font-family:var(--display);font-weight:800;
+  font-size:clamp(2rem,1.4rem + 2.4vw,3.2rem);line-height:1;
+  letter-spacing:-.03em;display:block}
+.prova .r{font-size:.9rem;color:var(--tinta-70);display:block;
+  margin-top:.5rem;max-width:24ch}
+.fonte{font-family:var(--dado);font-size:.72rem;color:var(--tinta-45);
+  margin-top:2rem;line-height:1.6;max-width:60ch}
+
+/* ── Lacuna: o que ainda não foi medido ──────────────────── */
+.lacuna{border:2px dashed var(--atraso);background:rgba(158,43,24,.045);
+  padding:clamp(1.25rem,3vw,2rem)}
+.lacuna .marca{color:var(--atraso)}
+.lacuna .marca::after{background:rgba(158,43,24,.25)}
+.lacuna h2{font-size:clamp(1.3rem,1.1rem + 1vw,1.9rem);margin-bottom:.9rem}
+.lacuna ul{margin:1rem 0 0;padding-left:1.1rem;max-width:var(--medida)}
+.lacuna li{margin-bottom:.5rem;color:var(--tinta-70)}
+.lacuna code{font-family:var(--dado);font-size:.85em;
+  background:rgba(158,43,24,.1);padding:.1em .35em}
+
+/* ── Equipe ──────────────────────────────────────────────── */
+.equipe{display:grid;gap:1.5rem;grid-template-columns:1fr}
+@media(min-width:44rem){.equipe{grid-template-columns:repeat(3,1fr)}}
+.pessoa{border-top:2px solid var(--tinta);padding-top:.9rem}
+.pessoa .nome{font-family:var(--display);font-weight:700;font-size:1.1rem}
+.pessoa .papel{font-family:var(--dado);font-size:.72rem;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-45);
+  margin-top:.35rem}
+
+/* ── Rodapé ──────────────────────────────────────────────── */
+.rodape{background:var(--tinta);color:var(--granito);
+  padding-block:clamp(3rem,7vw,5rem)}
+.rodape a{color:var(--granito);text-underline-offset:.25em}
+.rodape .marca{color:rgba(227,226,221,.5)}
+.rodape .marca::after{background:rgba(227,226,221,.2)}
+.rodape h2{font-size:clamp(1.5rem,1.2rem + 1.4vw,2.2rem);margin-bottom:1rem}
+.rodape p{color:rgba(227,226,221,.75)}
+.assinatura{font-family:var(--dado);font-size:.72rem;
+  color:rgba(227,226,221,.45);margin-top:3rem;line-height:1.7}
+</style>
+</head>
+<body>
+
+<header class="env topo">
+  <div class="marcaNome">Verbia <span>Seridó</span></div>
+  <div class="local">Jardim do Seridó · Rio Grande do Norte</div>
+</header>
+
+<main>
+
+<!-- ═══ Abertura ═══════════════════════════════════════════ -->
+<section class="env abertura" aria-labelledby="tese">
+  <div class="grelhaAbertura">
+    <div>
+      <h1 class="tese" id="tese">
+        Toda escola pública tem uma biblioteca.<br />
+        <em>Quase nenhuma sabe o que tem dentro dela.</em>
+      </h1>
+      <p class="linhaFina">
+        Somos estudantes de Jardim do Seridó. Construímos o SIGBEF, um
+        sistema de biblioteca escolar que funciona sem internet, roda no
+        computador que a escola já tem, e está em produção no Centro de
+        Ensino Felinto Elísio.
+      </p>
+    </div>
+
+    <!-- Elemento-assinatura: a ficha de empréstimo que o SIGBEF
+         substituiu, carimbada com os marcos reais do projeto. As
+         duas últimas linhas ainda estão em branco de propósito. -->
+    <div class="ficha">
+      <div class="fichaTopo"><span>Ficha de empréstimo</span><span>N.º 001</span></div>
+
+      <div class="linhaFicha">
+        <span class="carimbo">05 MAI 26</span>
+        <span class="rotulo">Primeira versão instalada na escola</span>
+      </div>
+      <div class="linhaFicha">
+        <span class="carimbo">26 JUL 26</span>
+        <span class="rotulo">Aplicativo do aluno, para consulta pelo celular</span>
+      </div>
+      <div class="linhaFicha">
+        <span class="carimbo">19 AGO 26</span>
+        <span class="rotulo">Versão 1.10.4 — a que está rodando hoje</span>
+      </div>
+      <div class="linhaFicha vazio">
+        <span class="carimbo">16 SET 26</span>
+        <span class="rotulo">FICTS / FECETS</span>
+      </div>
+      <div class="linhaFicha vazio">
+        <span class="carimbo">06 OUT 26</span>
+        <span class="rotulo">Banca estadual — Liga Jovem</span>
+      </div>
+
+      <p class="fichaLegenda">
+        A ficha de papel é o que o sistema substituiu. Os carimbos
+        acima são datas do próprio projeto. As duas últimas ainda
+        não foram dadas.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Problema ═══════════════════════════════════════════ -->
+<section class="env" aria-labelledby="s-problema">
+  <p class="marca">Um · O problema</p>
+  <div class="duasColunas">
+    <div>
+      <h2 class="tituloSecao" id="s-problema">
+        O acervo existe. A circulação é que não.
+      </h2>
+      <p>
+        A biblioteca da escola pública raramente tem catálogo. O
+        empréstimo é anotado num caderno, quando é anotado. Ninguém
+        consegue responder quantos livros existem, quais sumiram, ou
+        quem está com o quê — então o acervo fica parado, e ficar
+        parado é a forma mais silenciosa de um livro deixar de existir.
+      </p>
+    </div>
+    <div>
+      <p>
+        Os sistemas de biblioteca que existem no mercado assumem coisas
+        que a escola pública não tem: internet estável, servidor,
+        licença anual, alguém de TI para instalar. O problema não é
+        falta de software. É que o software disponível foi desenhado
+        para outra realidade.
+      </p>
+      <p>
+        O SIGBEF parte do contrário: funciona offline, instala em
+        minutos no computador que já está lá, e não custa nada.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ O sistema ══════════════════════════════════════════ -->
+<section class="env" aria-labelledby="s-sistema">
+  <p class="marca">Dois · O que construímos</p>
+  <h2 class="tituloSecao" id="s-sistema">Três superfícies, um acervo só.</h2>
+  <p style="margin-bottom:2.25rem">
+    Cada uma existe porque uma pessoa diferente precisa de uma coisa
+    diferente do mesmo acervo.
+  </p>
+
+  <div class="superficies">
+    <div class="superficie">
+      <p class="quem">Bibliotecária</p>
+      <h3>Balcão</h3>
+      <p>
+        Cadastro do acervo, empréstimo e devolução por código de barras,
+        etiquetas, multas, relatórios para a direção e histórico de quem
+        fez o quê.
+      </p>
+    </div>
+    <div class="superficie">
+      <p class="quem">Aluno, na biblioteca</p>
+      <h3>Autoatendimento</h3>
+      <p>
+        Um terminal em modo quiosque. O aluno entra com a carteirinha,
+        pega e devolve sozinho. A bibliotecária não precisa estar na
+        mesa para a biblioteca funcionar.
+      </p>
+    </div>
+    <div class="superficie">
+      <p class="quem">Aluno, fora da escola</p>
+      <h3>Aplicativo</h3>
+      <p>
+        Consulta do acervo, dos próprios empréstimos e do prazo de
+        devolução pelo celular. Feito para aparelho antigo e conexão
+        ruim, que é o que o aluno tem.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Provas ═════════════════════════════════════════════ -->
+<section class="env" aria-labelledby="s-provas">
+  <p class="marca">Três · O que dá para conferir</p>
+  <h2 class="tituloSecao" id="s-provas">Não é protótipo de feira.</h2>
+  <p style="margin-bottom:2.5rem">
+    O código é aberto e o histórico é público. Qualquer um pode abrir e
+    conferir cada número abaixo.
+  </p>
+
+  <div class="provas">
+    <div class="prova">
+      <span class="n">141</span>
+      <span class="r">alterações registradas desde a primeira versão</span>
+    </div>
+    <div class="prova">
+      <span class="n">523</span>
+      <span class="r">testes automatizados rodando a cada mudança</span>
+    </div>
+    <div class="prova">
+      <span class="n">12</span>
+      <span class="r">versões publicadas em pouco mais de três meses</span>
+    </div>
+    <div class="prova">
+      <span class="n">MIT</span>
+      <span class="r">licença livre — qualquer escola pode usar e alterar</span>
+    </div>
+  </div>
+
+  <p class="fonte">
+    Fonte: repositório do projeto, em 27 ago 2026. Contagem de alterações
+    e de versões extraída do histórico de código; contagem de testes
+    obtida rodando a suíte completa.
+  </p>
+</section>
+
+<!-- ═══ Lacuna ═════════════════════════════════════════════ -->
+<section class="env" aria-labelledby="s-lacuna">
+  <div class="lacuna">
+    <p class="marca">Preencher antes de publicar</p>
+    <h2 id="s-lacuna">Esta seção precisa dos números reais da escola.</h2>
+    <p>
+      Aqui entra o impacto medido — é a primeira coisa que uma banca
+      procura. Estes dados estão no banco da biblioteca e
+      <strong>não foram preenchidos com estimativa de propósito</strong>:
+      número inventado que a banca pede a fonte derruba o trabalho inteiro.
+    </p>
+    <ul>
+      <li>Quantos livros foram catalogados até hoje</li>
+      <li>Quantos alunos e professores estão cadastrados</li>
+      <li>Quantos empréstimos o sistema já registrou</li>
+      <li>Como era a circulação antes do sistema, se houver registro</li>
+      <li>Desde quando exatamente o sistema está em uso na escola</li>
+    </ul>
+    <p style="margin-top:1.25rem;margin-bottom:0">
+      Os quatro primeiros saem do próprio SIGBEF, em
+      <code>Relatórios</code>. O quinto é a data em que a bibliotecária
+      começou a usar de verdade.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ Equipe ═════════════════════════════════════════════ -->
+<section class="env" aria-labelledby="s-equipe">
+  <p class="marca">Quatro · Quem faz</p>
+  <h2 class="tituloSecao" id="s-equipe">A equipe.</h2>
+  <p style="margin-bottom:2.25rem">
+    Estudantes do ensino médio do Centro de Ensino Felinto Elísio, com
+    acompanhamento das bibliotecárias da escola.
+  </p>
+  <div class="equipe">
+    <div class="pessoa">
+      <div class="nome">[Nome do estudante 1]</div>
+      <div class="papel">Preencher</div>
+    </div>
+    <div class="pessoa">
+      <div class="nome">[Nome do estudante 2]</div>
+      <div class="papel">Preencher</div>
+    </div>
+    <div class="pessoa">
+      <div class="nome">[Nome do estudante 3]</div>
+      <div class="papel">Preencher</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ Rodapé ═════════════════════════════════════════════ -->
+<footer class="rodape">
+  <div class="env">
+    <p class="marca">Contato</p>
+    <h2>Verbia Seridó</h2>
+    <p style="max-width:46ch">
+      Para escolas que queiram usar o sistema, e para quem quiser
+      conversar sobre o projeto.
+    </p>
+    <p style="margin-top:1.5rem">
+      <a href="mailto:[e-mail]">[e-mail de contato]</a><br />
+      <a href="https://sigbef.vercel.app/">Site do SIGBEF</a>
+    </p>
+    <p class="assinatura">
+      Verbia Seridó · Jardim do Seridó, Rio Grande do Norte<br />
+      Nome empresarial em processo de verificação — INPI, JUCERN e registro.br.<br />
+      SIGBEF é distribuído sob licença MIT.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

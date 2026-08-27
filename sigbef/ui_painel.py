@@ -10,7 +10,7 @@ import csv
 import tkinter as tk
 from datetime import date, datetime
 from pathlib import Path
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 
 from . import barcode_util
 from . import icones
@@ -22,6 +22,7 @@ from .formato import data_br, data_hora_br, reais
 from .servicos import RegraNegocioError
 from .ui_dialogos import (
     DialogoDetalhesLivro,
+    DialogoDevolucaoEmLote,
     DialogoEditarLivro,
     DialogoEditarUsuario,
     DialogoImportarCSV,
@@ -43,8 +44,7 @@ class PainelPrincipal(tk.Tk):
         self.title(f"SIGBEF - {sessao.nome} ({sessao.perfil.title()})")
         tema.aplicar_tema(self)
         icones.aplicar_icone_janela(self)
-        tema.centralizar_janela(self, 1280, 780)
-        self.minsize(1180, 700)
+        tema.centralizar_janela(self, 1280, 780, minimo=(1180, 700))
 
         self._secoes: dict[str, ttk.Frame] = {}
         self._botoes_lateral: dict[str, ttk.Button] = {}
@@ -858,6 +858,8 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._renovar).pack(side="left", padx=(0, 8))
         ttk.Button(op, text="Quitar multa",
                     command=self._quitar).pack(side="left")
+        ttk.Button(op, text="Isentar multa",
+                    command=self._isentar).pack(side="left", padx=(8, 0))
         ttk.Button(op, text="Devolver em lote",
                     command=self._devolver_em_lote).pack(side="left",
                                                           padx=(8, 0))
@@ -995,20 +997,80 @@ class SecaoEmprestimos(SecaoBase):
                               parent=self.painel)
         self.atualizar()
 
-    def _quitar(self):
+    def _emprestimo_selecionado(self, acao):
+        """Id da linha selecionada, ou None (com aviso) se não houver."""
         sel = self.tree.selection()
         if not sel:
             messagebox.showinfo(
                 "Selecione um empréstimo",
-                "Clique numa linha da tabela antes de quitar a multa.",
+                f"Clique numa linha da tabela antes de {acao}.",
+                parent=self.painel)
+            return None
+        return int(self.tree.item(sel[0])["values"][0])
+
+    def _quitar(self):
+        emp_id = self._emprestimo_selecionado("quitar a multa")
+        if emp_id is None:
+            return
+        try:
+            saldo = servicos.saldo_multa(emp_id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Quitar multa", str(e), parent=self.painel)
+            return
+        if saldo <= 0:
+            messagebox.showinfo(
+                "Sem multa em aberto",
+                "Este empréstimo não tem multa a receber.",
                 parent=self.painel)
             return
-        emp_id = int(self.tree.item(sel[0])["values"][0])
-        if messagebox.askyesno("Quitar multa",
-                                "Deseja quitar a multa deste empréstimo?",
-                                parent=self.painel):
+        if not messagebox.askyesno(
+                "Quitar multa",
+                f"Registrar o recebimento de {reais(saldo)}?\n\n"
+                "O valor lançado continua no histórico e no relatório — "
+                "quitar registra que o dinheiro entrou, não apaga a multa.",
+                parent=self.painel):
+            return
+        try:
             servicos.quitar_multa(emp_id, self.sessao.id)
-            self.atualizar()
+        except RegraNegocioError as e:
+            messagebox.showwarning("Quitar multa", str(e), parent=self.painel)
+            return
+        self.atualizar()
+
+    def _isentar(self):
+        """Perdoa a multa — com motivo, que é o que diferencia de quitar.
+
+        Sem isto, a única forma de perdoar era clicar em "Quitar multa" e
+        deixar registrado que a escola recebeu um dinheiro que nunca
+        entrou.
+        """
+        emp_id = self._emprestimo_selecionado("isentar a multa")
+        if emp_id is None:
+            return
+        try:
+            saldo = servicos.saldo_multa(emp_id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Isentar multa", str(e), parent=self.painel)
+            return
+        if saldo <= 0:
+            messagebox.showinfo(
+                "Sem multa em aberto",
+                "Este empréstimo não tem multa a isentar.",
+                parent=self.painel)
+            return
+        motivo = simpledialog.askstring(
+            "Isentar multa",
+            f"Isentar {reais(saldo)} deste empréstimo.\n\n"
+            "Motivo da isenção (obrigatório):",
+            parent=self.painel)
+        if motivo is None:
+            return
+        try:
+            servicos.isentar_multa(emp_id, motivo, self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Isentar multa", str(e), parent=self.painel)
+            return
+        self.atualizar()
 
     def atualizar(self):
         for it in self.tree.get_children():
@@ -1870,6 +1932,10 @@ class SecaoRelatorios(SecaoBase):
             ["Devoluções com atraso", mov["com_atraso"],
              f"{mov['taxa_atraso']}%"],
             ["Multas lançadas (R$)", f"{mov['multa_total']:.2f}", ""],
+            ["  das quais recebidas (R$)",
+             f"{mov['multa_recebida']:.2f}", ""],
+            ["  das quais isentas (R$)", f"{mov['multa_isenta']:.2f}", ""],
+            ["  ainda em aberto (R$)", f"{mov['multa_em_aberto']:.2f}", ""],
             ["Leitores diferentes", mov["leitores"], ""],
             ["", "", ""],
             ["POR MÊS", "Empréstimos", ""],
@@ -2417,11 +2483,36 @@ class SecaoConfig(SecaoBase):
         DialogoResetarSistema(self.painel, self.sessao)
 
     def _salvar(self):
-        from .database import set_config
+        """Valida antes de gravar — e só diz que salvou se salvou mesmo.
+
+        Antes daqui saía "Salvo com sucesso" para qualquer coisa digitada:
+        "0,50" na multa era recusado silenciosamente lá no fundo e o
+        sistema continuava cobrando o valor antigo.
+        """
+        from .database import get_config
+        valores = {chave: ent.get() for chave, ent in self._entries.items()}
+        try:
+            alterados = servicos.salvar_configuracoes(
+                valores, executor_id=self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Configuração inválida", str(e),
+                                    parent=self.painel)
+            return
+        # Recoloca o valor canônico na tela: quem digitou "0,50" vê "0.50",
+        # que é o que o sistema realmente vai usar.
         for chave, ent in self._entries.items():
-            set_config(chave, ent.get().strip())
-        messagebox.showinfo("Configurações", "Salvo com sucesso.",
-                             parent=self.painel)
+            ent.delete(0, "end")
+            ent.insert(0, get_config(chave) or "")
+        if alterados:
+            messagebox.showinfo(
+                "Configurações",
+                "Salvo com sucesso.\n\nAlterado: "
+                + ", ".join(alterados) + ".",
+                parent=self.painel)
+        else:
+            messagebox.showinfo("Configurações",
+                                 "Nenhuma alteração a salvar.",
+                                 parent=self.painel)
 
     # ---- Brasão da instituição ----
     def _refrescar_status_brasao(self):
@@ -2535,9 +2626,10 @@ class SecaoConfig(SecaoBase):
 
     # ---------------- Avisos por e-mail ----------------
     def _salvar_email(self):
-        from .database import set_config
         for chave, ent in self._smtp_entries.items():
-            set_config(chave, ent.get().strip())
+            servicos.definir_config_auditada(
+                chave, ent.get().strip(), executor_id=self.sessao.id,
+                acao="CONFIG_EMAIL_ALTERADA")
         self.lbl_email_msg.configure(text="✓ Dados de e-mail salvos.",
                                       foreground=tema.COR_SUCESSO)
 
@@ -2688,11 +2780,12 @@ class SecaoConfig(SecaoBase):
 
     def _toggle_api(self):
         from . import api
-        from .database import set_config
         ligar = self.var_api.get()
         porta_txt = self.ent_api_porta.get().strip()
         if porta_txt.isdigit():
-            set_config("API_PORTA", porta_txt)
+            servicos.definir_config_auditada(
+                "API_PORTA", porta_txt, executor_id=self.sessao.id,
+                acao="CONFIG_API_ALTERADA")
         api.definir_api(ligar, executor_id=self.sessao.id)
         if ligar:
             try:
@@ -2795,7 +2888,8 @@ class SecaoConfig(SecaoBase):
                 parent=self.painel)
             return
         tema.salvar_cores(valores["primaria"], valores["secundaria"],
-                          valores["destaque"], valores["fundo"])
+                          valores["destaque"], valores["fundo"],
+                          executor_id=self.sessao.id)
         messagebox.showinfo(
             "Aparência salva",
             "As novas cores foram salvas.\n\n"
@@ -2809,7 +2903,7 @@ class SecaoConfig(SecaoBase):
             "As cores personalizadas serao substituidas.",
             parent=self.painel):
             return
-        tema.restaurar_padrao()
+        tema.restaurar_padrao(executor_id=self.sessao.id)
         self._aplicar_preset_aparencia("padrao")
         messagebox.showinfo(
             "Padrao restaurado",

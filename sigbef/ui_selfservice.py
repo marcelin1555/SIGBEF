@@ -33,8 +33,7 @@ class TerminalAutoatendimento(tk.Tk):
         tema.aplicar_tema(self)
         icones.aplicar_icone_janela(self)
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 1100, 760)
-        self.minsize(960, 700)
+        tema.centralizar_janela(self, 1100, 760, minimo=(960, 700))
 
         self.bind_all("<Any-KeyPress>", self._reset_timer)
         self.bind_all("<Any-Button>", self._reset_timer)
@@ -113,7 +112,13 @@ class TerminalAutoatendimento(tk.Tk):
                                     bg=tema.COR_FUNDO_ESCURO,
                                     justify="center")
         self.ent_cartao.grid(row=6, column=0, ipady=8, sticky="ew")
-        self.ent_cartao.bind("<Return>", lambda e: self._fazer_login_cartao())
+        # O "break" é obrigatório: sem ele o evento sobe pelas bindtags
+        # até o toplevel, e o <Return> do campo do cartão dispara também
+        # o login por senha logo abaixo. Cartão recusado gerava dois
+        # avisos de "Acesso negado" seguidos; cartão aceito trocava de
+        # tela e o segundo tratador ainda lia o campo já destruído.
+        self.ent_cartao.bind("<Return>",
+                              lambda e: (self._fazer_login_cartao(), "break")[1])
 
         self.ent_matr.focus_set()
         self.bind("<Return>", lambda e: self._fazer_login_senha())

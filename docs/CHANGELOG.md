@@ -2,6 +2,101 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.11.0] — 2026-08-27
+
+Rodada de correções encontrada numa varredura do projeto inteiro, antes
+da FICTS. O achado que reorganizou tudo: **duas funções que o changelog
+já anunciava como entregues não funcionavam.**
+
+### Devolução em lote passou a funcionar (nunca funcionou antes)
+
+- Anunciada na v1.9.0, em 28/07. O botão existia, a classe do diálogo
+  existia, mas `ui_painel.py` nunca importou o nome — clicar levantava
+  `NameError`. Como o executável empacotado não tem console, o botão
+  simplesmente não fazia nada, e ficou quase um mês assim
+- A causa de ter passado tanto tempo: `ui_painel.py` e `ui_dialogos.py`
+  somam cerca de 4.700 linhas sem um único teste. `tests/test_ui_nomes.py`
+  passa a percorrer a árvore sintática de todos os módulos de interface e
+  recusa nome usado que não exista no módulo
+
+### Multa deixou de apagar o próprio histórico
+
+- `quitar_multa` fazia `UPDATE emprestimo SET multa = 0`. Depois de
+  receber, não restava registro de que a multa existiu: não dava para
+  conferir caixa nem responder quanto a biblioteca arrecadou no ano
+- Pior: o relatório da direção somava essa mesma coluna sob o rótulo
+  **"Multas lançadas"**. Como quitar zerava, o número mostrado era, na
+  verdade, "multas que ninguém pagou" — e diminuía toda vez que alguém
+  pagava
+- Agora `multa` é o valor lançado e nunca muda. O recebimento vai em
+  `multa_paga`, e o relatório mostra os quatro números separados:
+  lançado, recebido, isento e ainda em aberto
+
+### Isenção de multa (nova)
+
+- Perdoar uma multa só era possível fingindo que ela nunca existiu, pelo
+  botão de quitar — ou seja, registrando que a escola recebeu um dinheiro
+  que nunca entrou
+- Isentar virou ação própria, com **motivo obrigatório** e registro
+  separado na auditoria. Isenção sem justificativa escrita é exatamente o
+  registro que ninguém consegue defender depois
+
+### Configurações pararam de mentir
+
+- A tela gravava sem validar e respondia "Salvo com sucesso" para
+  qualquer coisa. Digitar `0,50` na multa por dia — a forma normal de
+  escrever meio real — era aceito na tela, mas o sistema não converte
+  vírgula: caía no valor padrão e seguia cobrando R$ 1,50 por dia, sem
+  nenhum aviso
+- Agora valida antes de gravar, aceita vírgula, e recusa com mensagem
+  apontando qual campo está errado
+- Prazo, limite, multa, cores do tema, senha do SMTP e porta da API
+  gravavam direto no banco, pulando a camada de serviço: **mudança de
+  configuração não deixava rastro nenhum na auditoria**. Agora todas
+  passam por lá, e valor de chave sigilosa nunca vai para o detalhe
+- Bancos que já rodam na escola podem estar com `0,50` gravado. A subida
+  conserta uma vez, trocando vírgula por ponto e só quando o resultado
+  vira número — chutar um valor de multa seria pior que não mexer
+
+### Janela travada maior que a tela
+
+- A v1.10.4 limitou a geometria à tela, mas o `minsize()` logo abaixo
+  desfazia isso em quatro arquivos. No laboratório da escola (1366x768 a
+  125%, cerca de 1093x614 úteis) o painel era forçado a 1180x700 e a
+  linha de botões ficava fora da tela, sem rolagem
+- O mínimo passou a ser do próprio `centralizar_janela`, e um teste
+  recusa `minsize()` chamado por fora dele
+
+### Autoatendimento: um Enter, uma ação
+
+- O Enter no campo do cartão subia para a janela e disparava também o
+  login por senha. Cartão recusado gerava dois avisos seguidos; cartão
+  aceito trocava de tela e o segundo tratador lia um campo já destruído
+
+### Aplicativo do aluno
+
+- **Quebrava no Android 7.** O aviso de devolução usava `java.time`, que
+  só existe a partir da API 26, com `minSdk 24` e sem desugaring. Era o
+  aparelho antigo, justamente o público do app. Reescrito na convenção
+  que o resto do app já usava, e um teste novo recusa API acima do minSdk
+  em código de produção
+- **Câmera ficava aberta** ao sair do leitor de QR, com o analisador
+  ainda recebendo quadros e entregando cada um a um leitor já fechado
+- **"Em dia" num livro vencido.** O atraso era gravado na sincronização e
+  ficava congelado: quem passasse dias sem rede via selo verde num livro
+  vencido, e "prazo vencido" na tela inicial ao mesmo tempo. Agora é
+  calculado na leitura, e as três telas concordam
+- **Dados do aluno anterior reaparecendo.** Sair da conta limpava o cache
+  sem cancelar a sincronização em voo, que voltava e regravava tudo no
+  banco recém-limpo. Num celular compartilhado, o aluno seguinte via a
+  carteirinha do anterior
+
+### Testes
+
+- 523 no desktop (30 novos) e 46 na JVM do aplicativo (8 novos). Cada
+  correção teve o defeito reintroduzido de propósito para confirmar que o
+  teste novo realmente falha
+
 ## [1.10.4] — 2026-08-18
 
 Correção reportada direto do uso real: na escola, a janela de cadastrar

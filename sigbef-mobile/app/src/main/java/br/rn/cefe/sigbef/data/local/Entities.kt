@@ -39,6 +39,11 @@ data class EmprestimoEntity(
     val livroTitulo: String,
     val autor: String,
     val dataDevolucao: String,
+    /**
+     * Fotografia do atraso no momento da sincronizacao. NAO use para
+     * exibir: fica velha assim que o dia vira e o aluno esta sem rede.
+     * Quem mostra na tela e `toDomain()`, que recalcula pela data.
+     */
     val atrasado: Boolean = false,
     val devolvido: Boolean = false,
     val dataDevolvido: String? = null,
