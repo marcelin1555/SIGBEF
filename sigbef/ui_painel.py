@@ -1631,8 +1631,9 @@ class SecaoInventario(SecaoBase):
         if not nome:
             return
 
-        linhas = [["NÃO ENCONTRADOS (procurar na estante)", "", "", ""]]
-        linhas += [[x["titulo"], x["numero_tombo"] or "",
+        linhas = [["NÃO ENCONTRADOS (procurar na estante)", "Situação",
+                   "", ""]]
+        linhas += [[x["titulo"], x.get("status") or "",
                      x["codigo_barras"], x.get("localizacao") or ""]
                    for x in res["nao_encontrados"]]
         linhas += [["", "", "", ""],

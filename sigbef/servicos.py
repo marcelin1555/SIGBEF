@@ -819,12 +819,22 @@ def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
                 "Existem empréstimos em aberto para este livro. Devolva-os primeiro."
             )
         cur.execute("UPDATE livro SET ativo = 0 WHERE id = ?", (livro_id,))
+        # `status != 'BAIXADO'`, e não `= 'DISPONIVEL'`: o exemplar
+        # separado para uma reserva (RESERVADO) escapava da baixa. Quando
+        # a reserva vencia, a expiração o devolvia para DISPONIVEL — e
+        # como `localizar_exemplar` não filtra livro ativo, o livro
+        # excluído voltava a ser emprestável no balcão.
         cur.execute(
             "UPDATE exemplar SET status = 'BAIXADO' "
-            "WHERE livro_id = ? AND status = 'DISPONIVEL'",
+            "WHERE livro_id = ? AND status != 'BAIXADO'",
             (livro_id,),
         )
-    registrar_auditoria(usuario_id, "EXCLUSAO_LIVRO", f"livro_id={livro_id}")
+        from .reservas import cancelar_reservas_do_livro_cur
+        canceladas = cancelar_reservas_do_livro_cur(cur, livro_id)
+    registrar_auditoria(
+        usuario_id, "EXCLUSAO_LIVRO",
+        f"livro_id={livro_id}"
+        + (f" reservas_canceladas={canceladas}" if canceladas else ""))
 
 
 def _atraso_e_multa(data_prevista: str,
@@ -903,10 +913,20 @@ def baixar_exemplar(codigo: str, motivo: str,
                               data_baixa = ?
                         WHERE id = ?""", (motivo, hoje, ex["id"]))
 
+        # Só depois de o exemplar estar BAIXADO: assim a reoferta dentro
+        # de `liberar_reservas_do_exemplar_cur` nunca reoferece este
+        # mesmo exemplar. Antes disto a reserva ficava ATIVA apontando
+        # para um exemplar fora do acervo, e o aluno da vez ia até a
+        # biblioteca buscar um livro que não existia mais.
+        from .reservas import liberar_reservas_do_exemplar_cur
+        reservas_soltas = liberar_reservas_do_exemplar_cur(cur, ex["id"])
+
     registrar_auditoria(
         usuario_id, "BAIXA_EXEMPLAR",
         f"exemplar={ex['codigo_barras']} livro={ex['titulo']} motivo={motivo}"
-        + (f" emprestimo_encerrado={emp['id']}" if emp else ""))
+        + (f" emprestimo_encerrado={emp['id']}" if emp else "")
+        + (f" reservas_liberadas={len(reservas_soltas)}"
+           if reservas_soltas else ""))
 
     return {
         "exemplar_id": ex["id"],

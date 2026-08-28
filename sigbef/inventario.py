@@ -133,15 +133,23 @@ def resultado(inventario_id: int) -> dict:
     with db_cursor() as cur:
         # 1. O cadastro diz que está na estante, mas ninguém passou o
         #    leitor. É a lista que interessa: são os que sumiram.
+        #    RESERVADO entra aqui junto com DISPONIVEL. O exemplar
+        #    separado para uma reserva continua **dentro da biblioteca**,
+        #    na prateleira de retirada, e portanto tem que ser
+        #    encontrado na conferência. Antes ele não aparecia em lista
+        #    nenhuma das três, mas era contado em `no_acervo`: os
+        #    números da conferência nunca fechavam, e a bibliotecária
+        #    ficava procurando a diferença que o próprio relatório
+        #    escondia. O status vai junto para ela saber onde procurar.
         cur.execute("""SELECT ex.codigo_barras, ex.numero_tombo,
-                              ex.localizacao, l.titulo
+                              ex.localizacao, ex.status, l.titulo
                          FROM exemplar ex
                          JOIN livro l ON l.id = ex.livro_id
-                        WHERE ex.status = 'DISPONIVEL'
+                        WHERE ex.status IN ('DISPONIVEL', 'RESERVADO')
                           AND ex.id NOT IN (SELECT exemplar_id
                                               FROM inventario_item
                                              WHERE inventario_id = ?)
-                        ORDER BY ex.localizacao, l.titulo""",
+                        ORDER BY ex.status, ex.localizacao, l.titulo""",
                     (inventario_id,))
         nao_encontrados = [dict(r) for r in cur.fetchall()]
 
