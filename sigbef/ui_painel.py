@@ -323,6 +323,15 @@ class SecaoLivros(SecaoBase):
         topo.pack(fill="x")
         ttk.Label(topo, text="Livros e exemplares",
                   style="Titulo.TLabel").pack(side="left")
+
+        # Os botões ficam numa faixa própria, abaixo do título.
+        #
+        # Eram seis, na mesma linha do título. Somados, passavam da
+        # largura útil, e o último empacotado — "Importar CSV" — era
+        # espremido até desaparecer, sobrando só uma lasca azul colada no
+        # título. A função existia e não tinha como ser alcançada.
+        topo = ttk.Frame(self)
+        topo.pack(fill="x", pady=(10, 0))
         ttk.Button(topo, text=" Cadastrar livro",
                     image=icones.icone("mais", "branco", 14),
                     compound="left",
@@ -382,15 +391,22 @@ class SecaoLivros(SecaoBase):
         self.tree.column("ano", width=70, anchor="center")
         self.tree.column("total", width=70, anchor="center")
         self.tree.column("disp", width=70, anchor="center")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
-        self.tree.bind("<Double-1>", lambda e: self._detalhes())
-
         # Rodapé de paginação. A lista carrega por blocos porque o
         # Treeview insere linha por linha na mesma thread que desenha a
         # janela: um acervo grande travava a tela por segundos antes de
         # mostrar qualquer coisa.
+        #
+        # Empacotado ANTES da tabela e no rodapé, pelo mesmo motivo da
+        # barra de botões de Empréstimos: a tabela com `expand=True`
+        # tomava a área toda e este rodapé ficava com altura zero. Numa
+        # tela pequena, a contagem "Mostrando 500 de 2.868" e o botão
+        # "Carregar mais" desapareciam — e sem eles não havia como
+        # chegar ao resto do acervo.
         rodape = ttk.Frame(self, padding=(0, 8))
-        rodape.pack(fill="x")
+        rodape.pack(side="bottom", fill="x")
+
+        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        self.tree.bind("<Double-1>", lambda e: self._detalhes())
         self.lbl_contagem = ttk.Label(rodape, text="")
         self.lbl_contagem.pack(side="left")
         self.btn_mais = ttk.Button(rodape, text="Carregar mais",
@@ -842,12 +858,25 @@ class SecaoEmprestimos(SecaoBase):
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
+        # A barra de botões é empacotada ANTES da tabela, e no rodapé.
+        #
+        # A ordem é o conserto, não estilo. O `pack` do Tk atende na ordem
+        # em que é chamado: a tabela, com `expand=True`, tomava a área
+        # inteira e a faixa de botões — empacotada depois — ficava com
+        # altura zero. Numa tela pequena, "Devolver selecionado",
+        # "Quitar multa", "Isentar multa" e "Devolver em lote"
+        # simplesmente não existiam, sem aviso e sem rolagem.
+        #
+        # Limitar o tamanho da janela à tela (v1.11.0) não resolveu isto:
+        # aquilo fez a janela caber no monitor, e este faz o conteúdo
+        # caber na janela. São dois problemas diferentes.
+        op = ttk.Frame(self)
+        op.pack(side="bottom", fill="x", pady=(8, 0))
+
         self.tree.pack(fill="both", expand=True)
         # Devolução com um clique: duplo clique na linha devolve o livro
         self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
 
-        op = ttk.Frame(self)
-        op.pack(fill="x", pady=(8, 0))
         ttk.Button(op, text=" Devolver selecionado",
                     image=icones.icone("confirmar", "branco", 14),
                     compound="left",
