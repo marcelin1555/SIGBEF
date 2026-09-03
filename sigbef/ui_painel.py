@@ -24,10 +24,12 @@ from .ui_dialogos import (
     DialogoDetalhesLivro,
     DialogoDevolucaoEmLote,
     DialogoEditarLivro,
+    DialogoEmprestimoColecao,
     DialogoEditarUsuario,
     DialogoImportarCSV,
     DialogoLivro,
     DialogoResetarSistema,
+    DialogoRestaurarBackup,
     DialogoSelecionarExemplar,
     DialogoSelecionarUsuario,
     DialogoUsuario,
@@ -861,6 +863,11 @@ class SecaoEmprestimos(SecaoBase):
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
+        # A linha de coleção resume trinta empréstimos numa só. O negrito
+        # é o que avisa, antes de qualquer clique, que aquela linha não é
+        # do mesmo tipo das outras.
+        self.tree.tag_configure("colecao",
+                                  font=("Segoe UI Semibold", 9))
         # A barra de botões é empacotada ANTES da tabela, e no rodapé.
         #
         # A ordem é o conserto, não estilo. O `pack` do Tk atende na ordem
@@ -894,6 +901,12 @@ class SecaoEmprestimos(SecaoBase):
                     command=self._isentar).pack(side="left", padx=(8, 0))
         ttk.Button(op, text="Devolver em lote",
                     command=self._devolver_em_lote).pack(side="left",
+                                                          padx=(8, 0))
+        ttk.Button(op, text="Emprestar coleção...",
+                    command=self._emprestar_colecao).pack(side="left",
+                                                           padx=(16, 0))
+        ttk.Button(op, text="Devolver coleção",
+                    command=self._devolver_colecao).pack(side="left",
                                                           padx=(8, 0))
         ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
                   style="Hint.TLabel").pack(side="left", padx=(16, 0))
@@ -951,6 +964,12 @@ class SecaoEmprestimos(SecaoBase):
                 "Selecione um empréstimo",
                 "Clique numa linha da tabela antes de devolver.",
                 parent=self.painel)
+            return
+        if sel[0].startswith("col:"):
+            # Duplo clique numa coleção faz o que a linha promete:
+            # devolve a coleção. Cair no caminho do exemplar avulso
+            # tentaria devolver um código que é "30 exemplares".
+            self._devolver_colecao()
             return
         v = self.tree.item(sel[0])["values"]
         titulo, usuario, codigo = v[4], v[1], str(v[5])
@@ -1030,7 +1049,11 @@ class SecaoEmprestimos(SecaoBase):
         self.atualizar()
 
     def _emprestimo_selecionado(self, acao):
-        """Id da linha selecionada, ou None (com aviso) se não houver."""
+        """Id da linha selecionada, ou None (com aviso) se não houver.
+
+        Linha de coleção não serve: multa, renovação e devolução avulsa
+        são de um exemplar só, e a coleção resume trinta.
+        """
         sel = self.tree.selection()
         if not sel:
             messagebox.showinfo(
@@ -1038,7 +1061,49 @@ class SecaoEmprestimos(SecaoBase):
                 f"Clique numa linha da tabela antes de {acao}.",
                 parent=self.painel)
             return None
+        if sel[0].startswith("col:"):
+            messagebox.showinfo(
+                "Isto é uma coleção",
+                "Esta linha resume os exemplares que saíram para uma "
+                "turma inteira.\n\nUse “Devolver coleção” para "
+                "receber tudo de volta de uma vez.",
+                parent=self.painel)
+            return None
         return int(self.tree.item(sel[0])["values"][0])
+
+    def _emprestar_colecao(self):
+        DialogoEmprestimoColecao(self.painel, self.sessao,
+                                  ao_salvar=self.atualizar)
+
+    def _devolver_colecao(self):
+        sel = self.tree.selection()
+        if not sel or not sel[0].startswith("col:"):
+            messagebox.showinfo(
+                "Selecione uma coleção",
+                "Clique na linha da coleção (a que mostra “coleção” "
+                "na primeira coluna) antes de devolver.",
+                parent=self.painel)
+            return
+        v = self.tree.item(sel[0])["values"]
+        titulo, professor, quantos = v[4], v[1], v[5]
+        if not messagebox.askyesno(
+                "Devolver coleção",
+                f"Receber de volta {quantos} de “{titulo}”, "
+                f"que estão com {professor}?",
+                parent=self.painel):
+            return
+        try:
+            res = servicos.devolver_colecao(sel[0][4:], self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Devolver coleção", str(e),
+                                    parent=self.painel)
+            return
+        messagebox.showinfo(
+            "Coleção devolvida",
+            f"{res['devolvidos']} exemplar(es) de “{res['titulo']}” "
+            "voltaram para o acervo.",
+            parent=self.painel)
+        self.atualizar()
 
     def _quitar(self):
         emp_id = self._emprestimo_selecionado("quitar a multa")
@@ -1105,12 +1170,36 @@ class SecaoEmprestimos(SecaoBase):
         self.atualizar()
 
     def atualizar(self):
+        """Uma linha por empréstimo — e uma linha por coleção inteira.
+
+        A coleção de trinta livros-texto ocupa uma linha, não trinta:
+        essa era a razão de a saída para a turma acabar registrada em
+        papel. O `iid` da linha diz de que tipo ela é (`emp:` ou
+        `col:`), porque os botões da barra agem em coisas diferentes e
+        confundir os dois seria devolver a turma inteira sem querer.
+        """
         for it in self.tree.get_children():
             self.tree.delete(it)
+
+        for c in servicos.listar_colecoes_em_aberto():
+            atrasado = bool(c["atrasado"])
+            tags = ["colecao"] + (["atrasado"] if atrasado else [])
+            self.tree.insert(
+                "", "end", iid=f"col:{c['colecao_id']}", tags=tuple(tags),
+                values=(
+                    "coleção", c["professor"], c["matricula"],
+                    c["turma"] or "", c["titulo"],
+                    f"{c['quantidade']} exemplares",
+                    data_hora_br(c["data_emprestimo"]),
+                    data_br(c["data_prevista"]), "SIM" if atrasado else "",
+                ))
+
         for e in servicos.listar_emprestimos_em_aberto():
+            if e.get("colecao_id"):
+                continue          # já foi resumido na linha da coleção
             atrasado = bool(e["atrasado"])
             tag = ("atrasado",) if atrasado else ()
-            self.tree.insert("", "end", tags=tag, values=(
+            self.tree.insert("", "end", iid=f"emp:{e['id']}", tags=tag, values=(
                 e["id"], e["usuario"], e["matricula"],
                 e.get("turma") or "",
                 e["titulo"],
@@ -2217,33 +2306,56 @@ class SecaoConfig(SecaoBase):
                     command=self._backup
                     ).grid(row=0, column=1, rowspan=2, sticky="e", padx=12)
 
-        # Dados de demo
-        ttk.Label(ferramentas, text="Dados de demonstração",
+        # Restaurar
+        #
+        # O botão de fazer backup existia desde a primeira versão; o de
+        # usá-lo, não. Restaurar significava copiar um `.db` por cima do
+        # outro no Explorador — e com o banco em WAL é assim que se
+        # produz uma cópia que abre e está pela metade. Backup que
+        # ninguém sabe restaurar sozinho não é backup.
+        ttk.Label(ferramentas, text="Restaurar um backup",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=2, column=0, sticky="w", pady=(14, 2))
         ttk.Label(ferramentas,
+                  text=("Substitui TODO o acervo atual pelo conteúdo de uma "
+                        "cópia de segurança. O sistema guarda o banco de "
+                        "hoje antes de trocar, para o caso de arrependimento."),
+                  style="CardHint.TLabel", wraplength=600
+                  ).grid(row=3, column=0, sticky="w")
+        ttk.Button(ferramentas, text="Restaurar backup...",
+                    style="Perigo.TButton",
+                    command=self._restaurar_backup
+                    ).grid(row=2, column=1, rowspan=2, sticky="e",
+                            padx=12, pady=(14, 0))
+
+        # Dados de demo
+        ttk.Label(ferramentas, text="Dados de demonstração",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=4, column=0, sticky="w", pady=(14, 2))
+        ttk.Label(ferramentas,
                   text=("Adiciona 10 livros e 4 usuários de exemplo. "
                         "Útil para testar o sistema antes do uso real."),
                   style="CardHint.TLabel", wraplength=600
-                  ).grid(row=3, column=0, sticky="w")
+                  ).grid(row=5, column=0, sticky="w")
         ttk.Button(ferramentas, text="Carregar dados de demonstração",
                     command=self._carregar_demo
-                    ).grid(row=2, column=1, rowspan=2, sticky="e",
+                    ).grid(row=4, column=1, rowspan=2, sticky="e",
                             padx=12, pady=(14, 0))
 
         # Sobre
         ttk.Label(ferramentas, text="Sobre o sistema",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
-                  ).grid(row=4, column=0, sticky="w", pady=(14, 2))
+                  ).grid(row=6, column=0, sticky="w", pady=(14, 2))
         ttk.Label(ferramentas,
                   text="Versão, licença, autor e informações de contato.",
                   style="CardHint.TLabel"
-                  ).grid(row=5, column=0, sticky="w")
+                  ).grid(row=7, column=0, sticky="w")
         ttk.Button(ferramentas, text="Mostrar sobre...",
                     command=self._sobre
-                    ).grid(row=4, column=1, rowspan=2, sticky="e",
+                    ).grid(row=6, column=1, rowspan=2, sticky="e",
                             padx=12, pady=(14, 0))
 
         # ---------------- Integrações ----------------
@@ -2628,6 +2740,37 @@ class SecaoConfig(SecaoBase):
         messagebox.showinfo("Backup concluído",
                               f"Arquivo gerado em:\n{destino}",
                               parent=self.painel)
+
+    def _restaurar_backup(self):
+        """Escolhe o arquivo e entrega a decisão ao diálogo.
+
+        Aqui só se escolhe o arquivo. A confirmação — digitada, com os
+        números dos dois lados à vista — mora em `DialogoRestaurarBackup`,
+        pelo mesmo motivo que a de apagar tudo mora na dela: é a parte
+        que não pode ser um sim/não distraído.
+        """
+        from . import backup
+        origem = filedialog.askopenfilename(
+            parent=self.painel,
+            title="Escolha o arquivo de backup",
+            initialdir=str(backup.pasta_destino()),
+            filetypes=[("Banco SQLite", "*.db"), ("Todos", "*.*")])
+        if not origem:
+            return
+
+        try:
+            dialogo = DialogoRestaurarBackup(
+                self.painel, self.sessao, origem,
+                # Recarrega o que está à vista; as outras seções
+                # recarregam sozinhas quando forem abertas.
+                ao_restaurar=self.painel._atualizar_secao_atual)
+        except backup.BackupInvalido as e:
+            # Conferir antes de abrir a janela: não faz sentido montar
+            # uma tela de comparação para um arquivo que não serve.
+            messagebox.showerror("Este arquivo não serve", str(e),
+                                   parent=self.painel)
+            return
+        self.painel.wait_window(dialogo)
 
     def _carregar_demo(self):
         from . import seed

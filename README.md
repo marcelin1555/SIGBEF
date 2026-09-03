@@ -660,20 +660,23 @@ Funcionalidades planejadas para versões futuras:
 
 ### Próxima versão
 
-- [ ] **Restaurar uma cópia de segurança pela tela** — hoje o sistema faz
-      backup todo dia e não tem como usar. Recuperar exige fechar o
-      programa, achar a pasta e sobrescrever o arquivo na mão. Backup que
-      não se restaura é meio backup. É a segunda operação mais destrutiva
-      do sistema, então merece o mesmo cuidado do apagar tudo: cópia do
-      estado atual antes, e confirmação digitada
-- [ ] **Isentar multa, com motivo** — hoje só existe quitar. Perdoar uma
-      multa obriga a bibliotecária a registrar como paga, ou seja, a
-      gravar no histórico uma coisa que não aconteceu
-- [ ] **Empréstimo de coleção para o professor** — livro-texto para a
-      turma inteira num registro só, em vez de trinta. A dúvida que
-      travava isso era em nome de quem fica o exemplar; a proposta é
-      **no nome do professor, com a turma anotada**, porque é ele quem
-      responde pelos trinta livros
+- [x] **Restaurar uma cópia de segurança pela tela** — Configurações →
+      Ferramentas → "Restaurar backup...". Confere que o arquivo é mesmo
+      um banco do SIGBEF antes de qualquer coisa, mostra lado a lado o
+      que há hoje e o que há no arquivo, e exige a palavra RESTAURAR
+      digitada. Guarda o banco atual antes de trocar, com um nome que a
+      limpeza automática de backups não apaga — sem isso, restaurar por
+      engano seria irreversível
+- [x] **Isentar multa, com motivo** — o motivo é obrigatório, e o valor
+      lançado continua no histórico: isentar registra que a escola
+      perdoou, não que recebeu
+- [x] **Empréstimo de coleção para o professor** — Empréstimos →
+      "Emprestar coleção...". Sai no nome do professor com a turma
+      anotada, ocupa uma linha na tela em vez de trinta, tem prazo de
+      bimestre (60 dias) e não esbarra no limite de empréstimos
+      simultâneos — mas multa em aberto continua bloqueando. Continua
+      sendo uma linha por exemplar no banco, porque a conferência de
+      estante precisa saber que aqueles trinta não estão lá
 
 ### Para outra escola conseguir adotar sozinha
 

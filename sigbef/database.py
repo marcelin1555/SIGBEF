@@ -169,7 +169,17 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     multa_motivo_isencao TEXT,
     multa_quitada_em TEXT,
     origem TEXT NOT NULL DEFAULT 'BALCAO' CHECK (origem IN ('BALCAO','AUTOATENDIMENTO')),
-    renovacoes INTEGER NOT NULL DEFAULT 0
+    renovacoes INTEGER NOT NULL DEFAULT 0,
+    -- Emprestimo de colecao: o livro-texto que sai para a turma inteira.
+    -- Continua sendo uma linha por exemplar, porque e o exemplar que
+    -- precisa aparecer como emprestado no inventario e na estante; o
+    -- que `colecao_id` faz e amarrar as trinta linhas numa so para a
+    -- bibliotecaria, que devolve tudo junto e nao quer ler trinta
+    -- linhas iguais na tela. `colecao_turma` fica aqui, e nao no
+    -- usuario, porque quem responde pelos livros e o professor e ele
+    -- pode levar colecao para mais de uma turma no mesmo bimestre.
+    colecao_id TEXT,
+    colecao_turma TEXT
 );
 
 CREATE TABLE IF NOT EXISTS reserva (
@@ -282,6 +292,10 @@ CONFIG_PADRAO = {
     "LIMITE_RESERVAS": "3",       # reservas ativas simultâneas por usuário
     "RESERVA_VALIDADE_DIAS": "2", # prazo pra retirar o exemplar reservado
     "LIMITE_RENOVACOES": "2",     # renovações seguidas que o aluno faz sozinho
+    # Empréstimo de coleção: o livro-texto vai para a turma e volta no
+    # fim do bimestre, não em duas semanas. Prazo separado por isso.
+    "PRAZO_COLECAO_DIAS": "60",
+    "LIMITE_COLECAO_EXEMPLARES": "40",  # teto por coleção, contra erro de digitação
     # E-mail de aviso de vencimento (opt-in; sistema segue 100% offline
     # com isso desligado)
     "EMAIL_AVISOS": "0",
@@ -329,19 +343,29 @@ def _migrar_schema(cur) -> None:
         cur.execute("ALTER TABLE emprestimo "
                     "ADD COLUMN renovacoes INTEGER NOT NULL DEFAULT 0")
 
-    if "multa_paga" not in colunas:
-        # Bancos anteriores tem so `multa`. Nada a converter: o valor que
-        # esta la e, por definicao, o que ainda estava em aberto, entao
-        # pago e isento nascem zerados e o saldo continua o mesmo. O que
-        # ja foi quitado antes desta versao esta perdido -- `quitar_multa`
-        # zerava a coluna -- e nao da para reconstruir.
-        cur.execute("ALTER TABLE emprestimo "
-                    "ADD COLUMN multa_paga REAL NOT NULL DEFAULT 0")
-        cur.execute("ALTER TABLE emprestimo "
-                    "ADD COLUMN multa_isenta REAL NOT NULL DEFAULT 0")
-        cur.execute("ALTER TABLE emprestimo "
-                    "ADD COLUMN multa_motivo_isencao TEXT")
-        cur.execute("ALTER TABLE emprestimo ADD COLUMN multa_quitada_em TEXT")
+    # Bancos anteriores tem so `multa`. Nada a converter: o valor que
+    # esta la e, por definicao, o que ainda estava em aberto, entao pago
+    # e isento nascem zerados e o saldo continua o mesmo. O que ja foi
+    # quitado antes desta versao esta perdido -- `quitar_multa` zerava a
+    # coluna -- e nao da para reconstruir.
+    #
+    # Conferido coluna a coluna, e nao pelo `multa_paga` como porteiro
+    # das quatro: um banco que tenha so parte delas -- migracao
+    # interrompida por disco cheio, backup antigo restaurado -- fazia a
+    # migracao inteira abortar com "duplicate column name", e a partir
+    # dai o sistema nao subia mais.
+    for coluna, definicao in (
+            ("multa_paga", "REAL NOT NULL DEFAULT 0"),
+            ("multa_isenta", "REAL NOT NULL DEFAULT 0"),
+            ("multa_motivo_isencao", "TEXT"),
+            ("multa_quitada_em", "TEXT")):
+        if coluna not in colunas:
+            cur.execute("ALTER TABLE emprestimo ADD COLUMN %s %s"
+                        % (coluna, definicao))
+
+    for coluna in ("colecao_id", "colecao_turma"):
+        if coluna not in colunas:
+            cur.execute("ALTER TABLE emprestimo ADD COLUMN %s TEXT" % coluna)
 
     cur.execute("PRAGMA table_info(exemplar)")
     colunas = {r["name"] for r in cur.fetchall()}
