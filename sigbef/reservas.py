@@ -324,9 +324,18 @@ def listar_reservas_ativas() -> list[dict]:
                        r.exemplar_id, l.titulo,
                        u.nome AS usuario, u.matricula, u.turma,
                        ex.codigo_barras, ex.numero_tombo,
+                       -- `exemplar_id IS NULL` conta só quem ainda
+                       -- espera. Sem ele, esta consulta somava também
+                       -- as reservas que já têm exemplar separado, e o
+                       -- balcão dizia uma posição e o aplicativo do
+                       -- aluno dizia outra para a mesma reserva — o
+                       -- app já filtrava. Quem espera é quem disputa a
+                       -- próxima devolução; quem já tem o livro
+                       -- separado saiu da disputa.
                        (SELECT COUNT(*) FROM reserva r2
                          WHERE r2.livro_id = r.livro_id
                            AND r2.status = 'ATIVA'
+                           AND r2.exemplar_id IS NULL
                            AND (r2.criado_em < r.criado_em
                                 OR (r2.criado_em = r.criado_em
                                     AND r2.id <= r.id))

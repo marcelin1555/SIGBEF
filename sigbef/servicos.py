@@ -1383,6 +1383,23 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
                 f"Exemplar '{ex['titulo']}' está reservado para outro "
                 "usuário da fila de espera."
             )
+
+        # O limite é conferido DE NOVO aqui dentro, e não só lá em cima.
+        #
+        # `status_usuario` roda numa transação própria, antes desta. Entre
+        # uma e outra cabe um segundo empréstimo: duas bibliotecárias
+        # atendendo ao mesmo tempo, ou o balcão e a API do aplicativo.
+        # As duas passavam pela verificação com o mesmo número e as duas
+        # gravavam — o aluno terminava com um livro a mais que o limite,
+        # sem nada no sistema indicando como.
+        limite = _limite_para_perfil(u["perfil"])
+        cur.execute(
+            "SELECT COUNT(*) AS qt FROM emprestimo "
+            "WHERE usuario_id = ? AND data_devolucao IS NULL", (u["id"],))
+        if cur.fetchone()["qt"] >= limite:
+            raise RegraNegocioError(
+                f"Limite de {limite} empréstimos simultâneos atingido "
+                "para este usuário.")
         # Trava atômica contra corrida (balcão e kiosk simultâneos): só a
         # primeira transação consegue mudar o status pra EMPRESTADO; as
         # demais não afetam linha nenhuma e são rejeitadas aqui.
@@ -1700,7 +1717,12 @@ def estatisticas() -> dict:
     with db_cursor() as cur:
         cur.execute("SELECT COUNT(*) AS qt FROM livro WHERE ativo = 1")
         livros = cur.fetchone()["qt"]
-        cur.execute("SELECT COUNT(*) AS qt FROM exemplar")
+        # `!= 'BAIXADO'`: exemplar baixado saiu do acervo. Contá-lo aqui
+        # fazia o painel anunciar um acervo maior do que a biblioteca
+        # tem, e o número só crescia — baixar um livro perdido aumentava
+        # a contagem de exemplares em vez de diminuir.
+        cur.execute(
+            "SELECT COUNT(*) AS qt FROM exemplar WHERE status != 'BAIXADO'")
         exemplares = cur.fetchone()["qt"]
         cur.execute(
             "SELECT COUNT(*) AS qt FROM exemplar WHERE status = 'DISPONIVEL'")
