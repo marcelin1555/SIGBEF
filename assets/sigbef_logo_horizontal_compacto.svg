@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 220">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E75B6"/>
+      <stop offset="100%" stop-color="#1F4E79"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ícone: mesma marca do assets/sigbef.svg, sem o texto interno -->
+  <g transform="translate(0,0)">
+    <rect width="220" height="220" rx="38" ry="38" fill="url(#g)"/>
+    <g transform="translate(41,44)">
+      <rect x="5" y="5" width="127" height="131" rx="5" ry="5" fill="#FFFFFF" opacity="0.18"/>
+      <rect x="0" y="0" width="127" height="131" rx="5" ry="5" fill="#FFFFFF"/>
+      <rect x="0" y="0" width="127" height="19" fill="#F2A900"/>
+      <rect x="12" y="36" width="103" height="5" rx="2.5" fill="#1F4E79"/>
+      <rect x="12" y="50" width="86"  height="3.5" rx="1.75" fill="#9DB7CC"/>
+      <rect x="12" y="62" width="94"  height="3.5" rx="1.75" fill="#9DB7CC"/>
+      <rect x="12" y="74" width="69"  height="3.5" rx="1.75" fill="#9DB7CC"/>
+      <g transform="translate(12,93)">
+        <rect width="2.6" height="29" fill="#1F4E79"/>
+        <rect x="5.2"  width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="9.5" width="3.4" height="29" fill="#1F4E79"/>
+        <rect x="15.5" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="19.8" width="2.6" height="29" fill="#1F4E79"/>
+        <rect x="25" width="4.3" height="29" fill="#1F4E79"/>
+        <rect x="32" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="36" width="3.4" height="29" fill="#1F4E79"/>
+        <rect x="42" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="46.5" width="2.6" height="29" fill="#1F4E79"/>
+        <rect x="51.5" width="4.3" height="29" fill="#1F4E79"/>
+        <rect x="58.5" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="63" width="3.4" height="29" fill="#1F4E79"/>
+        <rect x="69" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="73" width="2.6" height="29" fill="#1F4E79"/>
+        <rect x="78" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="82.5" width="4.3" height="29" fill="#1F4E79"/>
+        <rect x="89" width="2.6" height="29" fill="#1F4E79"/>
+        <rect x="94.5" width="1.7" height="29" fill="#1F4E79"/>
+        <rect x="98.8" width="3.4" height="29" fill="#1F4E79"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- nome, ao lado, centralizado verticalmente com o icone -->
+  <text x="256" y="140" font-family="Segoe UI, Arial, sans-serif"
+        font-weight="800" font-size="100" fill="#1F4E79" letter-spacing="1">SIGBEF</text>
+</svg>

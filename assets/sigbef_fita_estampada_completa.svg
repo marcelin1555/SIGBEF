@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="840mm" height="20mm" viewBox="0 0 840 20">
+  <rect width="840" height="20" fill="#1F4E79"/>
+  <rect x="0" y="1.1" width="840" height="0.9" fill="#F2A900"/>
+  <rect x="0" y="18.0" width="840" height="0.9" fill="#F2A900"/>
+  <defs>
+    <g id="modulo">
+      <g transform="translate(4,4)">
+        <rect x="0" y="0" width="13" height="12.5" rx="1" ry="1" fill="#FFFFFF"/>
+        <rect x="0" y="0" width="13" height="2.7" fill="#F2A900"/>
+        <g transform="translate(1.4,8)">
+          <rect width="1.6" height="3.6" fill="#1F4E79"/>
+          <rect x="2.7" width="1.0" height="3.6" fill="#1F4E79"/>
+          <rect x="4.7" width="2.3" height="3.6" fill="#1F4E79"/>
+          <rect x="8.2" width="1.0" height="3.6" fill="#1F4E79"/>
+          <rect x="10.3" width="1.6" height="3.6" fill="#1F4E79"/>
+        </g>
+      </g>
+      <text x="22" y="14.5" font-family="Segoe UI, Arial, sans-serif"
+            font-weight="800" font-size="10.5" fill="#FFFFFF" letter-spacing="0.15">SIGBEF</text>
+      <g fill="#F2A900" opacity="0.55">
+        <rect x="58" y="7" width="0.7" height="6"/>
+        <rect x="61" y="7" width="1.1" height="6"/>
+        <rect x="64" y="7" width="0.7" height="6"/>
+        <rect x="67" y="7" width="0.7" height="6"/>
+        <rect x="70" y="7" width="1.4" height="6"/>
+        <rect x="74" y="7" width="0.7" height="6"/>
+        <rect x="77" y="7" width="1.1" height="6"/>
+        <rect x="80" y="7" width="0.7" height="6"/>
+        <rect x="83" y="7" width="0.7" height="6"/>
+        <rect x="86" y="7" width="1.4" height="6"/>
+        <rect x="90" y="7" width="0.7" height="6"/>
+        <rect x="93" y="7" width="1.1" height="6"/>
+        <rect x="96" y="7" width="0.7" height="6"/>
+        <rect x="99" y="7" width="1.4" height="6"/>
+        <rect x="103" y="7" width="0.7" height="6"/>
+        <rect x="106" y="7" width="1.1" height="6"/>
+        <rect x="109" y="7" width="0.7" height="6"/>
+        <rect x="112" y="7" width="1.4" height="6"/>
+      </g>
+    </g>
+  </defs>
+  <use href="#modulo" x="0" y="0"/><use href="#modulo" x="120" y="0"/><use href="#modulo" x="240" y="0"/><use href="#modulo" x="360" y="0"/><use href="#modulo" x="480" y="0"/><use href="#modulo" x="600" y="0"/><use href="#modulo" x="720" y="0"/>
+</svg>
