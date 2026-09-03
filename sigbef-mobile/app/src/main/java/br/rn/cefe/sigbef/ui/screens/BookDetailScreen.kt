@@ -30,6 +30,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -46,7 +47,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,16 +58,8 @@ import br.rn.cefe.sigbef.ui.components.PilulaStatus
 import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
+import br.rn.cefe.sigbef.ui.theme.SigbefFixo
 
 @Composable
 fun BookDetailScreen(
@@ -84,7 +76,7 @@ fun BookDetailScreen(
     val spineColor = try {
         Color(android.graphics.Color.parseColor(livro.spineColorHex))
     } catch (e: Exception) {
-        SigbefNavy
+        SigbefCores.atual.navy
     }
 
     Scaffold(
@@ -102,7 +94,7 @@ fun BookDetailScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -123,7 +115,7 @@ fun BookDetailScreen(
                         .height(200.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(spineColor)
-                        .border(1.dp, Color.Black.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
+                        .border(1.dp, SigbefCores.atual.tinta.copy(alpha = 0.1f), RoundedCornerShape(4.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
@@ -134,9 +126,8 @@ fun BookDetailScreen(
                     ) {
                         Text(
                             text = livro.titulo.uppercase(),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = SigbefFixo.PapelBranco,
                             letterSpacing = 2.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -152,15 +143,15 @@ fun BookDetailScreen(
                 if (livro.disponivel) {
                     PilulaStatus(
                         texto = "Disponível",
-                        cor = SigbefSuccess,
-                        fundo = SigbefSuccessFundo,
+                        cor = SigbefCores.atual.sucesso,
+                        fundo = SigbefCores.atual.sucessoFundo,
                         icone = Icons.Default.CheckCircle
                     )
                 } else {
                     PilulaStatus(
                         texto = "Emprestado",
-                        cor = SigbefWarningInk,
-                        fundo = SigbefWarningFundo,
+                        cor = SigbefCores.atual.avisoTinta,
+                        fundo = SigbefCores.atual.avisoFundo,
                         icone = Icons.Default.Schedule
                     )
                 }
@@ -170,9 +161,8 @@ fun BookDetailScreen(
                 // Title & Author
                 Text(
                     text = livro.titulo,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefInk,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = SigbefCores.atual.tinta,
                     textAlign = TextAlign.Center
                 )
 
@@ -180,8 +170,8 @@ fun BookDetailScreen(
 
                 Text(
                     text = livro.autor,
-                    fontSize = 16.sp,
-                    color = SigbefMuted,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = SigbefCores.atual.secundario,
                     textAlign = TextAlign.Center
                 )
 
@@ -242,15 +232,14 @@ fun BookDetailScreen(
                         Icon(
                             imageVector = Icons.Default.MenuBook,
                             contentDescription = null,
-                            tint = SigbefNavy,
+                            tint = SigbefCores.atual.navy,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Sinopse",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SigbefInk
+                            style = MaterialTheme.typography.titleLarge,
+                            color = SigbefCores.atual.tinta
                         )
                     }
 
@@ -259,13 +248,13 @@ fun BookDetailScreen(
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                        color = SigbefCores.atual.superficie,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                     ) {
                         Text(
                             text = livro.sinopse,
-                            fontSize = 14.sp,
-                            color = SigbefInk,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = SigbefCores.atual.tinta,
                             lineHeight = 22.sp,
                             modifier = Modifier.padding(16.dp)
                         )
@@ -277,9 +266,9 @@ fun BookDetailScreen(
             // Fixed Action Bottom Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
+                color = SigbefCores.atual.superficie,
                 shadowElevation = 8.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column(
                     modifier = Modifier
@@ -324,7 +313,8 @@ fun BookDetailScreen(
                                 enabled = !isOffline && !acaoEmCurso,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = SigbefNavy
+                                    containerColor = SigbefCores.atual.marca,
+                                    contentColor = SigbefCores.atual.sobreMarca,
                                 )
                             ) {
                                 Text(
@@ -347,7 +337,7 @@ private fun Aviso(texto: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
-        color = SigbefNavy.copy(alpha = 0.06f)
+        color = SigbefCores.atual.navy.copy(alpha = 0.06f)
     ) {
         Row(
             modifier = Modifier.padding(14.dp),
@@ -356,11 +346,12 @@ private fun Aviso(texto: String) {
             Icon(
                 imageVector = Icons.Default.Info,
                 contentDescription = null,
-                tint = SigbefNavy,
+                tint = SigbefCores.atual.navy,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(10.dp))
-            Text(text = texto, fontSize = 13.sp, color = SigbefNavy)
+            Text(text = texto, style = MaterialTheme.typography.bodySmall,
+                 color = SigbefCores.atual.navy)
         }
     }
 }
@@ -375,8 +366,8 @@ private fun DetailCard(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        color = SigbefCores.atual.superficie,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(
             modifier = Modifier.padding(12.dp)
@@ -387,24 +378,22 @@ private fun DetailCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = SigbefMuted,
+                    tint = SigbefCores.atual.secundario,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = label,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefMuted,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SigbefCores.atual.secundario,
                     letterSpacing = 1.sp
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = SigbefInk
+                style = MaterialTheme.typography.titleSmall,
+                color = SigbefCores.atual.tinta
             )
         }
     }

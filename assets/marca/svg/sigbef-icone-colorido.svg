@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E75B6"/>
+      <stop offset="100%" stop-color="#1F4E79"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="44" ry="44" fill="url(#g)"/>
+  <!-- livro -->
+  <g transform="translate(48,52)">
+    <rect x="6" y="6" width="148" height="152" rx="6" ry="6" fill="#FFFFFF" opacity="0.18"/>
+    <rect x="0" y="0" width="148" height="152" rx="6" ry="6" fill="#FFFFFF"/>
+    <rect x="0" y="0" width="148" height="22" fill="#F2A900"/>
+    <rect x="14" y="42" width="120" height="6" rx="3" fill="#1F4E79"/>
+    <rect x="14" y="58" width="100" height="4" rx="2" fill="#9DB7CC"/>
+    <rect x="14" y="72" width="110" height="4" rx="2" fill="#9DB7CC"/>
+    <rect x="14" y="86" width="80"  height="4" rx="2" fill="#9DB7CC"/>
+    <!-- código de barras -->
+    <g transform="translate(14,108)">
+      <rect width="3" height="34" fill="#1F4E79"/>
+      <rect x="6"  width="2" height="34" fill="#1F4E79"/>
+      <rect x="11" width="4" height="34" fill="#1F4E79"/>
+      <rect x="18" width="2" height="34" fill="#1F4E79"/>
+      <rect x="23" width="3" height="34" fill="#1F4E79"/>
+      <rect x="29" width="5" height="34" fill="#1F4E79"/>
+      <rect x="37" width="2" height="34" fill="#1F4E79"/>
+      <rect x="42" width="4" height="34" fill="#1F4E79"/>
+      <rect x="49" width="2" height="34" fill="#1F4E79"/>
+      <rect x="54" width="3" height="34" fill="#1F4E79"/>
+      <rect x="60" width="5" height="34" fill="#1F4E79"/>
+      <rect x="68" width="2" height="34" fill="#1F4E79"/>
+      <rect x="73" width="4" height="34" fill="#1F4E79"/>
+      <rect x="80" width="2" height="34" fill="#1F4E79"/>
+      <rect x="85" width="3" height="34" fill="#1F4E79"/>
+      <rect x="91" width="2" height="34" fill="#1F4E79"/>
+      <rect x="96" width="5" height="34" fill="#1F4E79"/>
+      <rect x="104" width="3" height="34" fill="#1F4E79"/>
+      <rect x="110" width="2" height="34" fill="#1F4E79"/>
+      <rect x="115" width="4" height="34" fill="#1F4E79"/>
+    </g>
+  </g>
+  <!-- texto SIGBEF (estilizado) -->
+  <text x="128" y="232" text-anchor="middle"
+        font-family="Segoe UI, Arial, sans-serif"
+        font-weight="700" font-size="28" fill="#FFFFFF"
+        letter-spacing="2">SIGBEF</text>
+</svg>

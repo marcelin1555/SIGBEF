@@ -38,20 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Screen
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefSurface
-import br.rn.cefe.sigbef.ui.theme.SigbefWarning
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
+import br.rn.cefe.sigbef.ui.theme.PesoRegular
+import br.rn.cefe.sigbef.ui.theme.PesoSemibold
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 /**
  * Barra do topo, em gradiente da marca fechado pela faixa dourada — a
@@ -80,7 +73,7 @@ fun SigbefTopAppBar(
 ) {
     Surface(
         shadowElevation = 2.dp,
-        color = SigbefSurface,
+        color = SigbefCores.atual.superficie,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
@@ -108,7 +101,7 @@ fun SigbefTopAppBar(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = Color.White
+                                tint = SigbefCores.atual.sobreMarca
                             )
                         }
                         Spacer(modifier = Modifier.size(4.dp))
@@ -117,17 +110,16 @@ fun SigbefTopAppBar(
                         Icon(
                             imageVector = Icons.Default.MenuBook,
                             contentDescription = "Logo SIGBEF",
-                            tint = Color.White,
+                            tint = SigbefCores.atual.sobreMarca,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.size(10.dp))
                     }
                     Text(
                         text = title,
-                        fontSize = if (showBack) 18.sp else 20.sp,
-                        fontWeight = if (showBack) FontWeight.Bold
-                                     else FontWeight.ExtraBold,
-                        color = Color.White,
+                        style = if (showBack) MaterialTheme.typography.titleLarge
+                                else MaterialTheme.typography.headlineSmall,
+                        color = SigbefCores.atual.sobreMarca,
                         letterSpacing = if (showBack) 0.sp else 0.5.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -147,7 +139,7 @@ fun SigbefTopAppBar(
                         ) {
                             if (carregando) {
                                 CircularProgressIndicator(
-                                    color = Color.White,
+                                    color = SigbefCores.atual.sobreMarca,
                                     strokeWidth = 2.dp,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -159,8 +151,8 @@ fun SigbefTopAppBar(
                                     contentDescription = if (isOffline)
                                         "Sem conexão. Tocar para tentar de novo"
                                     else "Atualizar dados da biblioteca",
-                                    tint = if (isOffline) SigbefGold
-                                           else Color.White
+                                    tint = if (isOffline) SigbefCores.atual.dourado
+                                           else SigbefCores.atual.sobreMarca
                                 )
                             }
                         }
@@ -170,8 +162,8 @@ fun SigbefTopAppBar(
                 if (!subtitle.isNullOrBlank()) {
                     Text(
                         text = subtitle,
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.sobreMarca.copy(alpha = 0.85f),
                         modifier = Modifier.padding(
                             start = 20.dp, end = 20.dp, bottom = 14.dp
                         )
@@ -185,14 +177,14 @@ fun SigbefTopAppBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(SigbefGold)
+                    .background(SigbefCores.atual.dourado)
             )
 
             if (isOffline) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(SigbefWarningFundo)
+                        .background(SigbefCores.atual.avisoFundo)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     // Top, e não Center: o texto quebra em duas linhas em
                     // tela estreita, e centralizado o ícone flutuaria no
@@ -202,7 +194,7 @@ fun SigbefTopAppBar(
                     Icon(
                         imageVector = Icons.Default.WifiOff,
                         contentDescription = "Modo Offline",
-                        tint = SigbefWarning,
+                        tint = SigbefCores.atual.aviso,
                         modifier = Modifier
                             .size(16.dp)
                             .padding(top = 1.dp)
@@ -221,9 +213,8 @@ fun SigbefTopAppBar(
                         else
                             "Sem conexão com a biblioteca. Seu cartão " +
                                 "continua funcionando.",
-                        fontSize = 12.sp,
-                        color = SigbefWarningInk,
-                        fontWeight = FontWeight.Medium
+                        style = MaterialTheme.typography.labelMedium,
+                        color = SigbefCores.atual.avisoTinta,
                     )
                 }
             }
@@ -244,7 +235,7 @@ fun SigbefBottomNavigation(
     onNavigate: (Screen) -> Unit
 ) {
     Surface(
-        color = SigbefSurface,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 8.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -307,7 +298,7 @@ private fun NavItem(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) SigbefBlueFundo else Color.Transparent)
+            .background(if (selected) SigbefCores.atual.azulFundo else Color.Transparent)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
@@ -318,15 +309,15 @@ private fun NavItem(
             Icon(
                 imageVector = if (selected) selectedIcon else unselectedIcon,
                 contentDescription = label,
-                tint = if (selected) SigbefNavy else SigbefMuted,
+                tint = if (selected) SigbefCores.atual.navy else SigbefCores.atual.secundario,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
-                fontSize = 11.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                color = if (selected) SigbefNavy else SigbefMuted
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) PesoSemibold else PesoRegular,
+                color = if (selected) SigbefCores.atual.navy else SigbefCores.atual.secundario
             )
         }
     }

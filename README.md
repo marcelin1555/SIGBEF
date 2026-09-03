@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.11.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.12.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -630,11 +630,18 @@ profissional com Inno Setup.
 
 ```bash
 python -m unittest discover -s tests        # suíte do desktop
+python tools/fumaca_telas.py                # abre as telas e aperta os botões
 ```
 
 Os testes rodam contra um banco SQLite temporário, recriado a cada caso
 (`tests/base.py`), e **nunca tocam** o banco real. Regra do projeto:
 correção de bug entra com o teste que a trava.
+
+`tools/fumaca_telas.py` fica fora da suíte de propósito: ele abre janela
+de verdade, e `unittest discover` precisa rodar também onde não há tela.
+É o que cobre o que a suíte não alcança — se o botão chama a função
+certa, se a lista recarrega sozinha depois de uma ação, se a confirmação
+digitada segura mesmo. Também monta o próprio banco temporário.
 
 ### Aplicativo Android
 
@@ -660,20 +667,23 @@ Funcionalidades planejadas para versões futuras:
 
 ### Próxima versão
 
-- [ ] **Restaurar uma cópia de segurança pela tela** — hoje o sistema faz
-      backup todo dia e não tem como usar. Recuperar exige fechar o
-      programa, achar a pasta e sobrescrever o arquivo na mão. Backup que
-      não se restaura é meio backup. É a segunda operação mais destrutiva
-      do sistema, então merece o mesmo cuidado do apagar tudo: cópia do
-      estado atual antes, e confirmação digitada
-- [ ] **Isentar multa, com motivo** — hoje só existe quitar. Perdoar uma
-      multa obriga a bibliotecária a registrar como paga, ou seja, a
-      gravar no histórico uma coisa que não aconteceu
-- [ ] **Empréstimo de coleção para o professor** — livro-texto para a
-      turma inteira num registro só, em vez de trinta. A dúvida que
-      travava isso era em nome de quem fica o exemplar; a proposta é
-      **no nome do professor, com a turma anotada**, porque é ele quem
-      responde pelos trinta livros
+- [x] **Restaurar uma cópia de segurança pela tela** — Configurações →
+      Ferramentas → "Restaurar backup...". Confere que o arquivo é mesmo
+      um banco do SIGBEF antes de qualquer coisa, mostra lado a lado o
+      que há hoje e o que há no arquivo, e exige a palavra RESTAURAR
+      digitada. Guarda o banco atual antes de trocar, com um nome que a
+      limpeza automática de backups não apaga — sem isso, restaurar por
+      engano seria irreversível
+- [x] **Isentar multa, com motivo** — o motivo é obrigatório, e o valor
+      lançado continua no histórico: isentar registra que a escola
+      perdoou, não que recebeu
+- [x] **Empréstimo de coleção para o professor** — Empréstimos →
+      "Emprestar coleção...". Sai no nome do professor com a turma
+      anotada, ocupa uma linha na tela em vez de trinta, tem prazo de
+      bimestre (60 dias) e não esbarra no limite de empréstimos
+      simultâneos — mas multa em aberto continua bloqueando. Continua
+      sendo uma linha por exemplar no banco, porque a conferência de
+      estante precisa saber que aqueles trinta não estão lá
 
 ### Para outra escola conseguir adotar sozinha
 
@@ -727,15 +737,17 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
       `docs/screenshots/` são mockups, e o aviso embaixo da tabela diz
       isso. O risco é alguém reaproveitar aquilo como evidência sem ler o
       aviso, o que num trabalho de pesquisa seria apresentar prova falsa
-- [ ] **Teste da camada de interface** — a suíte cobre bem serviço e
-      dados, mas os diálogos não têm teste. Os dois últimos defeitos de
-      tela (dica cortada na borda e campo que não aparecia) foram achados
-      no olho, rodando o programa
+- [ ] **Cobrir o resto das telas no teste de fumaça** —
+      `tools/fumaca_telas.py` já abre o painel e aperta os botões dos
+      dois fluxos mais destrutivos (empréstimo de coleção e restauração
+      de backup). Falta o mesmo para cadastro, devolução em lote,
+      inventário e importação de CSV — hoje os defeitos de comportamento
+      dessas telas ainda são achados no olho
 
 ### Descartado, e por quê
 
 - **Reescrita em Java.** Esteve no roadmap como ideia em aberto.
-  Reescrever um sistema em produção, com 471 testes e uma biblioteca
+  Reescrever um sistema em produção, com mais de 600 testes e uma biblioteca
   dependendo dele, para exercitar POO mais rígida custaria um semestre e
   não entregaria nada para quem usa. O objetivo de aprendizado já está
   atendido pelo aplicativo Android em Kotlin, que também é orientado a

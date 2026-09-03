@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import re
 import tkinter as tk
+from pathlib import Path
 from tkinter import ttk, messagebox, filedialog
 from typing import Callable, Optional
 
@@ -245,12 +246,13 @@ class DialogoBuscaSelecao(tk.Toplevel):
         ttk.Button(f, text="Pesquisar", command=self._buscar).pack(side="left")
 
         keys = [c[0] for c in self.COLUNAS]
-        self.tree = ttk.Treeview(wrap, columns=keys, show="headings",
-                                  height=14)
+        self.tree = tema.criar_tabela(wrap, columns=keys, show="headings",
+                                       height=14)
         for key, rotulo, largura_c, ancora in self.COLUNAS:
             self.tree.heading(key, text=rotulo)
             self.tree.column(key, width=largura_c, anchor=ancora)
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(12, 0))
         self.tree.bind("<Double-1>", lambda e: self._confirmar())
         self._idx_retorno = keys.index(self.COLUNA_RETORNO)
 
@@ -349,6 +351,323 @@ class DialogoSelecionarUsuario(DialogoBuscaSelecao):
     @property
     def matricula_selecionada(self) -> str:
         return self.selecionado
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: restaurar uma cópia de segurança
+# ---------------------------------------------------------------------------
+class DialogoRestaurarBackup(tk.Toplevel):
+    """Confirmação em duas camadas, como o resetar — pelo mesmo motivo.
+
+    Restaurar apaga o acervo de hoje e põe outro no lugar. É a segunda
+    operação mais destrutiva do sistema e a única que costuma ser feita
+    sob pressão, quando algo já deu errado — que é exatamente quando
+    ninguém lê caixa de diálogo. Por isso a confirmação é digitada, e
+    não um sim/não.
+
+    Os dois lados aparecem com número na frente: o que há hoje e o que
+    há no arquivo. Sem isso, "tem certeza?" não dá a ninguém condição de
+    decidir — a diferença entre os dois é justamente o que se perde.
+    """
+
+    FRASE_CONFIRMACAO = "RESTAURAR"
+
+    def __init__(self, parent, sessao: Sessao, origem: str,
+                 ao_restaurar: Optional[Callable[[], None]] = None):
+        super().__init__(parent)
+        from . import backup
+
+        self.sessao = sessao
+        self.origem = origem
+        self.ao_restaurar = ao_restaurar
+        self.restaurou = False
+        self.title("Restaurar backup")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 560, 520)
+
+        self.do_arquivo = backup.conferir(origem)   # pode levantar
+        self.hoje = servicos.estatisticas()
+        self._construir()
+
+    def _construir(self):
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Restaurar backup",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text=Path(self.origem).name,
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 12))
+
+        quadro = ttk.Frame(wrap, style="Card.TFrame", padding=14)
+        quadro.pack(fill="x")
+        quadro.columnconfigure(1, weight=1)
+        quadro.columnconfigure(2, weight=1)
+        cabecalho = ("", "Hoje", "No arquivo")
+        linhas = [
+            ("Livros", self.hoje["livros"], self.do_arquivo["livros"]),
+            ("Exemplares", self.hoje["exemplares"],
+             self.do_arquivo["exemplares"]),
+            ("Usuários", self.hoje["usuarios"], self.do_arquivo["usuarios"]),
+            ("Empréstimos em aberto", self.hoje["emp_abertos"],
+             self.do_arquivo["emprestimos_abertos"]),
+        ]
+        for j, t in enumerate(cabecalho):
+            ttk.Label(quadro, text=t, style="Card.TLabel",
+                      font=("Segoe UI Semibold", 9)
+                      ).grid(row=0, column=j, sticky="w", padx=(0, 16))
+        for i, (rotulo, a, b) in enumerate(linhas, start=1):
+            ttk.Label(quadro, text=rotulo, style="Card.TLabel"
+                      ).grid(row=i, column=0, sticky="w", padx=(0, 16),
+                             pady=2)
+            for j, valor in ((1, a), (2, b)):
+                # O que muda ganha destaque: é a diferença, e não os
+                # números em si, que a pessoa precisa enxergar.
+                estilo = ("Card.TLabel" if a == b else "CardHint.TLabel")
+                lbl = ttk.Label(quadro, text=str(valor), style=estilo)
+                if a != b:
+                    lbl.configure(foreground=tema.COR_AVISO,
+                                  font=("Segoe UI Semibold", 9))
+                lbl.grid(row=i, column=j, sticky="w", padx=(0, 16), pady=2)
+
+        ttk.Label(
+            wrap,
+            text=("Tudo que foi feito depois desse backup se perde — "
+                  "empréstimos, devoluções e cadastros. Antes de trocar, "
+                  "o sistema guarda uma cópia do banco de hoje na pasta de "
+                  "backups, com nome que a limpeza automática não apaga."),
+            style="Hint.TLabel", wraplength=500, justify="left"
+            ).pack(anchor="w", pady=(14, 4))
+
+        ttk.Label(wrap,
+                  text=f'Digite "{self.FRASE_CONFIRMACAO}" para confirmar:',
+                  style="Card.TLabel").pack(anchor="w", pady=(14, 4))
+        self.ent_confirmacao = ttk.Entry(wrap, width=30,
+                                         font=("Segoe UI", 10))
+        self.ent_confirmacao.pack(anchor="w")
+
+        self.lbl_msg = ttk.Label(wrap, text="", wraplength=500)
+        self.lbl_msg.pack(anchor="w", pady=(10, 0))
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(side="bottom", fill="x", pady=(20, 0))
+        ttk.Button(botoes, text="Cancelar",
+                   command=self.destroy).pack(side="right", padx=(8, 0))
+        ttk.Button(botoes, text="Restaurar", style="Perigo.TButton",
+                   command=self._confirmar).pack(side="right")
+        self.ent_confirmacao.focus_set()
+
+    def _confirmar(self):
+        from . import backup
+        if self.ent_confirmacao.get().strip().upper() != self.FRASE_CONFIRMACAO:
+            self.lbl_msg.configure(
+                text='⚠ Digite exatamente "%s" no campo para confirmar.'
+                     % self.FRASE_CONFIRMACAO,
+                foreground=tema.COR_ERRO)
+            return
+        try:
+            res = backup.restaurar(self.origem, usuario_id=self.sessao.id)
+        except backup.BackupInvalido as e:
+            messagebox.showerror("Este arquivo não serve", str(e), parent=self)
+            return
+        except Exception as e:                              # noqa: BLE001
+            # A notícia importante não é o erro: é que o banco de hoje
+            # continua inteiro, porque `restaurar` confere antes de
+            # trocar qualquer coisa.
+            messagebox.showerror(
+                "Falha ao restaurar",
+                "O banco NÃO foi trocado, o acervo de hoje continua como "
+                "estava.\n\n%s" % e,
+                parent=self)
+            return
+
+        self.restaurou = True
+        messagebox.showinfo(
+            "Backup restaurado",
+            "O acervo agora tem %d livros e %d exemplares.\n\n"
+            "O banco anterior ficou guardado em:\n%s\n\n"
+            "Feche e abra o sistema para todas as telas recarregarem."
+            % (res["resumo"]["livros"], res["resumo"]["exemplares"],
+               res["salvaguarda"]),
+            parent=self)
+        if self.ao_restaurar:
+            self.ao_restaurar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: selecionar um título do acervo
+# ---------------------------------------------------------------------------
+class DialogoSelecionarLivro(DialogoBuscaSelecao):
+    """Lista títulos e devolve o id do escolhido em `livro_selecionado`.
+
+    Diferente de `DialogoSelecionarExemplar`, que escolhe uma cópia
+    específica: aqui interessa o título, porque quem empresta uma
+    coleção não escolhe quais trinta exemplares vão — escolhe o
+    livro-texto e diz quantos.
+    """
+
+    COLUNAS = [("id", "ID", 60, "center"),
+               ("titulo", "Título", 280, "w"),
+               ("autores", "Autor(es)", 200, "w"),
+               ("disp", "Disponíveis", 90, "center")]
+    COLUNA_RETORNO = "id"
+
+    def __init__(self, parent):
+        super().__init__(
+            parent, "Selecionar livro",
+            "Busque pelo título, autor ou ISBN. A coluna “Disponíveis” "
+            "diz quantos exemplares podem sair agora.",
+            "Usar livro selecionado", largura=760, altura=500)
+
+    def buscar(self, termo: str) -> list[dict]:
+        return servicos.listar_livros(termo, limite=200)
+
+    def linha(self, liv: dict) -> tuple:
+        return (liv["id"], liv["titulo"], liv.get("autores") or "",
+                liv["disponiveis"])
+
+    @property
+    def livro_selecionado(self) -> str:
+        return self.selecionado
+
+
+# ---------------------------------------------------------------------------
+# Diálogo: empréstimo de coleção para a turma
+# ---------------------------------------------------------------------------
+class DialogoEmprestimoColecao(tk.Toplevel):
+    """Livro-texto para a turma inteira, num registro só.
+
+    A tela pede três coisas e nada mais: qual livro, para qual professor
+    e para qual turma. A quantidade vem junto porque é o que distingue
+    esta saída de um empréstimo comum.
+
+    O aviso de quantos exemplares existem fica visível ANTES de
+    confirmar. Pedir trinta e descobrir que só há vinte e dois é o erro
+    mais provável aqui, e descobrir isso por mensagem de recusa depois
+    de digitar tudo é pior do que ver o número o tempo todo.
+    """
+
+    def __init__(self, parent, sessao: Sessao,
+                 ao_salvar: Optional[Callable[[], None]] = None):
+        super().__init__(parent)
+        self.sessao = sessao
+        self.ao_salvar = ao_salvar
+        self.livro_id: Optional[int] = None
+        self.title("Emprestar coleção")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 620, 430)
+
+        wrap = ttk.Frame(self, padding=24)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Emprestar coleção",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(
+            wrap,
+            text=("Vários exemplares do mesmo livro para uma turma, no nome "
+                  "do professor. Sai como um registro só e volta de uma vez."),
+            style="Hint.TLabel", wraplength=560).pack(anchor="w", pady=(2, 16))
+
+        form = ttk.Frame(wrap)
+        form.pack(fill="x")
+        form.columnconfigure(1, weight=1)
+
+        ttk.Label(form, text="Livro:").grid(row=0, column=0, sticky="e",
+                                            padx=(0, 8), pady=4)
+        # `wraplength` porque o texto e longo por natureza: titulo do
+        # livro mais a contagem de disponiveis. Sem ele a linha corria
+        # por baixo do botao "Selecionar..." e o numero de exemplares --
+        # justamente o que evita pedir mais do que existe -- ficava
+        # escondido.
+        self.lbl_livro = ttk.Label(form, text="(nenhum escolhido)",
+                                   style="Hint.TLabel", wraplength=300,
+                                   justify="left")
+        self.lbl_livro.grid(row=0, column=1, sticky="w", pady=4)
+        ttk.Button(form, text="Selecionar...",
+                   command=self._escolher_livro
+                   ).grid(row=0, column=2, sticky="e", padx=(8, 0), pady=4)
+
+        ttk.Label(form, text="Professor (matrícula):"
+                  ).grid(row=1, column=0, sticky="e", padx=(0, 8), pady=4)
+        self.ent_prof = ttk.Entry(form)
+        self.ent_prof.grid(row=1, column=1, sticky="ew", pady=4)
+        ttk.Button(form, text="Selecionar...",
+                   command=self._escolher_professor
+                   ).grid(row=1, column=2, sticky="e", padx=(8, 0), pady=4)
+
+        ttk.Label(form, text="Turma:").grid(row=2, column=0, sticky="e",
+                                            padx=(0, 8), pady=4)
+        self.ent_turma = ttk.Entry(form)
+        self.ent_turma.grid(row=2, column=1, sticky="ew", pady=4)
+
+        ttk.Label(form, text="Quantos exemplares:"
+                  ).grid(row=3, column=0, sticky="e", padx=(0, 8), pady=4)
+        self.ent_qtd = ttk.Entry(form, width=8)
+        self.ent_qtd.grid(row=3, column=1, sticky="w", pady=4)
+
+        self.lbl_msg = ttk.Label(wrap, text="", wraplength=560)
+        self.lbl_msg.pack(anchor="w", pady=(14, 0))
+
+        botoes = ttk.Frame(wrap)
+        botoes.pack(side="bottom", fill="x", pady=(16, 0))
+        ttk.Button(botoes, text="Cancelar",
+                   command=self.destroy).pack(side="right", padx=(8, 0))
+        ttk.Button(botoes, text="Emprestar coleção",
+                   style="Primario.TButton",
+                   command=self._salvar).pack(side="right")
+
+        self.ent_turma.focus_set()
+
+    def _escolher_livro(self):
+        d = DialogoSelecionarLivro(self)
+        self.wait_window(d)
+        if not d.livro_selecionado:
+            return
+        self.livro_id = int(d.livro_selecionado)
+        liv = servicos.detalhes_livro(self.livro_id)
+        livres = sum(1 for ex in liv["exemplares"]
+                     if ex["status"] == "DISPONIVEL")
+        self.lbl_livro.configure(
+            text="%s — %d disponível(is) agora" % (liv["titulo"], livres))
+        if not self.ent_qtd.get().strip():
+            self.ent_qtd.insert(0, str(livres))
+
+    def _escolher_professor(self):
+        d = DialogoSelecionarUsuario(self)
+        self.wait_window(d)
+        if d.matricula_selecionada:
+            self.ent_prof.delete(0, "end")
+            self.ent_prof.insert(0, d.matricula_selecionada)
+
+    def _salvar(self):
+        if self.livro_id is None:
+            self.lbl_msg.configure(text="⚠ Escolha o livro primeiro.",
+                                   foreground=tema.COR_ERRO)
+            return
+        try:
+            res = servicos.emprestar_colecao(
+                livro_id=self.livro_id,
+                matricula_professor=self.ent_prof.get(),
+                quantidade=self.ent_qtd.get(),
+                turma=self.ent_turma.get(),
+                operador_id=self.sessao.id)
+        except RegraNegocioError as e:
+            self.lbl_msg.configure(text="⚠ %s" % e, foreground=tema.COR_ERRO)
+            return
+
+        messagebox.showinfo(
+            "Coleção emprestada",
+            "%d exemplares de “%s” saíram para a turma %s, no nome de %s.\n\n"
+            "Devolução prevista: %s (%d dias)."
+            % (res["quantidade"], res["titulo"], res["turma"],
+               res["professor"], data_br(res["data_prevista"]),
+               res["prazo_dias"]),
+            parent=self)
+        if self.ao_salvar:
+            self.ao_salvar()
+        self.destroy()
 
 
 # ---------------------------------------------------------------------------
@@ -867,11 +1186,11 @@ class DialogoImportarCSV(tk.Toplevel):
             filetypes=[("Planilha CSV", "*.csv")])
         if not destino:
             return
-        servicos.gerar_modelo_csv(destino)
-        messagebox.showinfo("Modelo salvo",
-                             "Planilha modelo salva. Preencha no Excel e "
-                             "salve como CSV para importar.",
-                             parent=self)
+        tema.gravar_arquivo(
+            self, destino, lambda: servicos.gerar_modelo_csv(destino),
+            titulo_ok="Modelo salvo",
+            mensagem_ok="Planilha modelo salva. Preencha no Excel e "
+                        "salve como CSV para importar.")
 
     def _importar(self):
         caminho = filedialog.askopenfilename(
@@ -1072,15 +1391,16 @@ class DialogoDevolucaoEmLote(tk.Toplevel):
         self.lbl_ultimo.pack(anchor="w", pady=(10, 0))
 
         cols = ("titulo", "quem", "atraso", "multa")
-        self.tree = ttk.Treeview(wrap, columns=cols, show="headings",
-                                  height=13)
+        self.tree = tema.criar_tabela(wrap, columns=cols, show="headings",
+                                       height=13)
         for c, t, w in [("titulo", "Título", 300), ("quem", "Estava com", 190),
                         ("atraso", "Atraso", 90), ("multa", "Multa", 100)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                  foreground=tema.COR_ERRO)
-        self.tree.pack(fill="both", expand=True, pady=(10, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(10, 0))
 
         self.lbl_total = ttk.Label(wrap, text="Nenhum livro devolvido ainda.",
                                      style="Card.TLabel",
@@ -1410,8 +1730,15 @@ class DialogoTomboExemplar(tk.Toplevel):
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
 class DialogoDetalhesLivro(tk.Toplevel):
-    def __init__(self, parent, livro_id: int):
+    def __init__(self, parent, livro_id: int,
+                 ao_mudar: Optional[Callable[[], None]] = None):
         super().__init__(parent)
+        # Este diálogo não só mostra: dá baixa, corrige tombo e muda
+        # prateleira. Sem avisar quem o abriu, a lista do acervo atrás
+        # continuava exibindo o exemplar recém-baixado até a tela ser
+        # recarregada na mão — e a bibliotecária procurava na prateleira
+        # um livro que o próprio sistema já sabia que não existia mais.
+        self.ao_mudar = ao_mudar
         # parent é o PainelPrincipal: sempre tem sessao. As três ações
         # de exemplar abaixo (baixa, tombo, prateleira) usam isso para
         # atribuir a ação certa na auditoria, em vez de "Sistema".
@@ -1420,7 +1747,11 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 720, 640)
+        # 800, e nao 720: os quatro botoes do rodape pedem 736 px e a
+        # largura antiga dava 672, entao "Dar baixa no exemplar" ficava
+        # cortado pela borda. `centralizar_janela` reduz sozinha se a
+        # tela for menor que isso.
+        tema.centralizar_janela(self, 800, 640)
 
         livro = servicos.detalhes_livro(livro_id)
         if not livro:
@@ -1462,7 +1793,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(16, 4))
 
         cols = ("tombo", "codigo", "loc", "status")
-        tree = ttk.Treeview(wrap, columns=cols, show="headings", height=8)
+        tree = tema.criar_tabela(wrap, columns=cols, show="headings", height=8)
         tree.heading("tombo", text="Tombo")
         tree.heading("codigo", text="Código de barras")
         tree.heading("loc", text="Localização")
@@ -1474,7 +1805,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self._livro_id = livro_id
         self.tree = tree
         self._preencher_exemplares(livro)
-        tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(tree, fill="both", expand=True)
 
         botoes = ttk.Frame(wrap)
         botoes.pack(fill="x", pady=(12, 0))
@@ -1545,6 +1876,10 @@ class DialogoDetalhesLivro(tk.Toplevel):
         livro = servicos.detalhes_livro(self._livro_id)
         if livro:
             self._preencher_exemplares(livro)
+        # Ponto único por onde passam as três ações que mexem no acervo,
+        # e por isso o lugar certo para avisar a tela de trás.
+        if self.ao_mudar:
+            self.ao_mudar()
 
 
 # ---------------------------------------------------------------------------

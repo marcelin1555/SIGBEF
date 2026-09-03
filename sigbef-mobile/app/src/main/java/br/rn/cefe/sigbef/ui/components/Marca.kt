@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,12 +23,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.ui.theme.SigbefBlue
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 
 /**
@@ -38,7 +37,15 @@ import br.rn.cefe.sigbef.ui.theme.SigbefNavy
  * `docs/DESIGN.md` e `site/src/components/Hero.jsx`.
  */
 
-/** O gradiente do topo do site (`from-[#1F4E79] to-[#2E75B6]`). */
+/**
+ * O gradiente do topo do site (`from-[#1F4E79] to-[#2E75B6]`).
+ *
+ * Fixo nos dois temas, e nao por esquecimento: e a barra da marca. Ela
+ * ja e escura, o texto que vai por cima e branco dos dois lados, e
+ * apaga-la no modo escuro trocaria a identidade do app por uma economia
+ * de brilho que o navy nao custa. Por ser fixo, nao precisa (nem pode)
+ * ser um valor que so existe dentro de um `@Composable`.
+ */
 val GradienteMarca = Brush.linearGradient(listOf(SigbefNavy, SigbefBlue))
 
 /**
@@ -89,7 +96,7 @@ fun CabecalhoMarca(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
-                .background(SigbefGold)
+                .background(SigbefCores.atual.dourado)
         )
     }
 }
@@ -102,16 +109,15 @@ fun CabecalhoMarca(
 fun TituloNoCabecalho(titulo: String, subtitulo: String? = null) {
     Text(
         text = titulo,
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = Color.White
+        style = MaterialTheme.typography.headlineLarge,
+        color = SigbefCores.atual.sobreMarca
     )
     if (!subtitulo.isNullOrBlank()) {
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = subtitulo,
-            fontSize = 14.sp,
-            color = Color.White.copy(alpha = 0.85f)
+            style = MaterialTheme.typography.bodyMedium,
+            color = SigbefCores.atual.sobreMarca.copy(alpha = 0.85f)
         )
     }
 }
@@ -149,8 +155,7 @@ fun PilulaStatus(
         }
         Text(
             text = texto,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium,
             color = cor
         )
     }
@@ -164,9 +169,8 @@ fun PilulaStatus(
 fun RotuloSecao(texto: String, modifier: Modifier = Modifier) {
     Text(
         text = texto.uppercase(),
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = SigbefMuted,
+        style = MaterialTheme.typography.labelMedium,
+        color = SigbefCores.atual.secundario,
         letterSpacing = 1.5.sp,
         modifier = modifier
     )

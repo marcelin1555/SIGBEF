@@ -7,17 +7,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.rn.cefe.sigbef.ui.theme.SigbefFixo
+import br.rn.cefe.sigbef.ui.theme.SigbefMuted
 
 @Composable
 fun BarcodeView(
@@ -27,7 +28,7 @@ fun BarcodeView(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(SigbefFixo.PapelBranco)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -49,7 +50,7 @@ fun BarcodeView(
                     val w = unidade * largura
                     if (escura) {
                         drawRect(
-                            color = Color.Black,
+                            color = SigbefFixo.TintaPreta,
                             topLeft = Offset(x, 0f),
                             size = Size(w, size.height)
                         )
@@ -60,18 +61,17 @@ fun BarcodeView(
 
             Text(
                 text = code,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleSmall,
                 letterSpacing = 2.sp,
-                color = Color.Black,
+                color = SigbefFixo.TintaPreta,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 8.dp)
             )
         } else {
             Text(
                 text = "Entre na sua conta para ver o código do seu cartão.",
-                fontSize = 13.sp,
-                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall,
+                color = SigbefMuted,
                 textAlign = TextAlign.Center
             )
         }

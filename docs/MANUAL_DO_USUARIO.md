@@ -22,10 +22,12 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Acompanhar a fila de espera](#acompanhar-a-fila-de-espera)
   - [Ver o uso do acervo](#ver-o-uso-do-acervo)
   - [Quitar multa](#quitar-multa)
+  - [Emprestar o livro-texto para a turma inteira](#emprestar-o-livro-texto-para-a-turma-inteira)
   - [Gerar relatórios](#gerar-relatórios)
 - [Para o Administrador](#para-o-administrador)
   - [Ajustar prazos e multas](#ajustar-prazos-e-multas)
   - [Fazer backup do banco](#fazer-backup-do-banco)
+  - [Restaurar um backup](#restaurar-um-backup)
   - [Carregar dados de demonstração](#carregar-dados-de-demonstração)
 - [Para o Aluno / Professor](#para-o-aluno--professor)
   - [Buscar um livro](#buscar-um-livro)
@@ -281,6 +283,43 @@ No resumo, preste atenção na lista **"separar da estante"**: são os
 livros que alguém está esperando na fila. Esses não voltam para a
 prateleira — vão para o balcão de reservados.
 
+### Emprestar o livro-texto para a turma inteira
+
+Trinta exemplares do mesmo livro saem no começo do bimestre e voltam no
+fim. Registrar um por um dá trinta linhas iguais na tela — por isso
+existe a **coleção**: sai num registro só e volta de uma vez.
+
+1. Menu lateral → **Empréstimos abertos** → **Emprestar coleção...**.
+2. **Selecionar...** o livro. A janela mostra quantos exemplares estão
+   disponíveis agora, e já sugere esse número na quantidade.
+3. Informe a **matrícula do professor** (ou use **Selecionar...**) e a
+   **turma**.
+4. Ajuste a quantidade e clique em **Emprestar coleção**.
+
+Na lista de empréstimos, a coleção aparece como **uma linha**, com a
+palavra "coleção" na primeira coluna e em negrito. Para receber tudo de
+volta: selecione essa linha e clique em **Devolver coleção** (ou dê um
+duplo clique nela).
+
+**O que é diferente de um empréstimo comum:**
+
+- **Fica no nome do professor, com a turma anotada.** É ele quem
+  responde pelos trinta livros. A turma vai junto porque o mesmo
+  professor pode levar coleções para turmas diferentes no mesmo
+  bimestre — sem isso, ninguém sabe qual pilha é de quem no fim.
+- **O prazo é de bimestre** (60 dias por padrão, ajustável em
+  Configurações), não os 14 dias do professor.
+- **Não conta no limite de empréstimos simultâneos.** O limite existe
+  para ninguém monopolizar o acervo; livro-texto da turma é o oposto
+  disso.
+- **Multa em aberto continua bloqueando.** Essa regra é sobre
+  responsabilidade, e trinta livros pesam mais, não menos.
+- **Exemplar reservado não entra na coleção.** Ele já está separado para
+  alguém da fila.
+
+Se um aluno devolver o exemplar dele avulso, no balcão, tudo bem: a
+devolução da coleção recebe o que ainda estiver fora.
+
 ### Tirar um exemplar do acervo
 
 Um livro voltou rasgado, o aluno perdeu, ou a coleção ficou
@@ -362,8 +401,41 @@ o que a outra encontrou.
 4. Escolha onde salvar (ex.: pendrive, pasta de rede, OneDrive).
 
 > **Recomendação:** faça backup diário ou semanal e guarde **fora do
-> computador da biblioteca** (pendrive, nuvem). Em caso de pane, basta
-> substituir o arquivo `sigbef.db` em `%APPDATA%\SIGBEF\` pelo backup.
+> computador da biblioteca** (pendrive, nuvem).
+
+### Restaurar um backup
+
+Use quando o banco se perdeu, ficou corrompido, ou alguém apagou algo
+que não devia. **Restaurar apaga o acervo de hoje e põe o do arquivo no
+lugar** — não é uma mesclagem.
+
+1. Menu lateral → **Configurações**.
+2. Role até **Ferramentas** → **Restaurar um backup**.
+3. Clique em **Restaurar backup...** e escolha o arquivo `.db`.
+   A janela já abre na pasta de backups.
+4. O sistema confere o arquivo e mostra os dois lados: quantos livros,
+   exemplares, usuários e empréstimos em aberto há **hoje** e quantos há
+   **no arquivo**. Os números diferentes aparecem em destaque — é
+   exatamente essa diferença que se perde.
+5. Digite **RESTAURAR** no campo e clique em **Restaurar**.
+6. Feche e abra o sistema.
+
+**O que o sistema faz por você:**
+
+- Recusa arquivo que não seja um banco do SIGBEF, antes de mexer em
+  qualquer coisa. Se o arquivo não servir, o acervo de hoje continua
+  intacto.
+- Guarda uma cópia do banco de hoje antes de trocar, na pasta de
+  backups, com o nome `sigbef_antes_da_restauracao_<data>.db`. A limpeza
+  automática de backups **não** apaga esse arquivo. Se você restaurou o
+  arquivo errado, restaure essa cópia e tudo volta.
+- Atualiza a estrutura do banco, caso o backup seja de uma versão antiga
+  do sistema.
+
+> **Não copie o `.db` por fora.** O banco usa um arquivo auxiliar de
+> transações (`-wal`); trocar só o `.db` pelo Explorador produz uma
+> cópia que abre e está pela metade — o pior tipo de defeito, o que
+> parece que deu certo. É por isso que esta tela existe.
 
 ### Carregar dados de demonstração
 

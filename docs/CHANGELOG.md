@@ -2,6 +2,151 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.12.0] — 2026-09-03
+
+Primeira rodada depois da FICTS, com o sistema descongelado. Duas
+funções que estavam paradas no roadmap desde o começo do ano, cinco
+defeitos de tela e o aplicativo ganhando o tema escuro que ele fingia
+ter.
+
+### Restaurar uma cópia de segurança pela tela
+
+O sistema fazia backup todo dia desde a primeira versão e não sabia usar
+nenhum deles. Recuperar exigia fechar o programa, achar a pasta e
+sobrescrever o `.db` no Explorador — e com o banco em WAL é assim que se
+produz uma cópia que abre e está pela metade, que é o pior tipo de
+defeito. O roteiro de apresentação já registrava isso como limitação
+conhecida.
+
+- **Configurações → Ferramentas → "Restaurar backup..."**. O arquivo é
+  conferido em modo somente leitura antes de qualquer coisa: o que não
+  for banco do SIGBEF é recusado com o acervo de hoje intacto
+- A confirmação mostra os dois lados com número na frente — quantos
+  livros, exemplares, usuários e empréstimos em aberto há **hoje** e
+  quantos há **no arquivo**, com o que muda em destaque — e exige a
+  palavra RESTAURAR digitada, como a de apagar tudo. É a segunda
+  operação mais destrutiva do sistema e a única feita sob pressão,
+  quando algo já deu errado, que é justamente quando ninguém lê caixa de
+  diálogo
+- **Guarda o banco de hoje antes de trocar**, com o prefixo
+  `sigbef_antes_da_restauracao_`, que a limpeza automática de backups
+  não apaga. Sem isso, restaurar o arquivo errado seria irreversível
+- Roda a migração de schema depois de restaurar: um backup de meses
+  atrás pode ser anterior a colunas que o sistema de hoje usa
+
+### Empréstimo de coleção para a turma
+
+Trinta exemplares do mesmo livro-texto saem no começo do bimestre e
+voltam no fim. Um por um são trinta linhas iguais na tela e trinta
+devoluções — e era por isso que esse tipo de saída acabava registrado em
+papel, fora do sistema.
+
+A dúvida que segurava a função era em nome de quem fica o exemplar. Fica
+com quem responde por ele.
+
+- **Empréstimos → "Emprestar coleção..."**: escolha o livro (a janela
+  mostra quantos exemplares estão livres agora), a matrícula do
+  professor e a turma
+- Na lista, a coleção ocupa **uma linha**, em negrito e com a palavra
+  "coleção" na primeira coluna. "Devolver coleção" — ou duplo clique na
+  linha — recebe tudo de volta, inclusive quando parte já voltou avulsa
+  pelo balcão
+- Prazo de bimestre (`PRAZO_COLECAO_DIAS`, 60 dias) e **fora do limite
+  de empréstimos simultâneos**: o limite existe para ninguém monopolizar
+  o acervo, e livro-texto da turma é o oposto disso. Multa em aberto
+  continua bloqueando — essa regra é sobre responsabilidade, e trinta
+  livros pesam mais, não menos
+- Exemplar reservado não entra na coleção: ele já está separado para
+  alguém da fila
+- No banco continua sendo uma linha por exemplar, amarradas por
+  `colecao_id`. A conferência de estante precisa saber que aqueles
+  trinta não estão lá; o que muda é a apresentação. A API também vê os
+  trinta, pelo mesmo motivo
+
+### Isentar multa, com motivo
+
+Antes só existia quitar. Perdoar uma multa obrigava a bibliotecária a
+registrar como paga — ou seja, a gravar no histórico um dinheiro que
+nunca entrou. Agora o motivo é obrigatório, e o valor lançado continua
+no histórico e no relatório da direção.
+
+### Correções
+
+- **Cadastro pela tela aceitava o que a planilha recusava.** A
+  importação de CSV conferia ano e ISBN repetido desde sempre; digitar
+  na tela não conferia nada. Dava para gravar um livro do ano 202 ou o
+  mesmo ISBN em dois registros — e é assim que o acervo ganha títulos
+  duplicados que ninguém concilia depois. A regra passou para a camada
+  de serviço e vale também na edição
+- **Cartão de alerta preso no vermelho.** Ele só trocava de cor quando
+  recebia uma; com o atraso zerado a chamada vinha sem cor e o vermelho
+  permanecia. Alerta que nunca apaga deixa de ser alerta
+- **Catorze tabelas e nenhuma barra de rolagem.** Numa tela pequena, o
+  que passava do fim da lista simplesmente não existia. As tabelas agora
+  nascem com barra vertical, e a horizontal aparece sozinha quando as
+  colunas não cabem
+- **Exportar com o arquivo aberto no Excel não dizia nada.** O erro
+  subia até o laço do Tk e morria no console, que num programa empacotado
+  não existe: a bibliotecária clicava e não acontecia nada. Os seis
+  relatórios passaram a avisar por um caminho só — dois deles nem
+  confirmavam que tinham salvado
+- **A lista do acervo não recarregava depois da baixa.** A tela de
+  detalhes dá baixa, corrige tombo e muda prateleira; a lista atrás
+  continuava mostrando o exemplar recém-baixado, e a bibliotecária
+  procurava na prateleira um livro que o sistema já sabia que não existia
+- **Migração de multa abortava pela metade.** Conferia só `multa_paga` e
+  adicionava as quatro colunas. Um banco com parte delas — migração
+  interrompida, ou backup antigo restaurado — derrubava a migração
+  inteira com "duplicate column name", e a partir daí o sistema não
+  subia. Agora é coluna a coluna
+
+### Aplicativo Android
+
+- **Tema escuro, que não existia.** `MyApplicationTheme` recebia
+  `darkTheme`, calculava, e usava o esquema claro de qualquer jeito. Quem
+  estivesse com o celular no escuro — a maioria, e este é um app de
+  consulta rápida no corredor — levava uma tela branca na cara
+- **As telas não liam o tema.** Importavam `SigbefNavy` e `SigbefMuted`
+  direto do arquivo de paleta, que são os valores do tema *claro*: 316
+  usos em 14 arquivos. Sem migrar isso, ligar o tema escuro não mudaria
+  nada. As cores agora vêm de `SigbefCores.atual.*`, com nomes de papel
+  em vez de nomes de cor
+- **A marca tem dois papéis, e agora são dois tokens.** Como frente
+  (texto, ícone) ela clareia no escuro; como fundo (botão, medalhão do
+  logo, cabeçalho do cartão) continua navy, senão o bloco viraria azul
+  claro com texto branco em cima
+- **O que não pode mudar com o tema ficou em `SigbefFixo`**: código de
+  barras e QR precisam de preto sobre branco de verdade, senão o leitor
+  do balcão não enxerga
+- **Escala tipográfica.** `Type.kt` tinha um estilo definido e o resto
+  comentado, do jeito que o assistente do Android gera. O resultado
+  medido eram 27 combinações de tamanho e peso para 91 textos. Os
+  tamanhos da escala nova saíram do uso real; os cinco pesos viraram
+  dois, que é o que o guia da marca manda desde o começo
+- `dynamicColor` continua na assinatura, mas agora é explicitamente
+  ignorado: um app que muda de cor conforme o papel de parede de cada
+  aluno deixa de ser reconhecível como o sistema da biblioteca
+
+### Testes
+
+- 606 no desktop (83 novos) e 53 na JVM do aplicativo (7 novos). Cada
+  correção teve o defeito reintroduzido de propósito para confirmar que o
+  teste novo realmente falha
+- `TemaTest.kt` recusa cor, tamanho de fonte ou peso escritos na mão nas
+  telas do app, e recusa importar a paleta clara — foi assim que o tema
+  escuro deixou de ser possível de quebrar por descuido
+- `test_bugs_de_tela.py` cobre disposição de widget lendo a árvore
+  sintática: toda tabela com barra de rolagem, nenhuma gravação sem
+  aviso de erro
+
+### Verificado rodando
+
+Painel aberto com dados de verdade a 1366x730, e o aplicativo instalado
+num emulador Android 14, nos dois temas. Cinco defeitos apareceram aí —
+quatro deles introduzidos nesta mesma rodada — e estão corrigidos. O que
+**não** foi verificado continua sendo aparelho físico: câmera,
+notificação no Android 7 e o fluxo de logout seguem só com teste de JVM.
+
 ## [1.11.0] — 2026-08-27
 
 Rodada de correções encontrada numa varredura do projeto inteiro, antes

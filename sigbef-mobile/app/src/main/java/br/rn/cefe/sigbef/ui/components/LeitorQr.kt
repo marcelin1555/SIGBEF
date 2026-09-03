@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.NoPhotography
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,22 +42,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import java.util.concurrent.Executors
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
+import br.rn.cefe.sigbef.ui.theme.SigbefFixo
 
 /**
  * Lê o QR de pareamento que o SIGBEF mostra na tela do computador da
@@ -128,14 +125,14 @@ private fun SemCamera(
         Icon(
             imageVector = Icons.Default.NoPhotography,
             contentDescription = null,
-            tint = SigbefMuted,
+            tint = SigbefCores.atual.secundario,
             modifier = Modifier.size(48.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = texto,
-            fontSize = 14.sp,
-            color = SigbefMuted,
+            style = MaterialTheme.typography.bodyMedium,
+            color = SigbefCores.atual.secundario,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -258,19 +255,18 @@ private fun CameraDoQr(
         Box(
             modifier = Modifier
                 .size(220.dp)
-                .border(3.dp, SigbefGold, RoundedCornerShape(16.dp))
+                .border(3.dp, SigbefCores.atual.dourado, RoundedCornerShape(16.dp))
         )
 
         Text(
             text = "Aponte para o QR na tela da biblioteca",
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
+            color = SigbefFixo.SobreCamera,
+            style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(24.dp)
-                .background(SigbefNavy.copy(alpha = 0.85f),
+                .background(SigbefCores.atual.marca.copy(alpha = 0.85f),
                             RoundedCornerShape(8.dp))
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         )

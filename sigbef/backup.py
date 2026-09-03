@@ -23,7 +23,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
-from .database import DB_PATH, get_config, registrar_auditoria, set_config
+from .database import (DB_PATH, db_cursor, get_config, registrar_auditoria,
+                       set_config)
 
 PREFIXO = "sigbef_backup_"
 SUFIXO = ".db"
@@ -155,3 +156,156 @@ def ultimo() -> Optional[dict]:
         "mb": round(p.stat().st_size / 1024 / 1024, 1),
         "total": len(copias),
     }
+
+
+# ---------------------------------------------------------------------------
+# Restauração
+# ---------------------------------------------------------------------------
+#: Prefixo da cópia tirada do banco ATUAL, imediatamente antes de ele ser
+#: substituído. Nome diferente do backup comum de propósito: a rotação
+#: (`limpar_antigos`) não pode apagar justamente a cópia que serve para
+#: desfazer uma restauração feita por engano.
+PREFIXO_SALVAGUARDA = "sigbef_antes_da_restauracao_"
+
+#: Sem estas tabelas o arquivo não é um banco do SIGBEF. A lista é curta
+#: de propósito: um backup antigo pode não ter as tabelas mais novas, e
+#: recusá-lo por isso seria recusar exatamente o backup de que alguém
+#: mais precisa.
+TABELAS_ESSENCIAIS = ("livro", "exemplar", "usuario", "emprestimo",
+                      "configuracao")
+
+
+class BackupInvalido(Exception):
+    """O arquivo escolhido não serve como banco do SIGBEF."""
+
+
+def conferir(origem) -> dict:
+    """Abre o arquivo só para leitura e diz o que tem dentro.
+
+    Existe para que a restauração possa ser confirmada com números na
+    frente — "3.104 livros, 2 empréstimos em aberto, mexido pela última
+    vez em 12/08" — em vez de um "tem certeza?" no vazio. Escolher o
+    arquivo errado é fácil: a pasta de backup tem uma cópia por dia e
+    todas têm nome parecido.
+
+    @raise BackupInvalido se o arquivo não abrir ou não for do SIGBEF.
+    """
+    caminho = Path(origem)
+    if not caminho.exists():
+        raise BackupInvalido("O arquivo não existe: %s" % caminho)
+
+    try:
+        # `mode=ro` garante que conferir não cria nem altera nada — nem
+        # mesmo o `-wal` que uma abertura normal deixaria para trás.
+        uri = "file:%s?mode=ro" % caminho.as_posix().replace("?", "%3f")
+        conn = sqlite3.connect(uri, uri=True, timeout=10)
+    except sqlite3.Error as e:
+        raise BackupInvalido("Não foi possível abrir o arquivo: %s" % e)
+
+    try:
+        conn.row_factory = sqlite3.Row
+        try:
+            cur = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'")
+            tabelas = {r["name"] for r in cur.fetchall()}
+        except sqlite3.DatabaseError:
+            raise BackupInvalido(
+                "O arquivo escolhido não é um banco de dados SQLite.")
+
+        faltando = [t for t in TABELAS_ESSENCIAIS if t not in tabelas]
+        if faltando:
+            raise BackupInvalido(
+                "O arquivo é um banco, mas não é do SIGBEF: faltam as "
+                "tabelas %s." % ", ".join(faltando))
+
+        def conta(sql: str) -> int:
+            try:
+                return conn.execute(sql).fetchone()[0]
+            except sqlite3.DatabaseError:
+                return 0
+
+        return {
+            "caminho": str(caminho),
+            "mb": round(caminho.stat().st_size / 1024 / 1024, 1),
+            "livros": conta("SELECT COUNT(*) FROM livro WHERE ativo = 1"),
+            "exemplares": conta("SELECT COUNT(*) FROM exemplar "
+                                "WHERE status != 'BAIXADO'"),
+            "usuarios": conta("SELECT COUNT(*) FROM usuario WHERE ativo = 1"),
+            "emprestimos_abertos": conta(
+                "SELECT COUNT(*) FROM emprestimo "
+                "WHERE data_devolucao IS NULL"),
+            "ultima_atividade": conn.execute(
+                "SELECT MAX(timestamp) FROM auditoria").fetchone()[0]
+            if "auditoria" in tabelas else None,
+        }
+    finally:
+        conn.close()
+
+
+def restaurar(origem, usuario_id: Optional[int] = None) -> dict:
+    """Substitui o banco em uso pelo conteúdo de um backup.
+
+    Três cuidados, todos deliberados:
+
+    1. **Confere antes.** Restaurar um arquivo qualquer apagaria o
+       acervo sem aviso; `conferir` recusa o que não for do SIGBEF.
+    2. **Guarda o banco atual antes de sobrescrever**, com nome que a
+       rotação não apaga. Restaurar é a operação mais destrutiva do
+       sistema e a mais provável de ser feita em pânico — desfazer
+       precisa ser possível.
+    3. **Copia pela API do SQLite, não pelo sistema de arquivos.** Pelo
+       mesmo motivo de `copiar`: com o banco em WAL, trocar o `.db` por
+       fora deixa para trás um `-wal` do banco antigo, e o resultado é
+       uma mistura dos dois.
+
+    Depois da troca roda `init_database()`: um backup de meses atrás
+    pode ser anterior a colunas que o sistema de hoje já usa, e sem a
+    migração o programa quebraria logo na primeira tela.
+
+    @return o resumo do que foi restaurado e onde ficou a salvaguarda.
+    """
+    resumo = conferir(origem)
+
+    pasta = pasta_destino()
+    pasta.mkdir(parents=True, exist_ok=True)
+    carimbo = datetime.now().strftime("%Y%m%d_%H%M%S")
+    salvaguarda = pasta / f"{PREFIXO_SALVAGUARDA}{carimbo}{SUFIXO}"
+    n = 2
+    while salvaguarda.exists():
+        salvaguarda = pasta / f"{PREFIXO_SALVAGUARDA}{carimbo}_{n}{SUFIXO}"
+        n += 1
+    copiar(salvaguarda)
+
+    fonte = sqlite3.connect(Path(origem), timeout=30)
+    try:
+        atual = sqlite3.connect(DB_PATH, timeout=30)
+        try:
+            # Sentido inverso do backup: o arquivo escolhido é a origem
+            # e o banco em uso é o destino. O SQLite troca o conteúdo
+            # inteiro numa transação — ou vai tudo, ou não vai nada.
+            fonte.backup(atual)
+        finally:
+            atual.close()
+    finally:
+        fonte.close()
+
+    from .database import init_database
+    init_database()
+
+    # A auditoria da restauração fica no banco RESTAURADO, que é onde
+    # ela vai fazer falta. Quem restaurou pode não existir lá dentro —
+    # um backup anterior ao cadastro dela — e nesse caso o registro fica
+    # sem dono em vez de falhar por chave estrangeira.
+    dono = usuario_id
+    if dono is not None:
+        with db_cursor() as cur:
+            cur.execute("SELECT 1 FROM usuario WHERE id = ?", (dono,))
+            if not cur.fetchone():
+                dono = None
+    registrar_auditoria(
+        dono, "BACKUP_RESTAURADO",
+        "arquivo=%s; salvaguarda=%s; livros=%s; exemplares=%s"
+        % (Path(origem).name, salvaguarda.name,
+           resumo["livros"], resumo["exemplares"]))
+
+    return {"resumo": resumo, "salvaguarda": salvaguarda}

@@ -24,10 +24,12 @@ from .ui_dialogos import (
     DialogoDetalhesLivro,
     DialogoDevolucaoEmLote,
     DialogoEditarLivro,
+    DialogoEmprestimoColecao,
     DialogoEditarUsuario,
     DialogoImportarCSV,
     DialogoLivro,
     DialogoResetarSistema,
+    DialogoRestaurarBackup,
     DialogoSelecionarExemplar,
     DialogoSelecionarUsuario,
     DialogoUsuario,
@@ -290,14 +292,14 @@ class SecaoPainel(SecaoBase):
         ttk.Label(self, text="Top 10 livros mais emprestados",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(20, 8))
 
-        self.tree_top = ttk.Treeview(self,
-                                       columns=("titulo", "qtd"),
-                                       show="headings", height=10)
+        self.tree_top = tema.criar_tabela(self,
+                                            columns=("titulo", "qtd"),
+                                            show="headings", height=10)
         self.tree_top.heading("titulo", text="Título")
         self.tree_top.heading("qtd", text="Empréstimos")
         self.tree_top.column("titulo", width=600, anchor="w")
         self.tree_top.column("qtd", width=120, anchor="center")
-        self.tree_top.pack(fill="x")
+        tema.empacotar_com_rolagem(self.tree_top, fill="x")
 
     def atualizar(self):
         st = servicos.estatisticas()
@@ -323,6 +325,15 @@ class SecaoLivros(SecaoBase):
         topo.pack(fill="x")
         ttk.Label(topo, text="Livros e exemplares",
                   style="Titulo.TLabel").pack(side="left")
+
+        # Os botões ficam numa faixa própria, abaixo do título.
+        #
+        # Eram seis, na mesma linha do título. Somados, passavam da
+        # largura útil, e o último empacotado — "Importar CSV" — era
+        # espremido até desaparecer, sobrando só uma lasca azul colada no
+        # título. A função existia e não tinha como ser alcançada.
+        topo = ttk.Frame(self)
+        topo.pack(fill="x", pady=(10, 0))
         ttk.Button(topo, text=" Cadastrar livro",
                     image=icones.icone("mais", "branco", 14),
                     compound="left",
@@ -366,8 +377,8 @@ class SecaoLivros(SecaoBase):
 
         cols = ("id", "titulo", "autores", "categoria", "ano",
                 "total", "disp")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("id", text="ID")
         self.tree.heading("titulo", text="Título")
         self.tree.heading("autores", text="Autor(es)")
@@ -382,15 +393,23 @@ class SecaoLivros(SecaoBase):
         self.tree.column("ano", width=70, anchor="center")
         self.tree.column("total", width=70, anchor="center")
         self.tree.column("disp", width=70, anchor="center")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
-        self.tree.bind("<Double-1>", lambda e: self._detalhes())
-
         # Rodapé de paginação. A lista carrega por blocos porque o
         # Treeview insere linha por linha na mesma thread que desenha a
         # janela: um acervo grande travava a tela por segundos antes de
         # mostrar qualquer coisa.
+        #
+        # Empacotado ANTES da tabela e no rodapé, pelo mesmo motivo da
+        # barra de botões de Empréstimos: a tabela com `expand=True`
+        # tomava a área toda e este rodapé ficava com altura zero. Numa
+        # tela pequena, a contagem "Mostrando 500 de 2.868" e o botão
+        # "Carregar mais" desapareciam — e sem eles não havia como
+        # chegar ao resto do acervo.
         rodape = ttk.Frame(self, padding=(0, 8))
-        rodape.pack(fill="x")
+        rodape.pack(side="bottom", fill="x")
+
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
+        self.tree.bind("<Double-1>", lambda e: self._detalhes())
         self.lbl_contagem = ttk.Label(rodape, text="")
         self.lbl_contagem.pack(side="left")
         self.btn_mais = ttk.Button(rodape, text="Carregar mais",
@@ -414,7 +433,8 @@ class SecaoLivros(SecaoBase):
                                   parent=self.painel)
             return
         livro_id = int(self.tree.item(sel[0])["values"][0])
-        DialogoDetalhesLivro(self.painel, livro_id)
+        DialogoDetalhesLivro(self.painel, livro_id,
+                             ao_mudar=self.atualizar)
 
     def _editar(self):
         sel = self.tree.selection()
@@ -628,8 +648,8 @@ class SecaoUsuarios(SecaoBase):
 
         cols = ("id", "nome", "matricula", "turma", "perfil", "email",
                 "cartao", "ativo")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         for c, t, w in [("id", "ID", 50), ("nome", "Nome", 220),
                         ("matricula", "Matrícula", 100),
                         ("turma", "Série / Turma", 180),
@@ -639,7 +659,8 @@ class SecaoUsuarios(SecaoBase):
                         ("ativo", "Ativo", 60)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
         self.tree.bind("<Double-1>", lambda e: self._editar())
 
     def _novo_usuario(self):
@@ -828,26 +849,64 @@ class SecaoEmprestimos(SecaoBase):
 
         cols = ("id", "usuario", "matricula", "turma", "titulo", "codigo",
                 "emprestado", "previsto", "atrasado")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=14)
-        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 160),
-                        ("matricula", "Matrícula", 90),
-                        ("turma", "Série / Turma", 170),
-                        ("titulo", "Título", 240),
-                        ("codigo", "Código", 150),
-                        ("emprestado", "Empréstimo", 120),
-                        ("previsto", "Previsto", 100),
-                        ("atrasado", "Atraso?", 70)]:
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=14)
+        # As larguras somavam 1.150 px para 1.039 px de área numa tela de
+        # 1366 — as duas últimas colunas, "Previsto" e "Atraso?", ficavam
+        # fora da vista. Agora somam 1.025 e cabem inteiras ali. Em tela
+        # menor a barra horizontal aparece sozinha; o ajuste é para que
+        # ela não precise aparecer no tamanho que a escola usa.
+        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 135),
+                        ("matricula", "Matrícula", 80),
+                        ("turma", "Série / Turma", 150),
+                        ("titulo", "Título", 202),
+                        ("codigo", "Código", 140),
+                        ("emprestado", "Empréstimo", 110),
+                        ("previsto", "Previsto", 90),
+                        ("atrasado", "Atraso?", 68)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
-        self.tree.pack(fill="both", expand=True)
+        # A linha de coleção resume trinta empréstimos numa só. O negrito
+        # é o que avisa, antes de qualquer clique, que aquela linha não é
+        # do mesmo tipo das outras.
+        self.tree.tag_configure("colecao",
+                                  font=("Segoe UI Semibold", 9))
+        # A barra de botões é empacotada ANTES da tabela, e no rodapé.
+        #
+        # A ordem é o conserto, não estilo. O `pack` do Tk atende na ordem
+        # em que é chamado: a tabela, com `expand=True`, tomava a área
+        # inteira e a faixa de botões — empacotada depois — ficava com
+        # altura zero. Numa tela pequena, "Devolver selecionado",
+        # "Quitar multa", "Isentar multa" e "Devolver em lote"
+        # simplesmente não existiam, sem aviso e sem rolagem.
+        #
+        # Limitar o tamanho da janela à tela (v1.11.0) não resolveu isto:
+        # aquilo fez a janela caber no monitor, e este faz o conteúdo
+        # caber na janela. São dois problemas diferentes.
+        # A dica primeiro, depois a barra de botões: com `side="bottom"`
+        # quem é empacotado antes fica mais embaixo, então esta ordem é
+        # a que põe a dica no rodapé e os botões logo acima dela.
+        #
+        # Ela saiu de dentro da barra de botões porque com seis botões
+        # não cabia mais ao lado deles: numa tela de 1366 px sobrava a
+        # letra "D" e o resto ficava fora da janela. É o mesmo defeito
+        # de `pack` de sempre — dar à dica o lugar dela, em vez de
+        # deixá-la disputar a sobra com quem cresce.
+        ttk.Label(self,
+                  text=("Dica: duplo clique numa linha devolve o livro — "
+                        "ou a coleção inteira, se a linha for de coleção."),
+                  style="Hint.TLabel").pack(side="bottom", anchor="w",
+                                             pady=(6, 0))
+
+        op = ttk.Frame(self)
+        op.pack(side="bottom", fill="x", pady=(8, 0))
+
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
         # Devolução com um clique: duplo clique na linha devolve o livro
         self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
 
-        op = ttk.Frame(self)
-        op.pack(fill="x", pady=(8, 0))
         ttk.Button(op, text=" Devolver selecionado",
                     image=icones.icone("confirmar", "branco", 14),
                     compound="left",
@@ -863,8 +922,12 @@ class SecaoEmprestimos(SecaoBase):
         ttk.Button(op, text="Devolver em lote",
                     command=self._devolver_em_lote).pack(side="left",
                                                           padx=(8, 0))
-        ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
-                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
+        ttk.Button(op, text="Emprestar coleção...",
+                    command=self._emprestar_colecao).pack(side="left",
+                                                           padx=(16, 0))
+        ttk.Button(op, text="Devolver coleção",
+                    command=self._devolver_colecao).pack(side="left",
+                                                          padx=(8, 0))
 
     def _devolver_em_lote(self):
         DialogoDevolucaoEmLote(self.painel, self.sessao,
@@ -919,6 +982,12 @@ class SecaoEmprestimos(SecaoBase):
                 "Selecione um empréstimo",
                 "Clique numa linha da tabela antes de devolver.",
                 parent=self.painel)
+            return
+        if sel[0].startswith("col:"):
+            # Duplo clique numa coleção faz o que a linha promete:
+            # devolve a coleção. Cair no caminho do exemplar avulso
+            # tentaria devolver um código que é "30 exemplares".
+            self._devolver_colecao()
             return
         v = self.tree.item(sel[0])["values"]
         titulo, usuario, codigo = v[4], v[1], str(v[5])
@@ -998,7 +1067,11 @@ class SecaoEmprestimos(SecaoBase):
         self.atualizar()
 
     def _emprestimo_selecionado(self, acao):
-        """Id da linha selecionada, ou None (com aviso) se não houver."""
+        """Id da linha selecionada, ou None (com aviso) se não houver.
+
+        Linha de coleção não serve: multa, renovação e devolução avulsa
+        são de um exemplar só, e a coleção resume trinta.
+        """
         sel = self.tree.selection()
         if not sel:
             messagebox.showinfo(
@@ -1006,7 +1079,49 @@ class SecaoEmprestimos(SecaoBase):
                 f"Clique numa linha da tabela antes de {acao}.",
                 parent=self.painel)
             return None
+        if sel[0].startswith("col:"):
+            messagebox.showinfo(
+                "Isto é uma coleção",
+                "Esta linha resume os exemplares que saíram para uma "
+                "turma inteira.\n\nUse “Devolver coleção” para "
+                "receber tudo de volta de uma vez.",
+                parent=self.painel)
+            return None
         return int(self.tree.item(sel[0])["values"][0])
+
+    def _emprestar_colecao(self):
+        DialogoEmprestimoColecao(self.painel, self.sessao,
+                                  ao_salvar=self.atualizar)
+
+    def _devolver_colecao(self):
+        sel = self.tree.selection()
+        if not sel or not sel[0].startswith("col:"):
+            messagebox.showinfo(
+                "Selecione uma coleção",
+                "Clique na linha da coleção (a que mostra “coleção” "
+                "na primeira coluna) antes de devolver.",
+                parent=self.painel)
+            return
+        v = self.tree.item(sel[0])["values"]
+        titulo, professor, quantos = v[4], v[1], v[5]
+        if not messagebox.askyesno(
+                "Devolver coleção",
+                f"Receber de volta {quantos} de “{titulo}”, "
+                f"que estão com {professor}?",
+                parent=self.painel):
+            return
+        try:
+            res = servicos.devolver_colecao(sel[0][4:], self.sessao.id)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Devolver coleção", str(e),
+                                    parent=self.painel)
+            return
+        messagebox.showinfo(
+            "Coleção devolvida",
+            f"{res['devolvidos']} exemplar(es) de “{res['titulo']}” "
+            "voltaram para o acervo.",
+            parent=self.painel)
+        self.atualizar()
 
     def _quitar(self):
         emp_id = self._emprestimo_selecionado("quitar a multa")
@@ -1073,12 +1188,36 @@ class SecaoEmprestimos(SecaoBase):
         self.atualizar()
 
     def atualizar(self):
+        """Uma linha por empréstimo — e uma linha por coleção inteira.
+
+        A coleção de trinta livros-texto ocupa uma linha, não trinta:
+        essa era a razão de a saída para a turma acabar registrada em
+        papel. O `iid` da linha diz de que tipo ela é (`emp:` ou
+        `col:`), porque os botões da barra agem em coisas diferentes e
+        confundir os dois seria devolver a turma inteira sem querer.
+        """
         for it in self.tree.get_children():
             self.tree.delete(it)
+
+        for c in servicos.listar_colecoes_em_aberto():
+            atrasado = bool(c["atrasado"])
+            tags = ["colecao"] + (["atrasado"] if atrasado else [])
+            self.tree.insert(
+                "", "end", iid=f"col:{c['colecao_id']}", tags=tuple(tags),
+                values=(
+                    "coleção", c["professor"], c["matricula"],
+                    c["turma"] or "", c["titulo"],
+                    f"{c['quantidade']} exemplares",
+                    data_hora_br(c["data_emprestimo"]),
+                    data_br(c["data_prevista"]), "SIM" if atrasado else "",
+                ))
+
         for e in servicos.listar_emprestimos_em_aberto():
+            if e.get("colecao_id"):
+                continue          # já foi resumido na linha da coleção
             atrasado = bool(e["atrasado"])
             tag = ("atrasado",) if atrasado else ()
-            self.tree.insert("", "end", tags=tag, values=(
+            self.tree.insert("", "end", iid=f"emp:{e['id']}", tags=tag, values=(
                 e["id"], e["usuario"], e["matricula"],
                 e.get("turma") or "",
                 e["titulo"],
@@ -1252,7 +1391,7 @@ class SecaoUso(SecaoBase):
                   style="Hint.TLabel").pack(anchor="w", padx=16, pady=(0, 10))
 
         cols = ("titulo", "categoria", "ano", "exemplares")
-        tree = ttk.Treeview(janela, columns=cols, show="headings")
+        tree = tema.criar_tabela(janela, columns=cols, show="headings")
         for c, t, w in [("titulo", "Título", 330),
                         ("categoria", "Categoria", 190),
                         ("ano", "Ano", 70),
@@ -1263,7 +1402,8 @@ class SecaoUso(SecaoBase):
             tree.insert("", "end", values=(liv["titulo"], liv["categoria"],
                                             liv["ano_publicacao"] or "",
                                             liv["exemplares"]))
-        tree.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+        tema.empacotar_com_rolagem(tree, fill="both", expand=True,
+                                   padx=16, pady=(0, 12))
         ttk.Button(janela, text="Fechar",
                     command=janela.destroy).pack(pady=(0, 16))
 
@@ -1281,15 +1421,18 @@ class SecaoUso(SecaoBase):
             defaultextension=".csv", filetypes=[("CSV", "*.csv")])
         if not nome:
             return
-        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(["ID", "Título", "Categoria", "Ano", "Exemplares"])
-            w.writerows([[_neutralizar_celula_csv(v) for v in
-                          (l["id"], l["titulo"], l["categoria"],
-                           l["ano_publicacao"] or "", l["exemplares"])]
-                         for l in parados])
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
+        def escrever():
+            with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(["ID", "Título", "Categoria", "Ano",
+                            "Exemplares"])
+                w.writerows([[_neutralizar_celula_csv(v) for v in
+                              (l["id"], l["titulo"], l["categoria"],
+                               l["ano_publicacao"] or "",
+                               l["exemplares"])]
+                             for l in parados])
+
+        tema.gravar_arquivo(self.painel, nome, escrever)
 
 
 class SecaoReservas(SecaoBase):
@@ -1323,8 +1466,8 @@ class SecaoReservas(SecaoBase):
         # usa. Isso libera a largura para a Situação, que é o que importa.
         cols = ("titulo", "usuario", "matricula", "turma",
                 "posicao", "desde", "situacao")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=12)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=12)
         for c, t, w in [("titulo", "Livro", 200),
                         ("usuario", "Quem espera", 150),
                         ("matricula", "Matrícula", 85),
@@ -1337,7 +1480,7 @@ class SecaoReservas(SecaoBase):
         # Separado = tem exemplar guardado esperando o aluno aparecer.
         self.tree.tag_configure("separado",
                                   background=tema.COR_PRIMARIA_SUAVE)
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         op = ttk.Frame(self)
         op.pack(fill="x", pady=(8, 0))
@@ -1480,14 +1623,15 @@ class SecaoInventario(SecaoBase):
 
         # --- lista do que já foi lido nesta sessão de trabalho
         cols = ("hora", "titulo", "codigo", "situacao")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=14)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=14)
         for c, t, w in [("hora", "Hora", 80), ("titulo", "Título", 340),
                         ("codigo", "Código", 200),
                         ("situacao", "Situação", 220)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
 
         rodape = ttk.Frame(self)
         rodape.pack(fill="x", pady=(10, 0))
@@ -1631,8 +1775,9 @@ class SecaoInventario(SecaoBase):
         if not nome:
             return
 
-        linhas = [["NÃO ENCONTRADOS (procurar na estante)", "", "", ""]]
-        linhas += [[x["titulo"], x["numero_tombo"] or "",
+        linhas = [["NÃO ENCONTRADOS (procurar na estante)", "Situação",
+                   "", ""]]
+        linhas += [[x["titulo"], x.get("status") or "",
                      x["codigo_barras"], x.get("localizacao") or ""]
                    for x in res["nao_encontrados"]]
         linhas += [["", "", "", ""],
@@ -1649,13 +1794,15 @@ class SecaoInventario(SecaoBase):
                      x["codigo_barras"]]
                    for x in res["apareceram"]]
 
-        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(["Título", "Detalhe", "Detalhe", "Código"])
-            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
-                          for linha in linhas])
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
+        def escrever():
+            with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(["Título", "Detalhe", "Detalhe",
+                            "Código"])
+                w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                             for linha in linhas])
+
+        tema.gravar_arquivo(self.painel, nome, escrever)
 
 
 class SecaoRelatorios(SecaoBase):
@@ -1830,11 +1977,21 @@ class SecaoRelatorios(SecaoBase):
 
     def _escrever(self, caminho: str, cabecalho: list[str],
                   linhas: list[list]):
-        with open(caminho, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(cabecalho)
-            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
-                        for linha in linhas])
+        """Grava o CSV e dá a notícia — boa ou má.
+
+        O aviso de sucesso e o de falha ficam aqui, e não em cada
+        um dos seis relatórios: era assim que dois deles acabaram
+        sem aviso nenhum e todos os seis sem tratamento de erro.
+        """
+        def gravar():
+            with open(caminho, "w", newline="",
+                      encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(cabecalho)
+                w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                             for linha in linhas])
+
+        return tema.gravar_arquivo(self.painel, caminho, gravar)
 
     def _exportar_acervo(self):
         nome = self._arquivo_destino(
@@ -1852,8 +2009,6 @@ class SecaoRelatorios(SecaoBase):
                         ["ID", "Título", "Autores", "Categoria", "Editora",
                          "ISBN", "Ano", "Total exemplares",
                          "Disponíveis"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_abertos(self):
         nome = self._arquivo_destino(
@@ -1869,8 +2024,6 @@ class SecaoRelatorios(SecaoBase):
                         ["ID", "Usuário", "Matrícula", "Título", "Código",
                          "Data empréstimo", "Data prevista", "Atrasado"],
                         linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_usuarios(self):
         nome = self._arquivo_destino(
@@ -1884,8 +2037,6 @@ class SecaoRelatorios(SecaoBase):
         self._escrever(nome,
                         ["ID", "Nome", "Matrícula", "Perfil", "E-mail",
                          "Código cartão", "Ativo"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_circulacao(self):
         try:
@@ -1900,8 +2051,6 @@ class SecaoRelatorios(SecaoBase):
         rs = servicos.relatorio_circulacao(50, inicio, fim)
         linhas = [[i + 1, r["titulo"], r["emprestimos"]] for i, r in enumerate(rs)]
         self._escrever(nome, ["#", "Título", "Empréstimos"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_movimentacao(self):
         """O relatório que vai para a direção no fim do período."""
@@ -2013,8 +2162,8 @@ class SecaoAuditoria(SecaoBase):
                     command=self.atualizar).pack(side="left")
 
         cols = ("quando", "usuario", "acao", "detalhes")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("quando", text="Quando")
         self.tree.heading("usuario", text="Quem")
         self.tree.heading("acao", text="Ação")
@@ -2023,7 +2172,7 @@ class SecaoAuditoria(SecaoBase):
         self.tree.column("usuario", width=160, anchor="w")
         self.tree.column("acao", width=160, anchor="w")
         self.tree.column("detalhes", width=420, anchor="w")
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         rodape = ttk.Frame(self, padding=(0, 8, 0, 0))
         rodape.pack(fill="x")
@@ -2175,33 +2324,56 @@ class SecaoConfig(SecaoBase):
                     command=self._backup
                     ).grid(row=0, column=1, rowspan=2, sticky="e", padx=12)
 
-        # Dados de demo
-        ttk.Label(ferramentas, text="Dados de demonstração",
+        # Restaurar
+        #
+        # O botão de fazer backup existia desde a primeira versão; o de
+        # usá-lo, não. Restaurar significava copiar um `.db` por cima do
+        # outro no Explorador — e com o banco em WAL é assim que se
+        # produz uma cópia que abre e está pela metade. Backup que
+        # ninguém sabe restaurar sozinho não é backup.
+        ttk.Label(ferramentas, text="Restaurar um backup",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=2, column=0, sticky="w", pady=(14, 2))
         ttk.Label(ferramentas,
+                  text=("Substitui TODO o acervo atual pelo conteúdo de uma "
+                        "cópia de segurança. O sistema guarda o banco de "
+                        "hoje antes de trocar, para o caso de arrependimento."),
+                  style="CardHint.TLabel", wraplength=600
+                  ).grid(row=3, column=0, sticky="w")
+        ttk.Button(ferramentas, text="Restaurar backup...",
+                    style="Perigo.TButton",
+                    command=self._restaurar_backup
+                    ).grid(row=2, column=1, rowspan=2, sticky="e",
+                            padx=12, pady=(14, 0))
+
+        # Dados de demo
+        ttk.Label(ferramentas, text="Dados de demonstração",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=4, column=0, sticky="w", pady=(14, 2))
+        ttk.Label(ferramentas,
                   text=("Adiciona 10 livros e 4 usuários de exemplo. "
                         "Útil para testar o sistema antes do uso real."),
                   style="CardHint.TLabel", wraplength=600
-                  ).grid(row=3, column=0, sticky="w")
+                  ).grid(row=5, column=0, sticky="w")
         ttk.Button(ferramentas, text="Carregar dados de demonstração",
                     command=self._carregar_demo
-                    ).grid(row=2, column=1, rowspan=2, sticky="e",
+                    ).grid(row=4, column=1, rowspan=2, sticky="e",
                             padx=12, pady=(14, 0))
 
         # Sobre
         ttk.Label(ferramentas, text="Sobre o sistema",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
-                  ).grid(row=4, column=0, sticky="w", pady=(14, 2))
+                  ).grid(row=6, column=0, sticky="w", pady=(14, 2))
         ttk.Label(ferramentas,
                   text="Versão, licença, autor e informações de contato.",
                   style="CardHint.TLabel"
-                  ).grid(row=5, column=0, sticky="w")
+                  ).grid(row=7, column=0, sticky="w")
         ttk.Button(ferramentas, text="Mostrar sobre...",
                     command=self._sobre
-                    ).grid(row=4, column=1, rowspan=2, sticky="e",
+                    ).grid(row=6, column=1, rowspan=2, sticky="e",
                             padx=12, pady=(14, 0))
 
         # ---------------- Integrações ----------------
@@ -2587,6 +2759,37 @@ class SecaoConfig(SecaoBase):
                               f"Arquivo gerado em:\n{destino}",
                               parent=self.painel)
 
+    def _restaurar_backup(self):
+        """Escolhe o arquivo e entrega a decisão ao diálogo.
+
+        Aqui só se escolhe o arquivo. A confirmação — digitada, com os
+        números dos dois lados à vista — mora em `DialogoRestaurarBackup`,
+        pelo mesmo motivo que a de apagar tudo mora na dela: é a parte
+        que não pode ser um sim/não distraído.
+        """
+        from . import backup
+        origem = filedialog.askopenfilename(
+            parent=self.painel,
+            title="Escolha o arquivo de backup",
+            initialdir=str(backup.pasta_destino()),
+            filetypes=[("Banco SQLite", "*.db"), ("Todos", "*.*")])
+        if not origem:
+            return
+
+        try:
+            dialogo = DialogoRestaurarBackup(
+                self.painel, self.sessao, origem,
+                # Recarrega o que está à vista; as outras seções
+                # recarregam sozinhas quando forem abertas.
+                ao_restaurar=self.painel._atualizar_secao_atual)
+        except backup.BackupInvalido as e:
+            # Conferir antes de abrir a janela: não faz sentido montar
+            # uma tela de comparação para um arquivo que não serve.
+            messagebox.showerror("Este arquivo não serve", str(e),
+                                   parent=self.painel)
+            return
+        self.painel.wait_window(dialogo)
+
     def _carregar_demo(self):
         from . import seed
         if not seed.banco_vazio():
@@ -2943,8 +3146,8 @@ class SecaoPesquisaAluno(SecaoBase):
                     command=self.atualizar).pack(side="left", padx=(8, 0))
 
         cols = ("id", "titulo", "autores", "categoria", "ano", "disp")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("id", text="ID")
         self.tree.heading("titulo", text="Título")
         self.tree.heading("autores", text="Autor(es)")
@@ -2957,7 +3160,8 @@ class SecaoPesquisaAluno(SecaoBase):
         self.tree.column("categoria", width=160, anchor="w")
         self.tree.column("ano", width=70, anchor="center")
         self.tree.column("disp", width=110, anchor="center")
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(12, 0))
         self.tree.bind("<Double-1>", lambda e: self._pegar_emprestado())
 
         rodape = ttk.Frame(self)
@@ -3018,7 +3222,8 @@ class SecaoPesquisaAluno(SecaoBase):
             return
         livro_id = int(self.tree.item(sel[0])["values"][0])
         from .ui_dialogos import DialogoDetalhesLivro
-        DialogoDetalhesLivro(self.painel, livro_id)
+        DialogoDetalhesLivro(self.painel, livro_id,
+                             ao_mudar=self.atualizar)
 
     def _pegar_emprestado(self):
         sel = self.tree.selection()
@@ -3116,8 +3321,8 @@ class SecaoMeusEmprestimos(SecaoBase):
 
         cols = ("codigo", "titulo", "emprestado", "previsto",
                 "devolucao", "multa", "origem")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         for c, t, w in [("codigo", "Código", 160),
                         ("titulo", "Título", 280),
                         ("emprestado", "Empréstimo", 140),
@@ -3130,14 +3335,14 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
         self.tree.tag_configure("devolvido", foreground="#888888")
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         # ------ Minhas reservas ------
         ttk.Label(self, text="Minhas reservas",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(14, 4))
-        self.tree_res = ttk.Treeview(
-            self, columns=("rid", "rtitulo", "situacao"),
-            show="headings", height=4)
+        self.tree_res = tema.criar_tabela(
+                 self, columns=("rid", "rtitulo", "situacao"),
+                 show="headings", height=4)
         self.tree_res.heading("rid", text="ID")
         self.tree_res.heading("rtitulo", text="Título")
         self.tree_res.heading("situacao", text="Situação")
@@ -3145,7 +3350,7 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree_res.column("rtitulo", width=300, anchor="w")
         self.tree_res.column("situacao", width=380, anchor="w")
         self.tree_res.tag_configure("pronta", background="#FFF6E5")
-        self.tree_res.pack(fill="x")
+        tema.empacotar_com_rolagem(self.tree_res, fill="x")
         bot_res = ttk.Frame(self)
         bot_res.pack(fill="x", pady=(6, 0))
         ttk.Button(bot_res, text="Cancelar reserva selecionada",

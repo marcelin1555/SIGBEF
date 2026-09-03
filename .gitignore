@@ -87,3 +87,7 @@ fotos do coloquio/
 
 # Capturas de tela do app (nao versionar; usadas no site ja otimizadas)
 capturas app/
+
+# Copias manuais feitas no Explorer, nao versionar
+assets/marca/png - Copia/
+assets/marca/*.zip

@@ -187,6 +187,57 @@ class TestRotas(ApiTestCase):
         self.assertEqual(corpo["emprestimos"][0]["titulo"], "Circulando")
 
 
+class TestColecaoPelaApi(ApiTestCase):
+    """A API foi escrita antes de existir empréstimo de coleção.
+
+    Na tela, uma coleção de trinta livros é **uma** linha — é a razão de
+    a funcionalidade existir. Na API, não: são trinta exemplares fora do
+    acervo, e quem consulta pela rede (o painel da direção, um script da
+    escola) precisa ver os trinta. Se algum dia alguém resolver agrupar
+    também aqui, este teste avisa que a decisão tem dois lados.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.criar_usuario(matricula="prof9", perfil="PROFESSOR",
+                           nome="Professora da Turma")
+        self.criar_usuario(matricula="alu9", nome="Aluno Avulso")
+        self.texto = self.criar_livro(titulo="Livro-texto", exemplares=20)
+        outro = self.criar_livro(titulo="Avulso")
+        servicos.realizar_emprestimo(
+            codigo_exemplar=outro["exemplares"][0][1],
+            matricula_usuario="alu9")
+        self.colecao = servicos.emprestar_colecao(
+            livro_id=self.texto["livro_id"], matricula_professor="prof9",
+            quantidade=12, turma="3o Ano B")
+
+    def test_conta_cada_exemplar_da_colecao(self):
+        status, corpo = self.get("/api/v1/estatisticas")
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["emp_abertos"], 13,
+                         "a API tem que ver os 12 da coleção mais o avulso")
+
+    def test_lista_os_exemplares_da_colecao_um_a_um(self):
+        status, corpo = self.get("/api/v1/emprestimos/abertos")
+        self.assertEqual(status, 200)
+        self.assertEqual(corpo["total"], 13)
+        da_colecao = [e for e in corpo["emprestimos"]
+                      if e["titulo"] == "Livro-texto"]
+        self.assertEqual(len(da_colecao), 12)
+
+    def test_o_professor_ve_a_colecao_como_emprestimos_dele(self):
+        """Quem responde pelos livros é ele — a situação dele tem que
+        dizer isso."""
+        status, corpo = self.get("/api/v1/usuarios/prof9/emprestimos")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(corpo["emprestimos_abertos"]), 12)
+
+    def test_o_acervo_nao_encolhe_com_a_colecao_fora(self):
+        status, corpo = self.get("/api/v1/estatisticas")
+        self.assertEqual(corpo["exemplares"], 21,
+                         "exemplar emprestado continua sendo do acervo")
+
+
 class TestSituacaoUsuario(ApiTestCase):
     def setUp(self):
         super().setUp()

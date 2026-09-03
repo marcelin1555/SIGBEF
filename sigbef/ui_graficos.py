@@ -200,9 +200,12 @@ class CartaoNumero(tk.Frame):
         super().__init__(parent, bg=tema.COR_CARD,
                          highlightbackground=tema.COR_BORDA,
                          highlightthickness=1, **kw)
+        # Guardada para o cartão saber voltar ao normal quando o motivo
+        # do destaque deixar de existir.
+        self._cor_repouso = cor or tema.COR_PRIMARIA
         self._lbl_valor = tk.Label(
             self, text=valor, bg=tema.COR_CARD,
-            fg=cor or tema.COR_PRIMARIA, font=("Segoe UI Semibold", 22))
+            fg=self._cor_repouso, font=("Segoe UI Semibold", 22))
         self._lbl_valor.pack(anchor="w", padx=14, pady=(12, 0))
         tk.Label(self, text=titulo, bg=tema.COR_CARD, fg=tema.COR_TEXTO,
                  font=("Segoe UI", 9)).pack(anchor="w", padx=14)
@@ -213,7 +216,14 @@ class CartaoNumero(tk.Frame):
 
     def atualizar(self, valor: str, detalhe: str = "",
                   cor: Optional[str] = None) -> None:
-        self._lbl_valor.configure(text=valor)
-        if cor:
-            self._lbl_valor.configure(fg=cor)
+        """Atualiza o cartão. Sem `cor`, volta para a cor de repouso.
+
+        Antes a cor só era trocada quando `cor` vinha preenchida. Um
+        cartão que ficasse vermelho por atraso — "3 em atraso" — nunca
+        mais voltava ao normal: quando o atraso zerava, a chamada vinha
+        sem cor e o vermelho permanecia. A bibliotecária via alerta numa
+        biblioteca em dia, e o alerta perdia o sentido de existir.
+        """
+        self._lbl_valor.configure(text=valor,
+                                  fg=cor or self._cor_repouso)
         self._lbl_detalhe.configure(text=detalhe)

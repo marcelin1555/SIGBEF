@@ -8,7 +8,7 @@ banco, recarregadas no boot).
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 # Paleta institucional padrao -------------------------------------------------
 COR_PRIMARIA = "#1F4E79"
@@ -353,3 +353,113 @@ def centralizar_janela(janela, largura, altura, minimo=None):
     janela.geometry(f"{largura}x{altura}+{x}+{y}")
     if minimo:
         janela.minsize(min(minimo[0], max_larg), min(minimo[1], max_alt))
+
+
+def criar_tabela(parent, **kw):
+    """Cria uma Treeview já dentro do quadro que vai abrigar a barra.
+
+    O quadro existe para que a tabela e a barra ocupem **um** lugar só
+    na disposição do pai. Sem ele, a tabela teria que ser empacotada
+    com `side="left"` para caber ao lado da barra, e aí tudo que fosse
+    empacotado depois dela no mesmo pai — um rodapé, um total, uma
+    faixa de botões — ficaria sem espaço. Esse é exatamente o
+    defeito de `pack` que já sumiu com a barra de ações antes.
+    """
+    caixa = ttk.Frame(parent)
+    tabela = ttk.Treeview(caixa, **kw)
+    tabela._caixa = caixa
+    return tabela
+
+
+def _largura_das_colunas(tabela) -> int:
+    """Quanto a tabela precisaria para mostrar tudo sem cortar."""
+    total = 0
+    for coluna in tabela["columns"]:
+        try:
+            total += int(tabela.column(coluna, "width"))
+        except (tk.TclError, ValueError, TypeError):
+            pass
+    return total
+
+
+def empacotar_com_rolagem(tabela, **pack_kw):
+    """Mostra a tabela com as barras de rolagem de que ela precisa.
+
+    `pack_kw` vale para o conjunto (tabela + barras), do mesmo jeito que
+    valeria para a tabela sozinha. A ordem interna — barra à direita
+    primeiro, tabela depois — é o que garante que a barra não nasça
+    com largura zero, e mora aqui para não ser reescrita em cada uma
+    das catorze telas que têm tabela.
+
+    **A barra horizontal aparece e some sozinha.** Numa tela de 1366 px,
+    a tabela de empréstimos tem nove colunas que somam mais que a área
+    disponível, e as duas últimas — "Previsto" e "Atraso?" — ficavam
+    fora da vista sem nada indicando que existiam. Deixá-la sempre
+    visível seria pior: rouba altura de tabela em toda tela onde as
+    colunas cabem. Então ela é empacotada e desempacotada conforme a
+    largura, no `<Configure>`.
+
+    @param tabela   Treeview criada por `criar_tabela`.
+    @param pack_kw  o que seria passado ao `pack` da tabela.
+    @return a barra vertical, para quem precisar dela depois.
+    """
+    caixa = getattr(tabela, "_caixa", None) or tabela.master
+
+    # A horizontal vai no rodapé da caixa e é reservada ANTES da tabela,
+    # pelo mesmo motivo de sempre: `pack` reparte na ordem em que é
+    # chamado, e a tabela com `expand=True` não deixa sobra.
+    barra_h = ttk.Scrollbar(caixa, orient="horizontal", command=tabela.xview)
+    tabela.configure(xscrollcommand=barra_h.set)
+
+    barra_v = ttk.Scrollbar(caixa, orient="vertical", command=tabela.yview)
+    tabela.configure(yscrollcommand=barra_v.set)
+    barra_v.pack(side="right", fill="y")
+    tabela.pack(side="left", fill="both", expand=True)
+    caixa.pack(**pack_kw)
+
+    def ajustar(_evento=None):
+        precisa = _largura_das_colunas(tabela) > tabela.winfo_width() + 1
+        visivel = bool(barra_h.winfo_manager())
+        if precisa and not visivel:
+            # `before=tabela` põe a barra antes da tabela na ordem de
+            # empacotamento sem precisar refazer os dois.
+            barra_h.pack(side="bottom", fill="x", before=tabela)
+        elif not precisa and visivel:
+            barra_h.pack_forget()
+
+    tabela.bind("<Configure>", ajustar, add="+")
+    tabela.after_idle(ajustar)
+    return barra_v
+
+
+def gravar_arquivo(parent, destino: str, escrever, titulo_ok: str = "Pronto",
+                   mensagem_ok: str = "") -> bool:
+    """Executa uma gravação em disco avisando quando ela falha.
+
+    Antes, cada tela que exportava CSV chamava `open(...)` solta. Se o
+    arquivo estivesse aberto no Excel, se o pen drive tivesse sido
+    tirado ou se a pasta fosse só de leitura, o erro subia até o laço
+    do Tk e morria no console — que ninguém vê numa escola. A
+    bibliotecária clicava em "Exportar", não aparecia nada, e ela
+    concluía que o sistema estava travado.
+
+    O `_backup` já fazia certo; esta função é aquele mesmo cuidado num
+    lugar só, para as outras exportações não precisarem repetir.
+
+    @param escrever  função sem argumentos que grava o arquivo.
+    @return True se gravou.
+    """
+    try:
+        escrever()
+    except OSError as e:
+        messagebox.showerror(
+            "Não foi possível salvar",
+            "O arquivo não pôde ser gravado em:\n%s\n\n%s\n\n"
+            "Verifique se ele não está aberto em outro programa e se a "
+            "pasta escolhida aceita gravação." % (destino, e),
+            parent=parent)
+        return False
+    messagebox.showinfo(titulo_ok,
+                        mensagem_ok or "Arquivo salvo em:\n%s" % destino,
+                        parent=parent)
+    return True

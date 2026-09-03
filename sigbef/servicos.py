@@ -11,6 +11,7 @@ import csv
 import io
 import re
 import unicodedata
+import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -62,6 +63,52 @@ def _validar_titulo_autores(titulo: str,
     return titulo, autores_limpos
 
 
+#: Faixa aceita para o ano de publicação. A mesma que a importação por
+#: planilha já usava — aqui ela vira regra única, em vez de existir só
+#: num dos dois caminhos.
+ANO_MINIMO, ANO_MAXIMO = 1000, 2100
+
+
+def _validar_ano(ano) -> None:
+    if ano in (None, ""):
+        return
+    try:
+        n = int(ano)
+    except (TypeError, ValueError):
+        raise RegraNegocioError(
+            f"Ano de publicação inválido: “{ano}”. Informe só o ano, "
+            "com quatro dígitos.")
+    if not ANO_MINIMO <= n <= ANO_MAXIMO:
+        raise RegraNegocioError(
+            f"Ano de publicação fora da faixa aceita "
+            f"({ANO_MINIMO}–{ANO_MAXIMO}): {n}.")
+
+
+def _validar_isbn_inedito(cur, isbn: str,
+                          ignorar_livro_id: Optional[int] = None) -> None:
+    """Recusa ISBN que já está em outro livro ativo do acervo.
+
+    ISBN identifica uma edição. Dois registros com o mesmo ISBN são o
+    mesmo livro cadastrado duas vezes — e é assim que o acervo ganha
+    títulos duplicados que ninguém consegue conciliar depois.
+    """
+    isbn = (isbn or "").strip()
+    if not isbn:
+        return
+    sql = "SELECT id, titulo FROM livro WHERE ativo = 1 AND isbn = ?"
+    params: list = [isbn]
+    if ignorar_livro_id is not None:
+        sql += " AND id != ?"
+        params.append(ignorar_livro_id)
+    cur.execute(sql, params)
+    ja = cur.fetchone()
+    if ja:
+        raise RegraNegocioError(
+            f"O ISBN {isbn} já está cadastrado em “{ja['titulo']}”. "
+            "Se for outro exemplar do mesmo livro, acrescente exemplares "
+            "ao registro existente em vez de cadastrar de novo.")
+
+
 def cadastrar_livro(
     *,
     titulo: str,
@@ -88,6 +135,16 @@ def cadastrar_livro(
     (id, codigo_barras)).
     """
     with db_cursor() as cur:
+        # A importação por planilha já recusava ano fora de faixa e ISBN
+        # repetido; o cadastro pela tela aceitava os dois calado. O mesmo
+        # acervo ficava com regra diferente conforme a porta de entrada,
+        # e a porta mais usada era a mais permissiva.
+        #
+        # A conferência mora aqui, na camada de serviço e dentro da
+        # transação, e não na tela: assim vale para o balcão, para a
+        # planilha e para qualquer caminho novo.
+        _validar_ano(ano)
+        _validar_isbn_inedito(cur, isbn)
         res = _inserir_livro_cur(
             cur, titulo=titulo, autores=autores, isbn=isbn, editora=editora,
             categoria=categoria, ano=ano, edicao=edicao, sinopse=sinopse,
@@ -259,6 +316,12 @@ def editar_livro(
                     (livro_id,))
         if not cur.fetchone():
             raise RegraNegocioError("Livro não encontrado.")
+
+        # As mesmas regras do cadastro. `ignorar_livro_id` deixa o
+        # próprio livro manter o ISBN que já é dele — sem isso, salvar a
+        # edição sem mexer no ISBN acusaria conflito consigo mesmo.
+        _validar_ano(ano)
+        _validar_isbn_inedito(cur, isbn, ignorar_livro_id=livro_id)
 
         editora = (editora or "").strip()
         categoria = (categoria or "").strip()
@@ -819,12 +882,22 @@ def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
                 "Existem empréstimos em aberto para este livro. Devolva-os primeiro."
             )
         cur.execute("UPDATE livro SET ativo = 0 WHERE id = ?", (livro_id,))
+        # `status != 'BAIXADO'`, e não `= 'DISPONIVEL'`: o exemplar
+        # separado para uma reserva (RESERVADO) escapava da baixa. Quando
+        # a reserva vencia, a expiração o devolvia para DISPONIVEL — e
+        # como `localizar_exemplar` não filtra livro ativo, o livro
+        # excluído voltava a ser emprestável no balcão.
         cur.execute(
             "UPDATE exemplar SET status = 'BAIXADO' "
-            "WHERE livro_id = ? AND status = 'DISPONIVEL'",
+            "WHERE livro_id = ? AND status != 'BAIXADO'",
             (livro_id,),
         )
-    registrar_auditoria(usuario_id, "EXCLUSAO_LIVRO", f"livro_id={livro_id}")
+        from .reservas import cancelar_reservas_do_livro_cur
+        canceladas = cancelar_reservas_do_livro_cur(cur, livro_id)
+    registrar_auditoria(
+        usuario_id, "EXCLUSAO_LIVRO",
+        f"livro_id={livro_id}"
+        + (f" reservas_canceladas={canceladas}" if canceladas else ""))
 
 
 def _atraso_e_multa(data_prevista: str,
@@ -903,10 +976,20 @@ def baixar_exemplar(codigo: str, motivo: str,
                               data_baixa = ?
                         WHERE id = ?""", (motivo, hoje, ex["id"]))
 
+        # Só depois de o exemplar estar BAIXADO: assim a reoferta dentro
+        # de `liberar_reservas_do_exemplar_cur` nunca reoferece este
+        # mesmo exemplar. Antes disto a reserva ficava ATIVA apontando
+        # para um exemplar fora do acervo, e o aluno da vez ia até a
+        # biblioteca buscar um livro que não existia mais.
+        from .reservas import liberar_reservas_do_exemplar_cur
+        reservas_soltas = liberar_reservas_do_exemplar_cur(cur, ex["id"])
+
     registrar_auditoria(
         usuario_id, "BAIXA_EXEMPLAR",
         f"exemplar={ex['codigo_barras']} livro={ex['titulo']} motivo={motivo}"
-        + (f" emprestimo_encerrado={emp['id']}" if emp else ""))
+        + (f" emprestimo_encerrado={emp['id']}" if emp else "")
+        + (f" reservas_liberadas={len(reservas_soltas)}"
+           if reservas_soltas else ""))
 
     return {
         "exemplar_id": ex["id"],
@@ -1363,6 +1446,23 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
                 f"Exemplar '{ex['titulo']}' está reservado para outro "
                 "usuário da fila de espera."
             )
+
+        # O limite é conferido DE NOVO aqui dentro, e não só lá em cima.
+        #
+        # `status_usuario` roda numa transação própria, antes desta. Entre
+        # uma e outra cabe um segundo empréstimo: duas bibliotecárias
+        # atendendo ao mesmo tempo, ou o balcão e a API do aplicativo.
+        # As duas passavam pela verificação com o mesmo número e as duas
+        # gravavam — o aluno terminava com um livro a mais que o limite,
+        # sem nada no sistema indicando como.
+        limite = _limite_para_perfil(u["perfil"])
+        cur.execute(
+            "SELECT COUNT(*) AS qt FROM emprestimo "
+            "WHERE usuario_id = ? AND data_devolucao IS NULL", (u["id"],))
+        if cur.fetchone()["qt"] >= limite:
+            raise RegraNegocioError(
+                f"Limite de {limite} empréstimos simultâneos atingido "
+                "para este usuário.")
         # Trava atômica contra corrida (balcão e kiosk simultâneos): só a
         # primeira transação consegue mudar o status pra EMPRESTADO; as
         # demais não afetam linha nenhuma e são rejeitadas aqui.
@@ -1397,6 +1497,214 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
         "prazo_dias": prazo,
         "usuario_nome": u["nome"],
     }
+
+
+# ---------------------------------------------------------------------------
+# Empréstimo de coleção
+# ---------------------------------------------------------------------------
+def _prazo_colecao() -> int:
+    return _config_int("PRAZO_COLECAO_DIAS", 60)
+
+
+def _teto_colecao() -> int:
+    return _config_int("LIMITE_COLECAO_EXEMPLARES", 40)
+
+
+def emprestar_colecao(*, livro_id: int, matricula_professor: str,
+                      quantidade: int, turma: str,
+                      operador_id: Optional[int] = None) -> dict:
+    """Empresta vários exemplares do mesmo livro de uma vez, para a turma.
+
+    O caso é o livro-texto: trinta exemplares do mesmo título saem no
+    começo do bimestre e voltam no fim. Registrar isso um por um dá
+    trinta linhas iguais na tela de empréstimos abertos, e devolver dá
+    trinta operações — foi por isso que esse tipo de saída acabou
+    virando papel, fora do sistema.
+
+    Três decisões que valem explicação:
+
+    **Em nome do professor, com a turma anotada.** Era a dúvida que
+    segurava a função: em nome de quem fica o exemplar. Fica com quem
+    responde por ele. A turma vai junto porque o mesmo professor pode
+    levar coleções para turmas diferentes no mesmo bimestre, e sem isso
+    ninguém sabe, no fim, qual pilha é qual.
+
+    **Não conta no limite de empréstimos simultâneos.** O limite existe
+    para que uma pessoa não monopolize o acervo; trinta livros-texto da
+    mesma obra são o oposto disso, são material didático com data para
+    voltar. Multa em aberto continua bloqueando — essa regra é sobre
+    responsabilidade, e vale mais aqui, não menos.
+
+    **Uma linha por exemplar, amarradas por `colecao_id`.** O exemplar
+    precisa aparecer como emprestado na conferência de estante e no
+    próprio registro dele; o que muda é a apresentação.
+
+    @return dados da coleção criada, incluindo o `colecao_id`.
+    """
+    matr = (matricula_professor or "").strip()
+    turma = (turma or "").strip()
+    if not matr:
+        raise RegraNegocioError("Informe a matrícula do professor.")
+    if not turma:
+        raise RegraNegocioError(
+            "Informe a turma. Sem ela não dá para saber, no fim do "
+            "bimestre, qual pilha de livros é de quem.")
+    try:
+        quantidade = int(quantidade)
+    except (TypeError, ValueError):
+        raise RegraNegocioError("Quantidade inválida.")
+    if quantidade < 1:
+        raise RegraNegocioError("A quantidade tem que ser pelo menos 1.")
+    teto = _teto_colecao()
+    if quantidade > teto:
+        raise RegraNegocioError(
+            f"Quantidade acima do teto de {teto} exemplares por coleção. "
+            "Se a turma for maior mesmo, aumente o teto em Configurações.")
+
+    u = localizar_usuario(matr)
+    if not u or not u["ativo"]:
+        raise RegraNegocioError("Professor não encontrado ou inativo.")
+    if u["perfil"] not in ("PROFESSOR", "BIBLIOTECARIO", "ADMINISTRADOR"):
+        raise RegraNegocioError(
+            "Coleção só sai no nome de um professor: é ele quem responde "
+            "pelos exemplares da turma inteira.")
+
+    st = status_usuario(u["id"])
+    # Do bloqueio normal, só a parte de multa vale aqui: o limite de
+    # empréstimos simultâneos é justamente o que a coleção dispensa.
+    if st.multas_em_aberto > 0:
+        raise RegraNegocioError(
+            f"Há multa em aberto de {st.multas_em_aberto:.2f} no nome de "
+            f"{u['nome']}. Resolva antes de levar a coleção.")
+
+    prazo = _prazo_colecao()
+    data_prevista = (date.today() + timedelta(days=prazo)).isoformat()
+    colecao_id = uuid.uuid4().hex
+
+    with db_cursor() as cur:
+        cur.execute("SELECT titulo FROM livro WHERE id = ? AND ativo = 1",
+                    (livro_id,))
+        liv = cur.fetchone()
+        if not liv:
+            raise RegraNegocioError("Livro não encontrado.")
+
+        # Só exemplares livres de verdade: RESERVADO fica de fora porque
+        # já está separado para alguém da fila, e levar a coleção por
+        # cima disso furaria a fila sem ninguém ver.
+        cur.execute(
+            "SELECT id, codigo_barras FROM exemplar "
+            "WHERE livro_id = ? AND status = 'DISPONIVEL' "
+            "ORDER BY id LIMIT ?", (livro_id, quantidade))
+        livres = cur.fetchall()
+        if len(livres) < quantidade:
+            raise RegraNegocioError(
+                f"Só há {len(livres)} exemplar(es) disponível(is) de "
+                f"\u201c{liv['titulo']}\u201d, e a coleção pede {quantidade}.")
+
+        codigos = []
+        for ex in livres:
+            # O mesmo UPDATE condicional do empréstimo comum: se outro
+            # terminal pegou o exemplar entre a consulta e agora, a linha
+            # não muda e a coleção inteira é desfeita pelo rollback.
+            cur.execute(
+                "UPDATE exemplar SET status = 'EMPRESTADO' "
+                "WHERE id = ? AND status = 'DISPONIVEL'", (ex["id"],))
+            if cur.rowcount != 1:
+                raise RegraNegocioError(
+                    "Um dos exemplares acabou de sair em outro terminal. "
+                    "Nenhum livro foi emprestado; tente de novo.")
+            cur.execute(
+                "INSERT INTO emprestimo(exemplar_id, usuario_id, "
+                "data_prevista, origem, colecao_id, colecao_turma) "
+                "VALUES (?, ?, ?, 'BALCAO', ?, ?)",
+                (ex["id"], u["id"], data_prevista, colecao_id, turma))
+            codigos.append(ex["codigo_barras"])
+
+    registrar_auditoria(
+        operador_id or u["id"], "EMPRESTIMO_COLECAO",
+        f"colecao={colecao_id}; livro={liv['titulo']}; turma={turma}; "
+        f"professor={u['matricula']}; exemplares={len(codigos)}")
+    return {
+        "colecao_id": colecao_id,
+        "titulo": liv["titulo"],
+        "turma": turma,
+        "professor": u["nome"],
+        "quantidade": len(codigos),
+        "codigos": codigos,
+        "data_prevista": data_prevista,
+        "prazo_dias": prazo,
+    }
+
+
+def listar_colecoes_em_aberto() -> list[dict]:
+    """Uma linha por coleção, e não por exemplar.
+
+    É a razão de a função existir: na tela de empréstimos abertos, uma
+    coleção de trinta livros tem que ocupar uma linha, não trinta.
+    """
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT e.colecao_id, e.colecao_turma AS turma,
+                      u.nome AS professor, u.matricula,
+                      l.titulo, COUNT(*) AS quantidade,
+                      MIN(e.data_emprestimo) AS data_emprestimo,
+                      e.data_prevista,
+                      (date(e.data_prevista) < date('now','localtime'))
+                          AS atrasado
+                 FROM emprestimo e
+                 JOIN exemplar ex ON ex.id = e.exemplar_id
+                 JOIN livro l ON l.id = ex.livro_id
+                 JOIN usuario u ON u.id = e.usuario_id
+                WHERE e.data_devolucao IS NULL AND e.colecao_id IS NOT NULL
+                GROUP BY e.colecao_id
+                ORDER BY e.data_prevista""")
+        return [dict(r) for r in cur.fetchall()]
+
+
+def devolver_colecao(colecao_id: str,
+                     operador_id: Optional[int] = None) -> dict:
+    """Devolve de uma vez o que ainda estiver fora numa coleção.
+
+    Aceita coleção parcialmente devolvida: um exemplar pode ter voltado
+    sozinho pelo balcão, e isso não pode impedir a devolução do resto.
+    """
+    colecao_id = (colecao_id or "").strip()
+    if not colecao_id:
+        raise RegraNegocioError("Coleção não informada.")
+
+    from . import reservas
+    with db_cursor() as cur:
+        cur.execute(
+            """SELECT e.id, e.exemplar_id, ex.livro_id, l.titulo
+                 FROM emprestimo e
+                 JOIN exemplar ex ON ex.id = e.exemplar_id
+                 JOIN livro l ON l.id = ex.livro_id
+                WHERE e.colecao_id = ? AND e.data_devolucao IS NULL""",
+            (colecao_id,))
+        pendentes = cur.fetchall()
+        if not pendentes:
+            raise RegraNegocioError(
+                "Esta coleção já foi devolvida por inteiro.")
+
+        titulo = pendentes[0]["titulo"]
+        for emp in pendentes:
+            cur.execute(
+                "UPDATE emprestimo "
+                "SET data_devolucao = datetime('now','localtime') "
+                "WHERE id = ?", (emp["id"],))
+            cur.execute("UPDATE exemplar SET status = 'DISPONIVEL' "
+                        "WHERE id = ?", (emp["exemplar_id"],))
+            # Cada exemplar que volta pode atender alguém da fila; sem
+            # isto, trinta livros voltariam para a estante com gente
+            # esperando por eles.
+            reservas._promover_fila_cur(cur, emp["livro_id"],
+                                        emp["exemplar_id"])
+
+    registrar_auditoria(
+        operador_id, "DEVOLUCAO_COLECAO",
+        f"colecao={colecao_id}; livro={titulo}; exemplares={len(pendentes)}")
+    return {"colecao_id": colecao_id, "titulo": titulo,
+            "devolvidos": len(pendentes)}
 
 
 def realizar_devolucao(*, codigo_exemplar: str,
@@ -1580,6 +1888,11 @@ def listar_emprestimos_em_aberto() -> list[dict]:
             """SELECT e.id, u.nome AS usuario, u.matricula, u.turma,
                        l.titulo, ex.codigo_barras, e.data_emprestimo,
                        e.data_prevista,
+                       -- Vem junto para a tela poder mostrar uma colecao
+                       -- de trinta livros como UMA linha. O relatorio e o
+                       -- aviso de vencimento continuam vendo os trinta,
+                       -- que e o certo: sao trinta exemplares fora.
+                       e.colecao_id, e.colecao_turma,
                        (date(e.data_prevista) < date('now','localtime')) AS atrasado
                 FROM emprestimo e
                 JOIN exemplar ex ON ex.id = e.exemplar_id
@@ -1680,7 +1993,12 @@ def estatisticas() -> dict:
     with db_cursor() as cur:
         cur.execute("SELECT COUNT(*) AS qt FROM livro WHERE ativo = 1")
         livros = cur.fetchone()["qt"]
-        cur.execute("SELECT COUNT(*) AS qt FROM exemplar")
+        # `!= 'BAIXADO'`: exemplar baixado saiu do acervo. Contá-lo aqui
+        # fazia o painel anunciar um acervo maior do que a biblioteca
+        # tem, e o número só crescia — baixar um livro perdido aumentava
+        # a contagem de exemplares em vez de diminuir.
+        cur.execute(
+            "SELECT COUNT(*) AS qt FROM exemplar WHERE status != 'BAIXADO'")
         exemplares = cur.fetchone()["qt"]
         cur.execute(
             "SELECT COUNT(*) AS qt FROM exemplar WHERE status = 'DISPONIVEL'")
@@ -2378,6 +2696,14 @@ CAMPOS_CONFIG: dict[str, tuple[str, str, float, float]] = {
                      "inteiro", 1, 50),
     "LIMITE_PROFESSOR": ("Limite de empréstimos simultâneos (professor)",
                          "inteiro", 1, 50),
+    # A coleção tem prazo e teto próprios, e por isso aparecem aqui: a
+    # mensagem que recusa uma coleção grande demais manda ajustar o teto
+    # em Configurações, e mandar alguém para uma tela que não tem o
+    # campo é pior do que não dizer nada.
+    "PRAZO_COLECAO_DIAS": ("Prazo da coleção para a turma (dias)",
+                           "inteiro", 1, 365),
+    "LIMITE_COLECAO_EXEMPLARES": ("Máximo de exemplares por coleção",
+                                  "inteiro", 1, 200),
     "MULTA_POR_DIA": ("Multa por dia de atraso (R$)", "dinheiro", 0, 100),
     "MULTA_TETO": ("Teto máximo de multa (R$)", "dinheiro", 0, 1000),
     "NOME_INSTITUICAO": ("Nome da instituição", "texto", 1, 120),

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120mm" height="20mm" viewBox="0 0 120 20">
+  <!--
+    Fita estampada do SIGBEF. Fundo solido na cor da fita (navy da marca),
+    com o icone invertido em branco, mais robusto para reproducao em
+    tecido do que logo colorido sobre fundo claro, e um filete laranja
+    nas duas bordas, amarrando as tres cores da identidade visual.
+  -->
+  <rect width="120" height="20" fill="#1F4E79"/>
+
+  <!-- filetes de acabamento -->
+  <rect x="0" y="1.1" width="120" height="0.9" fill="#F2A900"/>
+  <rect x="0" y="18.0" width="120" height="0.9" fill="#F2A900"/>
+
+  <!-- icone invertido: pagina branca, cabecalho laranja, barras navy -->
+  <g transform="translate(4,4)">
+    <rect x="0" y="0" width="13" height="12.5" rx="1" ry="1" fill="#FFFFFF"/>
+    <rect x="0" y="0" width="13" height="2.7" fill="#F2A900"/>
+    <g transform="translate(1.4,8)">
+      <rect width="1.6" height="3.6" fill="#1F4E79"/>
+      <rect x="2.7" width="1.0" height="3.6" fill="#1F4E79"/>
+      <rect x="4.7" width="2.3" height="3.6" fill="#1F4E79"/>
+      <rect x="8.2" width="1.0" height="3.6" fill="#1F4E79"/>
+      <rect x="10.3" width="1.6" height="3.6" fill="#1F4E79"/>
+    </g>
+  </g>
+
+  <!-- nome, em branco -->
+  <text x="22" y="14.5" font-family="Segoe UI, Arial, sans-serif"
+        font-weight="800" font-size="10.5" fill="#FFFFFF" letter-spacing="0.15">SIGBEF</text>
+
+  <!-- marcas tipo codigo de barras, preenchendo o vao ate a proxima repeticao:
+       o motivo do icone "vaza" pro resto da fita, virando estampa de verdade -->
+  <g fill="#F2A900" opacity="0.55">
+    <rect x="58" y="7" width="0.7" height="6"/>
+    <rect x="61" y="7" width="1.1" height="6"/>
+    <rect x="64" y="7" width="0.7" height="6"/>
+    <rect x="67" y="7" width="0.7" height="6"/>
+    <rect x="70" y="7" width="1.4" height="6"/>
+    <rect x="74" y="7" width="0.7" height="6"/>
+    <rect x="77" y="7" width="1.1" height="6"/>
+    <rect x="80" y="7" width="0.7" height="6"/>
+    <rect x="83" y="7" width="0.7" height="6"/>
+    <rect x="86" y="7" width="1.4" height="6"/>
+    <rect x="90" y="7" width="0.7" height="6"/>
+    <rect x="93" y="7" width="1.1" height="6"/>
+    <rect x="96" y="7" width="0.7" height="6"/>
+    <rect x="99" y="7" width="1.4" height="6"/>
+    <rect x="103" y="7" width="0.7" height="6"/>
+    <rect x="106" y="7" width="1.1" height="6"/>
+    <rect x="109" y="7" width="0.7" height="6"/>
+    <rect x="112" y="7" width="1.4" height="6"/>
+  </g>
+</svg>
