@@ -576,8 +576,14 @@ class DialogoEmprestimoColecao(tk.Toplevel):
 
         ttk.Label(form, text="Livro:").grid(row=0, column=0, sticky="e",
                                             padx=(0, 8), pady=4)
+        # `wraplength` porque o texto e longo por natureza: titulo do
+        # livro mais a contagem de disponiveis. Sem ele a linha corria
+        # por baixo do botao "Selecionar..." e o numero de exemplares --
+        # justamente o que evita pedir mais do que existe -- ficava
+        # escondido.
         self.lbl_livro = ttk.Label(form, text="(nenhum escolhido)",
-                                   style="Hint.TLabel")
+                                   style="Hint.TLabel", wraplength=300,
+                                   justify="left")
         self.lbl_livro.grid(row=0, column=1, sticky="w", pady=4)
         ttk.Button(form, text="Selecionar...",
                    command=self._escolher_livro
@@ -1741,7 +1747,11 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 720, 640)
+        # 800, e nao 720: os quatro botoes do rodape pedem 736 px e a
+        # largura antiga dava 672, entao "Dar baixa no exemplar" ficava
+        # cortado pela borda. `centralizar_janela` reduz sozinha se a
+        # tela for menor que isso.
+        tema.centralizar_janela(self, 800, 640)
 
         livro = servicos.detalhes_livro(livro_id)
         if not livro:

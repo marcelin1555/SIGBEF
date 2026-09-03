@@ -371,26 +371,65 @@ def criar_tabela(parent, **kw):
     return tabela
 
 
-def empacotar_com_rolagem(tabela, **pack_kw):
-    """Mostra a tabela com barra de rolagem vertical.
+def _largura_das_colunas(tabela) -> int:
+    """Quanto a tabela precisaria para mostrar tudo sem cortar."""
+    total = 0
+    for coluna in tabela["columns"]:
+        try:
+            total += int(tabela.column(coluna, "width"))
+        except (tk.TclError, ValueError, TypeError):
+            pass
+    return total
 
-    `pack_kw` vale para o conjunto (tabela + barra), do mesmo jeito que
+
+def empacotar_com_rolagem(tabela, **pack_kw):
+    """Mostra a tabela com as barras de rolagem de que ela precisa.
+
+    `pack_kw` vale para o conjunto (tabela + barras), do mesmo jeito que
     valeria para a tabela sozinha. A ordem interna — barra à direita
     primeiro, tabela depois — é o que garante que a barra não nasça
     com largura zero, e mora aqui para não ser reescrita em cada uma
     das catorze telas que têm tabela.
 
+    **A barra horizontal aparece e some sozinha.** Numa tela de 1366 px,
+    a tabela de empréstimos tem nove colunas que somam mais que a área
+    disponível, e as duas últimas — "Previsto" e "Atraso?" — ficavam
+    fora da vista sem nada indicando que existiam. Deixá-la sempre
+    visível seria pior: rouba altura de tabela em toda tela onde as
+    colunas cabem. Então ela é empacotada e desempacotada conforme a
+    largura, no `<Configure>`.
+
     @param tabela   Treeview criada por `criar_tabela`.
     @param pack_kw  o que seria passado ao `pack` da tabela.
-    @return a barra criada, para quem precisar dela depois.
+    @return a barra vertical, para quem precisar dela depois.
     """
     caixa = getattr(tabela, "_caixa", None) or tabela.master
-    barra = ttk.Scrollbar(caixa, orient="vertical", command=tabela.yview)
-    tabela.configure(yscrollcommand=barra.set)
-    barra.pack(side="right", fill="y")
+
+    # A horizontal vai no rodapé da caixa e é reservada ANTES da tabela,
+    # pelo mesmo motivo de sempre: `pack` reparte na ordem em que é
+    # chamado, e a tabela com `expand=True` não deixa sobra.
+    barra_h = ttk.Scrollbar(caixa, orient="horizontal", command=tabela.xview)
+    tabela.configure(xscrollcommand=barra_h.set)
+
+    barra_v = ttk.Scrollbar(caixa, orient="vertical", command=tabela.yview)
+    tabela.configure(yscrollcommand=barra_v.set)
+    barra_v.pack(side="right", fill="y")
     tabela.pack(side="left", fill="both", expand=True)
     caixa.pack(**pack_kw)
-    return barra
+
+    def ajustar(_evento=None):
+        precisa = _largura_das_colunas(tabela) > tabela.winfo_width() + 1
+        visivel = bool(barra_h.winfo_manager())
+        if precisa and not visivel:
+            # `before=tabela` põe a barra antes da tabela na ordem de
+            # empacotamento sem precisar refazer os dois.
+            barra_h.pack(side="bottom", fill="x", before=tabela)
+        elif not precisa and visivel:
+            barra_h.pack_forget()
+
+    tabela.bind("<Configure>", ajustar, add="+")
+    tabela.after_idle(ajustar)
+    return barra_v
 
 
 def gravar_arquivo(parent, destino: str, escrever, titulo_ok: str = "Pronto",

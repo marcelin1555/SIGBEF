@@ -630,11 +630,18 @@ profissional com Inno Setup.
 
 ```bash
 python -m unittest discover -s tests        # suíte do desktop
+python tools/fumaca_telas.py                # abre as telas e aperta os botões
 ```
 
 Os testes rodam contra um banco SQLite temporário, recriado a cada caso
 (`tests/base.py`), e **nunca tocam** o banco real. Regra do projeto:
 correção de bug entra com o teste que a trava.
+
+`tools/fumaca_telas.py` fica fora da suíte de propósito: ele abre janela
+de verdade, e `unittest discover` precisa rodar também onde não há tela.
+É o que cobre o que a suíte não alcança — se o botão chama a função
+certa, se a lista recarrega sozinha depois de uma ação, se a confirmação
+digitada segura mesmo. Também monta o próprio banco temporário.
 
 ### Aplicativo Android
 
@@ -730,13 +737,12 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
       `docs/screenshots/` são mockups, e o aviso embaixo da tabela diz
       isso. O risco é alguém reaproveitar aquilo como evidência sem ler o
       aviso, o que num trabalho de pesquisa seria apresentar prova falsa
-- [ ] **Teste de interação com os diálogos** — a camada de interface
-      deixou de ser terra de ninguém: `test_ui_nomes.py` recusa nome que
-      não existe, `test_bugs_de_tela.py` cobre disposição de widget
-      (toda tabela com barra de rolagem, nenhuma gravação sem aviso) e
-      `TemaTest.kt` faz o mesmo no app. O que ainda falta é abrir um
-      diálogo e clicar nele: os defeitos de *comportamento* de tela
-      continuam sendo achados no olho, rodando o programa
+- [ ] **Cobrir o resto das telas no teste de fumaça** —
+      `tools/fumaca_telas.py` já abre o painel e aperta os botões dos
+      dois fluxos mais destrutivos (empréstimo de coleção e restauração
+      de backup). Falta o mesmo para cadastro, devolução em lote,
+      inventário e importação de CSV — hoje os defeitos de comportamento
+      dessas telas ainda são achados no olho
 
 ### Descartado, e por quê
 

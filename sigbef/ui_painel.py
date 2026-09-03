@@ -851,14 +851,19 @@ class SecaoEmprestimos(SecaoBase):
                 "emprestado", "previsto", "atrasado")
         self.tree = tema.criar_tabela(self, columns=cols, show="headings",
                                        height=14)
-        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 160),
-                        ("matricula", "Matrícula", 90),
-                        ("turma", "Série / Turma", 170),
-                        ("titulo", "Título", 240),
-                        ("codigo", "Código", 150),
-                        ("emprestado", "Empréstimo", 120),
-                        ("previsto", "Previsto", 100),
-                        ("atrasado", "Atraso?", 70)]:
+        # As larguras somavam 1.150 px para 1.039 px de área numa tela de
+        # 1366 — as duas últimas colunas, "Previsto" e "Atraso?", ficavam
+        # fora da vista. Agora somam 1.025 e cabem inteiras ali. Em tela
+        # menor a barra horizontal aparece sozinha; o ajuste é para que
+        # ela não precise aparecer no tamanho que a escola usa.
+        for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 135),
+                        ("matricula", "Matrícula", 80),
+                        ("turma", "Série / Turma", 150),
+                        ("titulo", "Título", 202),
+                        ("codigo", "Código", 140),
+                        ("emprestado", "Empréstimo", 110),
+                        ("previsto", "Previsto", 90),
+                        ("atrasado", "Atraso?", 68)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
@@ -880,6 +885,21 @@ class SecaoEmprestimos(SecaoBase):
         # Limitar o tamanho da janela à tela (v1.11.0) não resolveu isto:
         # aquilo fez a janela caber no monitor, e este faz o conteúdo
         # caber na janela. São dois problemas diferentes.
+        # A dica primeiro, depois a barra de botões: com `side="bottom"`
+        # quem é empacotado antes fica mais embaixo, então esta ordem é
+        # a que põe a dica no rodapé e os botões logo acima dela.
+        #
+        # Ela saiu de dentro da barra de botões porque com seis botões
+        # não cabia mais ao lado deles: numa tela de 1366 px sobrava a
+        # letra "D" e o resto ficava fora da janela. É o mesmo defeito
+        # de `pack` de sempre — dar à dica o lugar dela, em vez de
+        # deixá-la disputar a sobra com quem cresce.
+        ttk.Label(self,
+                  text=("Dica: duplo clique numa linha devolve o livro — "
+                        "ou a coleção inteira, se a linha for de coleção."),
+                  style="Hint.TLabel").pack(side="bottom", anchor="w",
+                                             pady=(6, 0))
+
         op = ttk.Frame(self)
         op.pack(side="bottom", fill="x", pady=(8, 0))
 
@@ -908,8 +928,6 @@ class SecaoEmprestimos(SecaoBase):
         ttk.Button(op, text="Devolver coleção",
                     command=self._devolver_colecao).pack(side="left",
                                                           padx=(8, 0))
-        ttk.Label(op, text="Dica: duplo clique numa linha devolve o livro.",
-                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
 
     def _devolver_em_lote(self):
         DialogoDevolucaoEmLote(self.painel, self.sessao,

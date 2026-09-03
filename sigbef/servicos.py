@@ -2696,6 +2696,14 @@ CAMPOS_CONFIG: dict[str, tuple[str, str, float, float]] = {
                      "inteiro", 1, 50),
     "LIMITE_PROFESSOR": ("Limite de empréstimos simultâneos (professor)",
                          "inteiro", 1, 50),
+    # A coleção tem prazo e teto próprios, e por isso aparecem aqui: a
+    # mensagem que recusa uma coleção grande demais manda ajustar o teto
+    # em Configurações, e mandar alguém para uma tela que não tem o
+    # campo é pior do que não dizer nada.
+    "PRAZO_COLECAO_DIAS": ("Prazo da coleção para a turma (dias)",
+                           "inteiro", 1, 365),
+    "LIMITE_COLECAO_EXEMPLARES": ("Máximo de exemplares por coleção",
+                                  "inteiro", 1, 200),
     "MULTA_POR_DIA": ("Multa por dia de atraso (R$)", "dinheiro", 0, 100),
     "MULTA_TETO": ("Teto máximo de multa (R$)", "dinheiro", 0, 1000),
     "NOME_INSTITUICAO": ("Nome da instituição", "texto", 1, 120),
