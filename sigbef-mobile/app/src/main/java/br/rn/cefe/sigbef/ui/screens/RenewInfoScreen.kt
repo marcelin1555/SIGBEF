@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,23 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefBlue
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefWarning
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun RenewInfoScreen(
@@ -70,7 +60,7 @@ fun RenewInfoScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -84,8 +74,8 @@ fun RenewInfoScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = SigbefBlueFundo,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefBlue)
+                color = SigbefCores.atual.azulFundo,
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.azul)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -94,15 +84,15 @@ fun RenewInfoScreen(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = null,
-                        tint = SigbefBlue,
+                        tint = SigbefCores.atual.azul,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Você renova pelo próprio app, em \"Meus " +
                             "empréstimos\", enquanto o prazo não vencer.",
-                        fontSize = 14.sp,
-                        color = SigbefNavy,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.navy,
                         lineHeight = 20.sp
                     )
                 }
@@ -112,9 +102,9 @@ fun RenewInfoScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = SigbefCores.atual.superficie,
                 shadowElevation = 2.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -131,8 +121,8 @@ fun RenewInfoScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = SigbefWarningFundo,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefGold)
+                color = SigbefCores.atual.avisoFundo,
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.dourado)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -141,7 +131,7 @@ fun RenewInfoScreen(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
-                        tint = SigbefWarning,
+                        tint = SigbefCores.atual.aviso,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -150,8 +140,8 @@ fun RenewInfoScreen(
                             "se outro estudante está na fila de espera ou " +
                             "se você já renovou o livro várias vezes. " +
                             "Nesses casos, procure o balcão.",
-                        fontSize = 14.sp,
-                        color = SigbefWarningInk,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.avisoTinta,
                         lineHeight = 20.sp
                     )
                 }
@@ -162,7 +152,10 @@ fun RenewInfoScreen(
             // Action Button
             Button(
                 onClick = { onNavigate(Screen.LOANS) },
-                colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SigbefCores.atual.marca,
+                    contentColor = SigbefCores.atual.sobreMarca,
+                ),
                 shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -176,8 +169,7 @@ fun RenewInfoScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "IR PARA MEUS EMPRÉSTIMOS",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
                     letterSpacing = 1.sp
                 )
             }
@@ -194,22 +186,20 @@ private fun StepItem(number: String, title: String) {
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(SigbefNavy),
+                .background(SigbefCores.atual.marca),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = number,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                style = MaterialTheme.typography.titleSmall,
+                color = SigbefCores.atual.sobreMarca
             )
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = title,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium,
-            color = SigbefInk
+            style = MaterialTheme.typography.titleMedium,
+            color = SigbefCores.atual.tinta
         )
     }
 }

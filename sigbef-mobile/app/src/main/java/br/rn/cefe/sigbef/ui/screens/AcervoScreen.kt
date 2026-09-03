@@ -31,6 +31,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -45,26 +46,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Livro
 import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.ui.components.BookSpineView
 import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
-import br.rn.cefe.sigbef.ui.theme.SigbefWarning
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun AcervoScreen(
@@ -130,7 +120,7 @@ fun AcervoScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -156,7 +146,7 @@ fun AcervoScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Buscar",
-                            tint = SigbefMuted
+                            tint = SigbefCores.atual.secundario
                         )
                     },
                     trailingIcon = {
@@ -168,7 +158,7 @@ fun AcervoScreen(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Limpar busca",
-                                    tint = SigbefMuted
+                                    tint = SigbefCores.atual.secundario
                                 )
                             }
                         } else {
@@ -177,13 +167,13 @@ fun AcervoScreen(
                                     .padding(end = 8.dp)
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(SigbefNavy.copy(alpha = 0.1f)),
+                                    .background(SigbefCores.atual.azulFundo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Tune,
                                     contentDescription = "Filtro",
-                                    tint = SigbefNavy,
+                                    tint = SigbefCores.atual.navy,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -196,11 +186,11 @@ fun AcervoScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        disabledContainerColor = SigbefSurfaceContainerLow,
-                        focusedBorderColor = SigbefNavy,
-                        unfocusedBorderColor = SigbefLine
+                        focusedContainerColor = SigbefCores.atual.superficie,
+                        unfocusedContainerColor = SigbefCores.atual.superficie,
+                        disabledContainerColor = SigbefCores.atual.superficieAlta,
+                        focusedBorderColor = SigbefCores.atual.navy,
+                        unfocusedBorderColor = SigbefCores.atual.linha
                     )
                 )
 
@@ -218,19 +208,19 @@ fun AcervoScreen(
                                 selectedCategoryLocal = cat
                                 onCategoryChange?.invoke(cat)
                             },
-                            label = { Text(cat, fontSize = 13.sp) },
+                            label = { Text(cat, style = MaterialTheme.typography.bodySmall) },
                             shape = RoundedCornerShape(20.dp),
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = SigbefNavy,
-                                selectedLabelColor = Color.White,
-                                containerColor = Color.White,
-                                labelColor = SigbefInk
+                                selectedContainerColor = SigbefCores.atual.marca,
+                                selectedLabelColor = SigbefCores.atual.sobreMarca,
+                                containerColor = SigbefCores.atual.superficie,
+                                labelColor = SigbefCores.atual.tinta
                             ),
                             border = FilterChipDefaults.filterChipBorder(
                                 enabled = true,
                                 selected = selected,
-                                borderColor = SigbefLine,
-                                selectedBorderColor = SigbefNavy
+                                borderColor = SigbefCores.atual.linha,
+                                selectedBorderColor = SigbefCores.atual.navy
                             )
                         )
                     }
@@ -240,8 +230,8 @@ fun AcervoScreen(
 
                 Text(
                     text = "Resultados — ${filteredLivros.size} encontrados",
-                    fontSize = 13.sp,
-                    color = SigbefMuted
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SigbefCores.atual.secundario
                 )
             }
 
@@ -257,7 +247,7 @@ fun AcervoScreen(
                     Icon(
                         imageVector = Icons.Default.MenuBook,
                         contentDescription = "Livro não encontrado",
-                        tint = SigbefMuted.copy(alpha = 0.5f),
+                        tint = SigbefCores.atual.secundario.copy(alpha = 0.5f),
                         modifier = Modifier.size(72.dp)
                     )
 
@@ -265,9 +255,8 @@ fun AcervoScreen(
 
                     Text(
                         text = "Nenhum livro encontrado para '$searchQuery'",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefInk,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = SigbefCores.atual.tinta,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
@@ -275,8 +264,8 @@ fun AcervoScreen(
 
                     Text(
                         text = "Tente buscar só pelo sobrenome do autor ou verifique a ortografia.",
-                        fontSize = 14.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.secundario,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
@@ -289,7 +278,10 @@ fun AcervoScreen(
                             onSearchQueryChange?.invoke("")
                             onCategoryChange?.invoke("Todos")
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SigbefCores.atual.marca,
+                            contentColor = SigbefCores.atual.sobreMarca,
+                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text("LIMPAR BUSCA")
@@ -326,7 +318,7 @@ private fun BookCard(
     val spineColor = try {
         Color(android.graphics.Color.parseColor(livro.spineColorHex))
     } catch (e: Exception) {
-        SigbefNavy
+        SigbefCores.atual.navy
     }
 
     Surface(
@@ -335,9 +327,9 @@ private fun BookCard(
             .height(132.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 2.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Row(
             modifier = Modifier.fillMaxSize()
@@ -360,17 +352,16 @@ private fun BookCard(
                 Column {
                     Text(
                         text = livro.titulo,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefInk,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = SigbefCores.atual.tinta,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = livro.autor,
-                        fontSize = 13.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -383,8 +374,8 @@ private fun BookCard(
                 ) {
                     Text(
                         text = livro.categoria,
-                        fontSize = 12.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
@@ -396,36 +387,35 @@ private fun BookCard(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(SigbefSuccessFundo)
+                                .background(SigbefCores.atual.sucessoFundo)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = "Disponível",
-                                tint = SigbefSuccess,
+                                tint = SigbefCores.atual.sucesso,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Disponível",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SigbefSuccess
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SigbefCores.atual.sucesso
                             )
                         }
                     } else {
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(SigbefWarningFundo)
+                                .background(SigbefCores.atual.avisoFundo)
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Schedule,
                                 contentDescription = "Devolução",
-                                tint = SigbefWarning,
+                                tint = SigbefCores.atual.aviso,
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -433,9 +423,8 @@ private fun BookCard(
                                 text = livro.previsaoDevolucao
                                     ?.let { "Volta em ${dataParaLer(it)}" }
                                     ?: "Emprestado",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SigbefWarning
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SigbefCores.atual.aviso
                             )
                         }
                     }

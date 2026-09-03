@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,9 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.model.Emprestimo
@@ -44,19 +43,7 @@ import br.rn.cefe.sigbef.model.Screen
 import br.rn.cefe.sigbef.model.Usuario
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefBlue
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefError
-import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefWarning
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefWarningInk
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun HomeScreen(
@@ -93,7 +80,7 @@ fun HomeScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -107,9 +94,9 @@ fun HomeScreen(
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    color = Color.White,
+                    color = SigbefCores.atual.superficie,
                     shadowElevation = 2.dp,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -122,9 +109,8 @@ fun HomeScreen(
                             Column {
                                 Text(
                                     text = if (ativos.isEmpty()) "Nenhum livro emprestado" else "${ativos.size} ${if (ativos.size == 1) "livro com você" else "livros com você"}",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = SigbefInk
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = SigbefCores.atual.tinta
                                 )
 
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -133,36 +119,35 @@ fun HomeScreen(
                                     Row(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(SigbefErrorFundo)
+                                            .background(SigbefCores.atual.erroFundo)
                                             .padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Schedule,
                                             contentDescription = null,
-                                            tint = SigbefError,
+                                            tint = SigbefCores.atual.erro,
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
                                             text = "${atrasados.size} com devolução em atraso",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = SigbefError
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = SigbefCores.atual.erro
                                         )
                                     }
                                 } else if (ativos.isNotEmpty()) {
                                     Row(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(6.dp))
-                                            .background(SigbefWarningFundo)
+                                            .background(SigbefCores.atual.avisoFundo)
                                             .padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Schedule,
                                             contentDescription = null,
-                                            tint = SigbefWarning,
+                                            tint = SigbefCores.atual.aviso,
                                             modifier = Modifier.size(14.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -172,16 +157,15 @@ fun HomeScreen(
                                             // 3 dias", que aparecia igual mesmo
                                             // com o livro vencendo hoje.
                                             text = proximoVencimento(ativos),
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = SigbefWarning
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = SigbefCores.atual.aviso
                                         )
                                     }
                                 } else {
                                     Text(
                                         text = "Explore o acervo da biblioteca",
-                                        fontSize = 13.sp,
-                                        color = SigbefMuted
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = SigbefCores.atual.secundario
                                     )
                                 }
                             }
@@ -190,13 +174,13 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(SigbefBlueFundo),
+                                    .background(SigbefCores.atual.azulFundo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ImportContacts,
                                     contentDescription = null,
-                                    tint = SigbefNavy,
+                                    tint = SigbefCores.atual.navy,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -214,14 +198,14 @@ fun HomeScreen(
                                     .fillMaxWidth()
                                     .height(8.dp)
                                     .clip(RoundedCornerShape(4.dp)),
-                                color = SigbefBlue,
-                                trackColor = SigbefLine
+                                color = SigbefCores.atual.azul,
+                                trackColor = SigbefCores.atual.linha
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "${ativos.size} de $maxLivros do limite",
-                                fontSize = 12.sp,
-                                color = SigbefMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SigbefCores.atual.secundario,
                                 modifier = Modifier.align(Alignment.End)
                             )
                         }
@@ -234,7 +218,7 @@ fun HomeScreen(
                             Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
-                                color = SigbefWarningFundo
+                                color = SigbefCores.atual.avisoFundo
                             ) {
                                 Row(
                                     modifier = Modifier.padding(10.dp),
@@ -243,14 +227,14 @@ fun HomeScreen(
                                     Icon(
                                         imageVector = Icons.Default.Schedule,
                                         contentDescription = null,
-                                        tint = SigbefWarning,
+                                        tint = SigbefCores.atual.aviso,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = usuario.situacao,
-                                        fontSize = 12.sp,
-                                        color = SigbefWarningInk
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = SigbefCores.atual.avisoTinta
                                     )
                                 }
                             }
@@ -315,7 +299,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(8.dp)
                         .clip(CircleShape)
-                        .background(if (!isOffline) SigbefSuccess else SigbefWarning)
+                        .background(if (!isOffline) SigbefCores.atual.sucesso else SigbefCores.atual.aviso)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
@@ -330,8 +314,8 @@ fun HomeScreen(
                         !isOffline -> "Conectado à ${usuario.escola}"
                         else -> "Sem conexão — ${usuario.escola}"
                     },
-                    fontSize = 13.sp,
-                    color = SigbefMuted
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SigbefCores.atual.secundario
                 )
             }
         }
@@ -351,9 +335,9 @@ private fun BentoShortcutCard(
     Surface(
         modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 1.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(
             modifier = Modifier
@@ -366,22 +350,21 @@ private fun BentoShortcutCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(SigbefBlueFundo),
+                    .background(SigbefCores.atual.azulFundo),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = SigbefNavy,
+                    tint = SigbefCores.atual.navy,
                     modifier = Modifier.size(22.dp)
                 )
             }
 
             Text(
                 text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = SigbefInk,
+                style = MaterialTheme.typography.titleSmall,
+                color = SigbefCores.atual.tinta,
                 lineHeight = 18.sp
             )
         }

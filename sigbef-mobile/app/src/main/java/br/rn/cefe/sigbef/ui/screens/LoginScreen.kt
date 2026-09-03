@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,19 +34,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefError
-import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun LoginScreen(
@@ -60,7 +53,7 @@ fun LoginScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = SigbefBackground
+        color = SigbefCores.atual.fundo
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -71,9 +64,9 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .padding(20.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = SigbefCores.atual.superficie,
                 shadowElevation = 6.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column(
                     modifier = Modifier
@@ -86,13 +79,13 @@ fun LoginScreen(
                         modifier = Modifier
                             .size(72.dp)
                             .clip(CircleShape)
-                            .background(SigbefNavy),
+                            .background(SigbefCores.atual.marca),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.MenuBook,
                             contentDescription = "SIGBEF Logo",
-                            tint = Color.White,
+                            tint = SigbefCores.atual.sobreMarca,
                             modifier = Modifier.size(36.dp)
                         )
                     }
@@ -101,9 +94,8 @@ fun LoginScreen(
 
                     Text(
                         text = "SIGBEF",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = SigbefNavy,
+                        style = MaterialTheme.typography.displaySmall,
+                        color = SigbefCores.atual.navy,
                         letterSpacing = (-0.5).sp
                     )
 
@@ -111,8 +103,8 @@ fun LoginScreen(
 
                     Text(
                         text = "Sistema Integrado de Gestão de Biblioteca Escolar",
-                        fontSize = 13.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario,
                         textAlign = TextAlign.Center
                     )
 
@@ -129,13 +121,13 @@ fun LoginScreen(
                                     .padding(start = 8.dp)
                                     .size(32.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(SigbefNavy.copy(alpha = 0.1f)),
+                                    .background(SigbefCores.atual.azulFundo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Badge,
                                     contentDescription = null,
-                                    tint = SigbefNavy,
+                                    tint = SigbefCores.atual.navy,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -159,13 +151,13 @@ fun LoginScreen(
                                     .padding(start = 8.dp)
                                     .size(32.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(SigbefNavy.copy(alpha = 0.1f)),
+                                    .background(SigbefCores.atual.azulFundo),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = null,
-                                    tint = SigbefNavy,
+                                    tint = SigbefCores.atual.navy,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -181,14 +173,14 @@ fun LoginScreen(
                     if (erro != null) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            color = SigbefErrorFundo,
+                            color = SigbefCores.atual.erroFundo,
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
                                 text = erro,
                                 modifier = Modifier.padding(12.dp),
-                                fontSize = 13.sp,
-                                color = SigbefError
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SigbefCores.atual.erro
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -201,14 +193,16 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = SigbefCores.atual.marca,
+                            contentColor = SigbefCores.atual.sobreMarca,
+                        ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = if (carregando) "Entrando…" else "Entrar",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            style = MaterialTheme.typography.titleMedium,
+                            color = SigbefCores.atual.sobreMarca
                         )
                     }
 
@@ -217,7 +211,7 @@ fun LoginScreen(
                     // Warning Text Box
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = SigbefSurfaceContainerLow,
+                        color = SigbefCores.atual.superficieAlta,
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Row(
@@ -227,14 +221,14 @@ fun LoginScreen(
                             Icon(
                                 imageVector = Icons.Default.Info,
                                 contentDescription = "Info",
-                                tint = SigbefMuted,
+                                tint = SigbefCores.atual.secundario,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.size(8.dp))
                             Text(
                                 text = "Use a mesma matrícula e senha do sistema da biblioteca.\nEsqueceu? Procure a bibliotecária.",
-                                fontSize = 12.sp,
-                                color = SigbefMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SigbefCores.atual.secundario,
                                 lineHeight = 16.sp
                             )
                         }

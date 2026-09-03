@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,14 +46,7 @@ import br.rn.cefe.sigbef.ui.components.RotuloSecao
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
 import br.rn.cefe.sigbef.ui.components.dataParaLer
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSurface
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 /**
  * "Minha leitura": o que o aluno já leu e o que a biblioteca sugere.
@@ -91,7 +84,7 @@ fun ReadingScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -134,8 +127,8 @@ private fun ConviteParaComecar() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = SigbefSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        color = SigbefCores.atual.superficie,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -145,30 +138,29 @@ private fun ConviteParaComecar() {
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(SigbefBlueFundo),
+                    .background(SigbefCores.atual.azulFundo),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoStories,
                     contentDescription = null,
-                    tint = SigbefNavy,
+                    tint = SigbefCores.atual.navy,
                     modifier = Modifier.size(36.dp)
                 )
             }
             Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = "Sua estante começa no primeiro livro",
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = SigbefNavy,
+                style = MaterialTheme.typography.titleLarge,
+                color = SigbefCores.atual.navy,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Quando você devolver um livro, ele aparece aqui — " +
                     "com o tempo, esta tela vira o retrato do que você leu.",
-                fontSize = 14.sp,
-                color = SigbefMuted,
+                style = MaterialTheme.typography.bodyMedium,
+                color = SigbefCores.atual.secundario,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -181,9 +173,9 @@ private fun ResumoDaLeitura(e: EstatisticaLeitura) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = SigbefSurface,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 2.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Faixa dourada: a assinatura da marca, igual à do cartão.
@@ -191,22 +183,21 @@ private fun ResumoDaLeitura(e: EstatisticaLeitura) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(SigbefGold)
+                    .background(SigbefCores.atual.dourado)
             )
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
                         text = "${e.totalLidos}",
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefNavy
+                        style = MaterialTheme.typography.displayLarge,
+                        color = SigbefCores.atual.navy
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (e.totalLidos == 1) "livro lido"
                                else "livros lidos",
-                        fontSize = 16.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = SigbefCores.atual.secundario,
                         modifier = Modifier.padding(bottom = 7.dp)
                     )
                 }
@@ -217,8 +208,8 @@ private fun ResumoDaLeitura(e: EstatisticaLeitura) {
                         text = "${e.lidosNoAno} " +
                             (if (e.lidosNoAno == 1) "foi" else "foram") +
                             " este ano",
-                        fontSize = 14.sp,
-                        color = SigbefMuted
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.secundario
                     )
                 }
 
@@ -259,14 +250,16 @@ private fun LinhaDetalhe(icone: ImageVector, texto: String,
         Icon(
             imageVector = icone,
             contentDescription = null,
-            tint = SigbefNavy,
+            tint = SigbefCores.atual.navy,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(10.dp))
-        Text(text = texto, fontSize = 14.sp, color = SigbefInk)
+        Text(text = texto, style = MaterialTheme.typography.bodyMedium,
+             color = SigbefCores.atual.tinta)
         if (apoio.isNotBlank()) {
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text = "· $apoio", fontSize = 14.sp, color = SigbefMuted)
+            Text(text = "· $apoio", style = MaterialTheme.typography.bodyMedium,
+                 color = SigbefCores.atual.secundario)
         }
     }
 }
@@ -286,14 +279,14 @@ private fun CartaoRecomendacao(r: Recomendacao, onAbrir: (Int) -> Unit) {
     val corLombada = try {
         Color(android.graphics.Color.parseColor(r.spineColorHex))
     } catch (e: Exception) {
-        SigbefNavy
+        SigbefCores.atual.navy
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth().clickable { onAbrir(r.livroId) },
         shape = RoundedCornerShape(12.dp),
-        color = SigbefSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        color = SigbefCores.atual.superficie,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -310,9 +303,8 @@ private fun CartaoRecomendacao(r: Recomendacao, onAbrir: (Int) -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = r.titulo,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefInk,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = SigbefCores.atual.tinta,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -321,8 +313,8 @@ private fun CartaoRecomendacao(r: Recomendacao, onAbrir: (Int) -> Unit) {
                     // O porquê da sugestão. Sem ele, a lista parece anúncio.
                     Text(
                         text = r.motivo,
-                        fontSize = 12.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -337,13 +329,13 @@ private fun AvisoSemRede() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = SigbefBlueFundo
+        color = SigbefCores.atual.azulFundo
     ) {
         Text(
             text = "As sugestões chegam quando você estiver no Wi-Fi da " +
                 "escola.",
-            fontSize = 13.sp,
-            color = SigbefNavy,
+            style = MaterialTheme.typography.bodySmall,
+            color = SigbefCores.atual.navy,
             modifier = Modifier.padding(16.dp)
         )
     }

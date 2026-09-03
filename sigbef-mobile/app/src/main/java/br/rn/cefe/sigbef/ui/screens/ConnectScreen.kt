@@ -22,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -35,21 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import br.rn.cefe.sigbef.ui.components.LeitorQr
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefBlue
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefError
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
+import br.rn.cefe.sigbef.ui.theme.SigbefFixo
 
 @Composable
 fun ConnectScreen(
@@ -67,7 +59,7 @@ fun ConnectScreen(
     // A câmera ocupa a tela inteira enquanto está ativa: mirar um código
     // pequeno numa janelinha é frustrante.
     if (escaneando) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        Box(modifier = Modifier.fillMaxSize().background(SigbefFixo.TintaPreta)) {
             LeitorQr(
                 modifier = Modifier.fillMaxSize(),
                 aoLer = { conteudo ->
@@ -83,7 +75,7 @@ fun ConnectScreen(
                 onClick = { escaneando = false },
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp)
             ) {
-                Text("Cancelar", color = Color.White)
+                Text("Cancelar", color = SigbefFixo.SobreCamera)
             }
         }
         return
@@ -91,7 +83,7 @@ fun ConnectScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = SigbefBackground
+        color = SigbefCores.atual.fundo
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -100,7 +92,7 @@ fun ConnectScreen(
         ) {
             // Header Top
             Surface(
-                color = Color.White,
+                color = SigbefCores.atual.superficie,
                 shadowElevation = 1.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -114,15 +106,14 @@ fun ConnectScreen(
                     Icon(
                         imageVector = Icons.Default.MenuBook,
                         contentDescription = null,
-                        tint = SigbefNavy,
+                        tint = SigbefCores.atual.navy,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = "SIGBEF",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = SigbefNavy
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = SigbefCores.atual.navy
                     )
                 }
             }
@@ -139,14 +130,14 @@ fun ConnectScreen(
                     modifier = Modifier
                         .size(180.dp)
                         .clip(CircleShape)
-                        .background(SigbefBlueFundo)
-                        .border(1.dp, SigbefLine, CircleShape),
+                        .background(SigbefCores.atual.azulFundo)
+                        .border(1.dp, SigbefCores.atual.linha, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
                         contentDescription = "QR Code Illustration",
-                        tint = SigbefNavy,
+                        tint = SigbefCores.atual.navy,
                         modifier = Modifier.size(88.dp)
                     )
                 }
@@ -155,9 +146,8 @@ fun ConnectScreen(
 
                 Text(
                     text = "Conectar à biblioteca da escola",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefInk,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = SigbefCores.atual.tinta,
                     textAlign = TextAlign.Center
                 )
 
@@ -167,8 +157,8 @@ fun ConnectScreen(
                     text = "Peça à bibliotecária para abrir Configurações → " +
                         "Integrações → Parear celular, e aponte a câmera " +
                         "para o QR que aparecer na tela.",
-                    fontSize = 15.sp,
-                    color = SigbefMuted,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = SigbefCores.atual.secundario,
                     textAlign = TextAlign.Center,
                     lineHeight = 22.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -181,7 +171,10 @@ fun ConnectScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SigbefCores.atual.marca,
+                        contentColor = SigbefCores.atual.sobreMarca,
+                    ),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(
@@ -192,8 +185,7 @@ fun ConnectScreen(
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = "Ler o QR da biblioteca",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
 
@@ -208,15 +200,15 @@ fun ConnectScreen(
                 ) {
                     Text(
                         text = "Digitar o endereço",
-                        fontSize = 14.sp,
-                        color = SigbefNavy
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.navy
                     )
                 }
             }
 
             // Footer Privacy Notice
             Surface(
-                color = SigbefSurfaceContainerLow,
+                color = SigbefCores.atual.superficieAlta,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -229,14 +221,14 @@ fun ConnectScreen(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Privacidade",
-                        tint = SigbefMuted,
+                        tint = SigbefCores.atual.secundario,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = "Seus dados ficam na escola. Nada vai para a internet.",
-                        fontSize = 13.sp,
-                        color = SigbefMuted
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario
                     )
                 }
             }
@@ -247,14 +239,17 @@ fun ConnectScreen(
         AlertDialog(
             onDismissRequest = { showManualDialog = false },
             title = {
-                Text("Endereço da Biblioteca", fontWeight = FontWeight.Bold)
+                Text(
+                    "Endereço da Biblioteca",
+                    style = MaterialTheme.typography.titleMedium,
+                )
             },
             text = {
                 Column {
                     Text(
                         "Informe o IP e a porta exibidos no SIGBEF do computador da biblioteca:",
-                        fontSize = 13.sp,
-                        color = SigbefMuted
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
@@ -267,7 +262,7 @@ fun ConnectScreen(
                     )
                     if (erro != null) {
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(erro, fontSize = 12.sp, color = SigbefError)
+                        Text(erro, style = MaterialTheme.typography.bodySmall, color = SigbefCores.atual.erro)
                     }
                 }
             },
@@ -275,7 +270,10 @@ fun ConnectScreen(
                 Button(
                     onClick = { onConnected(ipInput) },
                     enabled = ipInput.isNotBlank() && !carregando,
-                    colors = ButtonDefaults.buttonColors(containerColor = SigbefNavy)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SigbefCores.atual.marca,
+                        contentColor = SigbefCores.atual.sobreMarca,
+                    )
                 ) {
                     Text(if (carregando) "Conectando…" else "Conectar")
                 }

@@ -28,8 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,6 +35,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,15 +48,7 @@ import br.rn.cefe.sigbef.model.Usuario
 import br.rn.cefe.sigbef.ui.components.BarcodeView
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefSurface
-import br.rn.cefe.sigbef.ui.theme.SigbefSurfaceContainerLow
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun DigitalCardScreen(
@@ -88,7 +79,7 @@ fun DigitalCardScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -102,9 +93,9 @@ fun DigitalCardScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White,
+                color = SigbefCores.atual.superficie,
                 shadowElevation = 4.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column {
                     // Gold Accent Stripe
@@ -112,22 +103,21 @@ fun DigitalCardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
-                            .background(SigbefGold)
+                            .background(SigbefCores.atual.dourado)
                     )
 
                     // Navy Header
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(SigbefNavy)
+                            .background(SigbefCores.atual.marca)
                             .padding(vertical = 12.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = usuario.escola.uppercase(),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = SigbefCores.atual.sobreMarca,
                             letterSpacing = 2.sp
                         )
                     }
@@ -141,9 +131,8 @@ fun DigitalCardScreen(
                     ) {
                         Text(
                             text = usuario.nome,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SigbefInk,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = SigbefCores.atual.tinta,
                             textAlign = TextAlign.Center
                         )
 
@@ -151,17 +140,16 @@ fun DigitalCardScreen(
 
                         Text(
                             text = "Matrícula: ${usuario.matricula}",
-                            fontSize = 14.sp,
-                            color = SigbefMuted,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.titleSmall,
+                            color = SigbefCores.atual.secundario,
                         )
 
                         Spacer(modifier = Modifier.height(2.dp))
 
                         Text(
                             text = usuario.turma,
-                            fontSize = 13.sp,
-                            color = SigbefMuted
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SigbefCores.atual.secundario
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -170,8 +158,8 @@ fun DigitalCardScreen(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            color = SigbefSurface,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+                            color = SigbefCores.atual.superficie,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                         ) {
                             BarcodeView(code = usuario.matricula)
                         }
@@ -179,7 +167,7 @@ fun DigitalCardScreen(
 
                     // Footer Note
                     Surface(
-                        color = SigbefSurfaceContainerLow,
+                        color = SigbefCores.atual.superficieAlta,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
@@ -192,15 +180,14 @@ fun DigitalCardScreen(
                             Icon(
                                 imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
-                                tint = SigbefSuccess,
+                                tint = SigbefCores.atual.sucesso,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = "Funciona mesmo sem internet.",
-                                fontSize = 13.sp,
-                                color = SigbefInk,
-                                fontWeight = FontWeight.Medium
+                                style = MaterialTheme.typography.titleSmall,
+                                color = SigbefCores.atual.tinta,
                             )
                         }
                     }
@@ -235,7 +222,11 @@ fun DigitalCardScreen(
                 onClick = onTrocarBiblioteca,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Trocar de biblioteca", color = SigbefMuted, fontSize = 13.sp)
+                Text(
+                    "Trocar de biblioteca",
+                    color = SigbefCores.atual.secundario,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
     }
@@ -268,8 +259,8 @@ private fun AvisoDevolucaoOpcao() {
 
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        border = BorderStroke(1.dp, SigbefLine),
+        color = SigbefCores.atual.superficie,
+        border = BorderStroke(1.dp, SigbefCores.atual.linha),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -279,15 +270,14 @@ private fun AvisoDevolucaoOpcao() {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Avisar quando o livro estiver para vencer",
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.titleSmall
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Um aviso no celular na véspera da devolução. " +
                         "Funciona sem internet.",
-                    color = SigbefMuted,
-                    fontSize = 12.sp
+                    color = SigbefCores.atual.secundario,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ImportContacts
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,18 +46,9 @@ import br.rn.cefe.sigbef.ui.components.PilulaStatus
 import br.rn.cefe.sigbef.ui.components.dataParaLer
 import br.rn.cefe.sigbef.ui.components.SigbefBottomNavigation
 import br.rn.cefe.sigbef.ui.components.SigbefTopAppBar
-import br.rn.cefe.sigbef.ui.theme.SigbefBackground
-import br.rn.cefe.sigbef.ui.theme.SigbefBlue
-import br.rn.cefe.sigbef.ui.theme.SigbefBlueFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefError
-import br.rn.cefe.sigbef.ui.theme.SigbefErrorFundo
-import br.rn.cefe.sigbef.ui.theme.SigbefGold
-import br.rn.cefe.sigbef.ui.theme.SigbefInk
-import br.rn.cefe.sigbef.ui.theme.SigbefLine
-import br.rn.cefe.sigbef.ui.theme.SigbefMuted
-import br.rn.cefe.sigbef.ui.theme.SigbefNavy
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccess
-import br.rn.cefe.sigbef.ui.theme.SigbefSuccessFundo
+import br.rn.cefe.sigbef.ui.theme.PesoRegular
+import br.rn.cefe.sigbef.ui.theme.PesoSemibold
+import br.rn.cefe.sigbef.ui.theme.SigbefCores
 
 @Composable
 fun LoansScreen(
@@ -93,7 +84,7 @@ fun LoansScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = SigbefBackground
+        containerColor = SigbefCores.atual.fundo
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -107,9 +98,8 @@ fun LoansScreen(
             ) {
                 Text(
                     text = "Como renovar",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = SigbefBlue,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = SigbefCores.atual.azul,
                     textDecoration = TextDecoration.Underline
                 )
             }
@@ -133,13 +123,13 @@ fun LoansScreen(
                         modifier = Modifier
                             .size(140.dp)
                             .clip(CircleShape)
-                            .background(SigbefBlueFundo),
+                            .background(SigbefCores.atual.azulFundo),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.ImportContacts,
                             contentDescription = null,
-                            tint = SigbefNavy,
+                            tint = SigbefCores.atual.navy,
                             modifier = Modifier.size(64.dp)
                         )
                     }
@@ -148,9 +138,8 @@ fun LoansScreen(
 
                     Text(
                         text = "Você ainda não pegou nenhum livro",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefNavy,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = SigbefCores.atual.navy,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
@@ -158,8 +147,8 @@ fun LoansScreen(
 
                     Text(
                         text = "Quando pegar um livro emprestado no balcão, ele aparece aqui com o prazo de devolução.",
-                        fontSize = 14.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SigbefCores.atual.secundario,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
@@ -168,7 +157,7 @@ fun LoansScreen(
 
                     Button(
                         onClick = { onNavigate(Screen.ACERVO) },
-                        colors = ButtonDefaults.buttonColors(containerColor = SigbefGold),
+                        colors = ButtonDefaults.buttonColors(containerColor = SigbefCores.atual.dourado),
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -176,9 +165,8 @@ fun LoansScreen(
                     ) {
                         Text(
                             text = "EXPLORAR O ACERVO",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = SigbefNavy,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = SigbefCores.atual.navy,
                             letterSpacing = 1.sp
                         )
                     }
@@ -192,9 +180,8 @@ fun LoansScreen(
                         item {
                             Text(
                                 text = "COM VOCÊ AGORA (${ativos.size})",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SigbefMuted,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = SigbefCores.atual.secundario,
                                 letterSpacing = 1.5.sp
                             )
                         }
@@ -214,9 +201,8 @@ fun LoansScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = "NA FILA DE ESPERA (${reservas.size})",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SigbefMuted,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = SigbefCores.atual.secundario,
                                 letterSpacing = 1.5.sp
                             )
                         }
@@ -236,9 +222,8 @@ fun LoansScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
                                 text = "HISTÓRICO RECENTE",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = SigbefMuted,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = SigbefCores.atual.secundario,
                                 letterSpacing = 1.5.sp
                             )
                         }
@@ -269,17 +254,17 @@ private fun ActiveLoanCard(
     val spineColor = try {
         Color(android.graphics.Color.parseColor(emp.spineColorHex))
     } catch (e: Exception) {
-        SigbefNavy
+        SigbefCores.atual.navy
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 2.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = if (emp.atrasado) 1.5.dp else 1.dp,
-            color = if (emp.atrasado) SigbefError else SigbefLine
+            color = if (emp.atrasado) SigbefCores.atual.erro else SigbefCores.atual.linha
         )
     ) {
         Column(
@@ -306,17 +291,16 @@ private fun ActiveLoanCard(
                 ) {
                     Text(
                         text = emp.livroTitulo,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefInk
+                        style = MaterialTheme.typography.titleMedium,
+                        color = SigbefCores.atual.tinta
                     )
 
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
                         text = "Devolução em ${dataParaLer(emp.dataDevolucao)}",
-                        fontSize = 13.sp,
-                        color = SigbefMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario,
                         textDecoration = if (emp.atrasado) TextDecoration.LineThrough else TextDecoration.None
                     )
 
@@ -325,15 +309,15 @@ private fun ActiveLoanCard(
                     if (emp.atrasado) {
                         PilulaStatus(
                             texto = "Atrasado",
-                            cor = SigbefError,
-                            fundo = SigbefErrorFundo,
+                            cor = SigbefCores.atual.erro,
+                            fundo = SigbefCores.atual.erroFundo,
                             icone = Icons.Default.Error
                         )
                     } else {
                         PilulaStatus(
                             texto = "Em dia",
-                            cor = SigbefSuccess,
-                            fundo = SigbefSuccessFundo,
+                            cor = SigbefCores.atual.sucesso,
+                            fundo = SigbefCores.atual.sucessoFundo,
                             icone = Icons.Default.CheckCircle
                         )
                     }
@@ -344,7 +328,7 @@ private fun ActiveLoanCard(
             // frase que explica a recusa. O app não recalcula a regra.
             if (!emp.devolvido) {
                 Spacer(modifier = Modifier.height(12.dp))
-                androidx.compose.material3.HorizontalDivider(color = SigbefLine)
+                androidx.compose.material3.HorizontalDivider(color = SigbefCores.atual.linha)
                 Spacer(modifier = Modifier.height(8.dp))
 
                 when {
@@ -354,16 +338,17 @@ private fun ActiveLoanCard(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SigbefNavy
+                            containerColor = SigbefCores.atual.marca,
+                            contentColor = SigbefCores.atual.sobreMarca,
                         )
                     ) {
-                        Text("Renovar empréstimo", fontSize = 14.sp)
+                        Text("Renovar empréstimo", style = MaterialTheme.typography.labelLarge)
                     }
 
                     emp.podeRenovar -> Text(
                         text = "Conecte-se ao Wi-Fi da escola para renovar.",
-                        fontSize = 12.sp,
-                        color = SigbefMuted
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SigbefCores.atual.secundario
                     )
 
                     else -> Text(
@@ -371,8 +356,8 @@ private fun ActiveLoanCard(
                             "Para renovar, leve o livro ao balcão da " +
                                 "biblioteca."
                         },
-                        fontSize = 12.sp,
-                        color = if (emp.atrasado) SigbefError else SigbefMuted
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (emp.atrasado) SigbefCores.atual.erro else SigbefCores.atual.secundario
                     )
                 }
             }
@@ -396,17 +381,17 @@ private fun ReservaCard(
     val spineColor = try {
         Color(android.graphics.Color.parseColor(reserva.spineColorHex))
     } catch (e: Exception) {
-        SigbefNavy
+        SigbefCores.atual.navy
     }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = SigbefCores.atual.superficie,
         shadowElevation = 2.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = if (reserva.separado) 1.5.dp else 1.dp,
-            color = if (reserva.separado) SigbefGold else SigbefLine
+            color = if (reserva.separado) SigbefCores.atual.dourado else SigbefCores.atual.linha
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -424,9 +409,8 @@ private fun ReservaCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = reserva.titulo,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = SigbefInk
+                        style = MaterialTheme.typography.titleMedium,
+                        color = SigbefCores.atual.tinta
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -438,16 +422,16 @@ private fun ReservaCard(
                                     ?: "")
                         else
                             "Você é o ${reserva.posicao}º da fila",
-                        fontSize = 13.sp,
-                        fontWeight = if (reserva.separado) FontWeight.Bold
-                                     else FontWeight.Normal,
-                        color = if (reserva.separado) SigbefNavy else SigbefMuted
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = if (reserva.separado) PesoSemibold
+                                     else PesoRegular,
+                        color = if (reserva.separado) SigbefCores.atual.navy else SigbefCores.atual.secundario
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            androidx.compose.material3.HorizontalDivider(color = SigbefLine)
+            androidx.compose.material3.HorizontalDivider(color = SigbefCores.atual.linha)
             Spacer(modifier = Modifier.height(4.dp))
 
             TextButton(
@@ -458,8 +442,8 @@ private fun ReservaCard(
                 Text(
                     text = if (isOffline) "Sem conexão para sair da fila"
                            else "Sair da fila",
-                    fontSize = 13.sp,
-                    color = SigbefMuted
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SigbefCores.atual.secundario
                 )
             }
         }
@@ -471,8 +455,8 @@ private fun HistoryLoanCard(emp: Emprestimo) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefLine)
+        color = SigbefCores.atual.superficie,
+        border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         // Sem seta ">" à direita: ela prometia abrir alguma coisa, e o
         // cartão não é clicável — não há tela de detalhe do empréstimo.
@@ -485,16 +469,15 @@ private fun HistoryLoanCard(emp: Emprestimo) {
                 // Sem "(autor)": o empréstimo não carrega autor (é outra
                 // tabela, N:N), então saía "Título ()".
                 text = emp.livroTitulo,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = SigbefInk
+                style = MaterialTheme.typography.titleSmall,
+                color = SigbefCores.atual.tinta
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Devolvido em " +
                     dataParaLer(emp.dataDevolvido ?: emp.dataDevolucao),
-                fontSize = 12.sp,
-                color = SigbefMuted
+                style = MaterialTheme.typography.bodySmall,
+                color = SigbefCores.atual.secundario
             )
         }
     }
