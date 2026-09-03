@@ -730,15 +730,18 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
       `docs/screenshots/` são mockups, e o aviso embaixo da tabela diz
       isso. O risco é alguém reaproveitar aquilo como evidência sem ler o
       aviso, o que num trabalho de pesquisa seria apresentar prova falsa
-- [ ] **Teste da camada de interface** — a suíte cobre bem serviço e
-      dados, mas os diálogos não têm teste. Os dois últimos defeitos de
-      tela (dica cortada na borda e campo que não aparecia) foram achados
-      no olho, rodando o programa
+- [ ] **Teste de interação com os diálogos** — a camada de interface
+      deixou de ser terra de ninguém: `test_ui_nomes.py` recusa nome que
+      não existe, `test_bugs_de_tela.py` cobre disposição de widget
+      (toda tabela com barra de rolagem, nenhuma gravação sem aviso) e
+      `TemaTest.kt` faz o mesmo no app. O que ainda falta é abrir um
+      diálogo e clicar nele: os defeitos de *comportamento* de tela
+      continuam sendo achados no olho, rodando o programa
 
 ### Descartado, e por quê
 
 - **Reescrita em Java.** Esteve no roadmap como ideia em aberto.
-  Reescrever um sistema em produção, com 471 testes e uma biblioteca
+  Reescrever um sistema em produção, com mais de 600 testes e uma biblioteca
   dependendo dele, para exercitar POO mais rígida custaria um semestre e
   não entregaria nada para quem usa. O objetivo de aprendizado já está
   atendido pelo aplicativo Android em Kotlin, que também é orientado a
