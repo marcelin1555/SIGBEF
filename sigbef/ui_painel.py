@@ -290,14 +290,14 @@ class SecaoPainel(SecaoBase):
         ttk.Label(self, text="Top 10 livros mais emprestados",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(20, 8))
 
-        self.tree_top = ttk.Treeview(self,
-                                       columns=("titulo", "qtd"),
-                                       show="headings", height=10)
+        self.tree_top = tema.criar_tabela(self,
+                                            columns=("titulo", "qtd"),
+                                            show="headings", height=10)
         self.tree_top.heading("titulo", text="Título")
         self.tree_top.heading("qtd", text="Empréstimos")
         self.tree_top.column("titulo", width=600, anchor="w")
         self.tree_top.column("qtd", width=120, anchor="center")
-        self.tree_top.pack(fill="x")
+        tema.empacotar_com_rolagem(self.tree_top, fill="x")
 
     def atualizar(self):
         st = servicos.estatisticas()
@@ -375,8 +375,8 @@ class SecaoLivros(SecaoBase):
 
         cols = ("id", "titulo", "autores", "categoria", "ano",
                 "total", "disp")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("id", text="ID")
         self.tree.heading("titulo", text="Título")
         self.tree.heading("autores", text="Autor(es)")
@@ -405,7 +405,8 @@ class SecaoLivros(SecaoBase):
         rodape = ttk.Frame(self, padding=(0, 8))
         rodape.pack(side="bottom", fill="x")
 
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
         self.tree.bind("<Double-1>", lambda e: self._detalhes())
         self.lbl_contagem = ttk.Label(rodape, text="")
         self.lbl_contagem.pack(side="left")
@@ -430,7 +431,8 @@ class SecaoLivros(SecaoBase):
                                   parent=self.painel)
             return
         livro_id = int(self.tree.item(sel[0])["values"][0])
-        DialogoDetalhesLivro(self.painel, livro_id)
+        DialogoDetalhesLivro(self.painel, livro_id,
+                             ao_mudar=self.atualizar)
 
     def _editar(self):
         sel = self.tree.selection()
@@ -644,8 +646,8 @@ class SecaoUsuarios(SecaoBase):
 
         cols = ("id", "nome", "matricula", "turma", "perfil", "email",
                 "cartao", "ativo")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         for c, t, w in [("id", "ID", 50), ("nome", "Nome", 220),
                         ("matricula", "Matrícula", 100),
                         ("turma", "Série / Turma", 180),
@@ -655,7 +657,8 @@ class SecaoUsuarios(SecaoBase):
                         ("ativo", "Ativo", 60)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
         self.tree.bind("<Double-1>", lambda e: self._editar())
 
     def _novo_usuario(self):
@@ -844,8 +847,8 @@ class SecaoEmprestimos(SecaoBase):
 
         cols = ("id", "usuario", "matricula", "turma", "titulo", "codigo",
                 "emprestado", "previsto", "atrasado")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=14)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=14)
         for c, t, w in [("id", "ID", 50), ("usuario", "Usuário", 160),
                         ("matricula", "Matrícula", 90),
                         ("turma", "Série / Turma", 170),
@@ -873,7 +876,7 @@ class SecaoEmprestimos(SecaoBase):
         op = ttk.Frame(self)
         op.pack(side="bottom", fill="x", pady=(8, 0))
 
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
         # Devolução com um clique: duplo clique na linha devolve o livro
         self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
 
@@ -1281,7 +1284,7 @@ class SecaoUso(SecaoBase):
                   style="Hint.TLabel").pack(anchor="w", padx=16, pady=(0, 10))
 
         cols = ("titulo", "categoria", "ano", "exemplares")
-        tree = ttk.Treeview(janela, columns=cols, show="headings")
+        tree = tema.criar_tabela(janela, columns=cols, show="headings")
         for c, t, w in [("titulo", "Título", 330),
                         ("categoria", "Categoria", 190),
                         ("ano", "Ano", 70),
@@ -1292,7 +1295,8 @@ class SecaoUso(SecaoBase):
             tree.insert("", "end", values=(liv["titulo"], liv["categoria"],
                                             liv["ano_publicacao"] or "",
                                             liv["exemplares"]))
-        tree.pack(fill="both", expand=True, padx=16, pady=(0, 12))
+        tema.empacotar_com_rolagem(tree, fill="both", expand=True,
+                                   padx=16, pady=(0, 12))
         ttk.Button(janela, text="Fechar",
                     command=janela.destroy).pack(pady=(0, 16))
 
@@ -1310,15 +1314,18 @@ class SecaoUso(SecaoBase):
             defaultextension=".csv", filetypes=[("CSV", "*.csv")])
         if not nome:
             return
-        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(["ID", "Título", "Categoria", "Ano", "Exemplares"])
-            w.writerows([[_neutralizar_celula_csv(v) for v in
-                          (l["id"], l["titulo"], l["categoria"],
-                           l["ano_publicacao"] or "", l["exemplares"])]
-                         for l in parados])
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
+        def escrever():
+            with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(["ID", "Título", "Categoria", "Ano",
+                            "Exemplares"])
+                w.writerows([[_neutralizar_celula_csv(v) for v in
+                              (l["id"], l["titulo"], l["categoria"],
+                               l["ano_publicacao"] or "",
+                               l["exemplares"])]
+                             for l in parados])
+
+        tema.gravar_arquivo(self.painel, nome, escrever)
 
 
 class SecaoReservas(SecaoBase):
@@ -1352,8 +1359,8 @@ class SecaoReservas(SecaoBase):
         # usa. Isso libera a largura para a Situação, que é o que importa.
         cols = ("titulo", "usuario", "matricula", "turma",
                 "posicao", "desde", "situacao")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=12)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=12)
         for c, t, w in [("titulo", "Livro", 200),
                         ("usuario", "Quem espera", 150),
                         ("matricula", "Matrícula", 85),
@@ -1366,7 +1373,7 @@ class SecaoReservas(SecaoBase):
         # Separado = tem exemplar guardado esperando o aluno aparecer.
         self.tree.tag_configure("separado",
                                   background=tema.COR_PRIMARIA_SUAVE)
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         op = ttk.Frame(self)
         op.pack(fill="x", pady=(8, 0))
@@ -1509,14 +1516,15 @@ class SecaoInventario(SecaoBase):
 
         # --- lista do que já foi lido nesta sessão de trabalho
         cols = ("hora", "titulo", "codigo", "situacao")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=14)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=14)
         for c, t, w in [("hora", "Hora", 80), ("titulo", "Título", 340),
                         ("codigo", "Código", 200),
                         ("situacao", "Situação", 220)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
-        self.tree.pack(fill="both", expand=True, pady=(8, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(8, 0))
 
         rodape = ttk.Frame(self)
         rodape.pack(fill="x", pady=(10, 0))
@@ -1679,13 +1687,15 @@ class SecaoInventario(SecaoBase):
                      x["codigo_barras"]]
                    for x in res["apareceram"]]
 
-        with open(nome, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(["Título", "Detalhe", "Detalhe", "Código"])
-            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
-                          for linha in linhas])
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
+        def escrever():
+            with open(nome, "w", newline="", encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(["Título", "Detalhe", "Detalhe",
+                            "Código"])
+                w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                             for linha in linhas])
+
+        tema.gravar_arquivo(self.painel, nome, escrever)
 
 
 class SecaoRelatorios(SecaoBase):
@@ -1860,11 +1870,21 @@ class SecaoRelatorios(SecaoBase):
 
     def _escrever(self, caminho: str, cabecalho: list[str],
                   linhas: list[list]):
-        with open(caminho, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f, delimiter=";")
-            w.writerow(cabecalho)
-            w.writerows([[_neutralizar_celula_csv(v) for v in linha]
-                        for linha in linhas])
+        """Grava o CSV e dá a notícia — boa ou má.
+
+        O aviso de sucesso e o de falha ficam aqui, e não em cada
+        um dos seis relatórios: era assim que dois deles acabaram
+        sem aviso nenhum e todos os seis sem tratamento de erro.
+        """
+        def gravar():
+            with open(caminho, "w", newline="",
+                      encoding="utf-8-sig") as f:
+                w = csv.writer(f, delimiter=";")
+                w.writerow(cabecalho)
+                w.writerows([[_neutralizar_celula_csv(v) for v in linha]
+                             for linha in linhas])
+
+        return tema.gravar_arquivo(self.painel, caminho, gravar)
 
     def _exportar_acervo(self):
         nome = self._arquivo_destino(
@@ -1882,8 +1902,6 @@ class SecaoRelatorios(SecaoBase):
                         ["ID", "Título", "Autores", "Categoria", "Editora",
                          "ISBN", "Ano", "Total exemplares",
                          "Disponíveis"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_abertos(self):
         nome = self._arquivo_destino(
@@ -1899,8 +1917,6 @@ class SecaoRelatorios(SecaoBase):
                         ["ID", "Usuário", "Matrícula", "Título", "Código",
                          "Data empréstimo", "Data prevista", "Atrasado"],
                         linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_usuarios(self):
         nome = self._arquivo_destino(
@@ -1914,8 +1930,6 @@ class SecaoRelatorios(SecaoBase):
         self._escrever(nome,
                         ["ID", "Nome", "Matrícula", "Perfil", "E-mail",
                          "Código cartão", "Ativo"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_circulacao(self):
         try:
@@ -1930,8 +1944,6 @@ class SecaoRelatorios(SecaoBase):
         rs = servicos.relatorio_circulacao(50, inicio, fim)
         linhas = [[i + 1, r["titulo"], r["emprestimos"]] for i, r in enumerate(rs)]
         self._escrever(nome, ["#", "Título", "Empréstimos"], linhas)
-        messagebox.showinfo("Pronto", f"Arquivo salvo em:\n{nome}",
-                              parent=self.painel)
 
     def _exportar_movimentacao(self):
         """O relatório que vai para a direção no fim do período."""
@@ -2043,8 +2055,8 @@ class SecaoAuditoria(SecaoBase):
                     command=self.atualizar).pack(side="left")
 
         cols = ("quando", "usuario", "acao", "detalhes")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("quando", text="Quando")
         self.tree.heading("usuario", text="Quem")
         self.tree.heading("acao", text="Ação")
@@ -2053,7 +2065,7 @@ class SecaoAuditoria(SecaoBase):
         self.tree.column("usuario", width=160, anchor="w")
         self.tree.column("acao", width=160, anchor="w")
         self.tree.column("detalhes", width=420, anchor="w")
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         rodape = ttk.Frame(self, padding=(0, 8, 0, 0))
         rodape.pack(fill="x")
@@ -2973,8 +2985,8 @@ class SecaoPesquisaAluno(SecaoBase):
                     command=self.atualizar).pack(side="left", padx=(8, 0))
 
         cols = ("id", "titulo", "autores", "categoria", "ano", "disp")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         self.tree.heading("id", text="ID")
         self.tree.heading("titulo", text="Título")
         self.tree.heading("autores", text="Autor(es)")
@@ -2987,7 +2999,8 @@ class SecaoPesquisaAluno(SecaoBase):
         self.tree.column("categoria", width=160, anchor="w")
         self.tree.column("ano", width=70, anchor="center")
         self.tree.column("disp", width=110, anchor="center")
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(12, 0))
         self.tree.bind("<Double-1>", lambda e: self._pegar_emprestado())
 
         rodape = ttk.Frame(self)
@@ -3048,7 +3061,8 @@ class SecaoPesquisaAluno(SecaoBase):
             return
         livro_id = int(self.tree.item(sel[0])["values"][0])
         from .ui_dialogos import DialogoDetalhesLivro
-        DialogoDetalhesLivro(self.painel, livro_id)
+        DialogoDetalhesLivro(self.painel, livro_id,
+                             ao_mudar=self.atualizar)
 
     def _pegar_emprestado(self):
         sel = self.tree.selection()
@@ -3146,8 +3160,8 @@ class SecaoMeusEmprestimos(SecaoBase):
 
         cols = ("codigo", "titulo", "emprestado", "previsto",
                 "devolucao", "multa", "origem")
-        self.tree = ttk.Treeview(self, columns=cols, show="headings",
-                                  height=18)
+        self.tree = tema.criar_tabela(self, columns=cols, show="headings",
+                                       height=18)
         for c, t, w in [("codigo", "Código", 160),
                         ("titulo", "Título", 280),
                         ("emprestado", "Empréstimo", 140),
@@ -3160,14 +3174,14 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
         self.tree.tag_configure("devolvido", foreground="#888888")
-        self.tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         # ------ Minhas reservas ------
         ttk.Label(self, text="Minhas reservas",
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(14, 4))
-        self.tree_res = ttk.Treeview(
-            self, columns=("rid", "rtitulo", "situacao"),
-            show="headings", height=4)
+        self.tree_res = tema.criar_tabela(
+                 self, columns=("rid", "rtitulo", "situacao"),
+                 show="headings", height=4)
         self.tree_res.heading("rid", text="ID")
         self.tree_res.heading("rtitulo", text="Título")
         self.tree_res.heading("situacao", text="Situação")
@@ -3175,7 +3189,7 @@ class SecaoMeusEmprestimos(SecaoBase):
         self.tree_res.column("rtitulo", width=300, anchor="w")
         self.tree_res.column("situacao", width=380, anchor="w")
         self.tree_res.tag_configure("pronta", background="#FFF6E5")
-        self.tree_res.pack(fill="x")
+        tema.empacotar_com_rolagem(self.tree_res, fill="x")
         bot_res = ttk.Frame(self)
         bot_res.pack(fill="x", pady=(6, 0))
         ttk.Button(bot_res, text="Cancelar reserva selecionada",

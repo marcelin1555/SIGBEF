@@ -245,12 +245,13 @@ class DialogoBuscaSelecao(tk.Toplevel):
         ttk.Button(f, text="Pesquisar", command=self._buscar).pack(side="left")
 
         keys = [c[0] for c in self.COLUNAS]
-        self.tree = ttk.Treeview(wrap, columns=keys, show="headings",
-                                  height=14)
+        self.tree = tema.criar_tabela(wrap, columns=keys, show="headings",
+                                       height=14)
         for key, rotulo, largura_c, ancora in self.COLUNAS:
             self.tree.heading(key, text=rotulo)
             self.tree.column(key, width=largura_c, anchor=ancora)
-        self.tree.pack(fill="both", expand=True, pady=(12, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(12, 0))
         self.tree.bind("<Double-1>", lambda e: self._confirmar())
         self._idx_retorno = keys.index(self.COLUNA_RETORNO)
 
@@ -867,11 +868,11 @@ class DialogoImportarCSV(tk.Toplevel):
             filetypes=[("Planilha CSV", "*.csv")])
         if not destino:
             return
-        servicos.gerar_modelo_csv(destino)
-        messagebox.showinfo("Modelo salvo",
-                             "Planilha modelo salva. Preencha no Excel e "
-                             "salve como CSV para importar.",
-                             parent=self)
+        tema.gravar_arquivo(
+            self, destino, lambda: servicos.gerar_modelo_csv(destino),
+            titulo_ok="Modelo salvo",
+            mensagem_ok="Planilha modelo salva. Preencha no Excel e "
+                        "salve como CSV para importar.")
 
     def _importar(self):
         caminho = filedialog.askopenfilename(
@@ -1072,15 +1073,16 @@ class DialogoDevolucaoEmLote(tk.Toplevel):
         self.lbl_ultimo.pack(anchor="w", pady=(10, 0))
 
         cols = ("titulo", "quem", "atraso", "multa")
-        self.tree = ttk.Treeview(wrap, columns=cols, show="headings",
-                                  height=13)
+        self.tree = tema.criar_tabela(wrap, columns=cols, show="headings",
+                                       height=13)
         for c, t, w in [("titulo", "Título", 300), ("quem", "Estava com", 190),
                         ("atraso", "Atraso", 90), ("multa", "Multa", 100)]:
             self.tree.heading(c, text=t)
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                  foreground=tema.COR_ERRO)
-        self.tree.pack(fill="both", expand=True, pady=(10, 0))
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
+                                   pady=(10, 0))
 
         self.lbl_total = ttk.Label(wrap, text="Nenhum livro devolvido ainda.",
                                      style="Card.TLabel",
@@ -1410,8 +1412,15 @@ class DialogoTomboExemplar(tk.Toplevel):
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
 class DialogoDetalhesLivro(tk.Toplevel):
-    def __init__(self, parent, livro_id: int):
+    def __init__(self, parent, livro_id: int,
+                 ao_mudar: Optional[Callable[[], None]] = None):
         super().__init__(parent)
+        # Este diálogo não só mostra: dá baixa, corrige tombo e muda
+        # prateleira. Sem avisar quem o abriu, a lista do acervo atrás
+        # continuava exibindo o exemplar recém-baixado até a tela ser
+        # recarregada na mão — e a bibliotecária procurava na prateleira
+        # um livro que o próprio sistema já sabia que não existia mais.
+        self.ao_mudar = ao_mudar
         # parent é o PainelPrincipal: sempre tem sessao. As três ações
         # de exemplar abaixo (baixa, tombo, prateleira) usam isso para
         # atribuir a ação certa na auditoria, em vez de "Sistema".
@@ -1462,7 +1471,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
                   style="Subtitulo.TLabel").pack(anchor="w", pady=(16, 4))
 
         cols = ("tombo", "codigo", "loc", "status")
-        tree = ttk.Treeview(wrap, columns=cols, show="headings", height=8)
+        tree = tema.criar_tabela(wrap, columns=cols, show="headings", height=8)
         tree.heading("tombo", text="Tombo")
         tree.heading("codigo", text="Código de barras")
         tree.heading("loc", text="Localização")
@@ -1474,7 +1483,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self._livro_id = livro_id
         self.tree = tree
         self._preencher_exemplares(livro)
-        tree.pack(fill="both", expand=True)
+        tema.empacotar_com_rolagem(tree, fill="both", expand=True)
 
         botoes = ttk.Frame(wrap)
         botoes.pack(fill="x", pady=(12, 0))
@@ -1545,6 +1554,10 @@ class DialogoDetalhesLivro(tk.Toplevel):
         livro = servicos.detalhes_livro(self._livro_id)
         if livro:
             self._preencher_exemplares(livro)
+        # Ponto único por onde passam as três ações que mexem no acervo,
+        # e por isso o lugar certo para avisar a tela de trás.
+        if self.ao_mudar:
+            self.ao_mudar()
 
 
 # ---------------------------------------------------------------------------

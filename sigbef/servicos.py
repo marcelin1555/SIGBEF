@@ -62,6 +62,52 @@ def _validar_titulo_autores(titulo: str,
     return titulo, autores_limpos
 
 
+#: Faixa aceita para o ano de publicação. A mesma que a importação por
+#: planilha já usava — aqui ela vira regra única, em vez de existir só
+#: num dos dois caminhos.
+ANO_MINIMO, ANO_MAXIMO = 1000, 2100
+
+
+def _validar_ano(ano) -> None:
+    if ano in (None, ""):
+        return
+    try:
+        n = int(ano)
+    except (TypeError, ValueError):
+        raise RegraNegocioError(
+            f"Ano de publicação inválido: “{ano}”. Informe só o ano, "
+            "com quatro dígitos.")
+    if not ANO_MINIMO <= n <= ANO_MAXIMO:
+        raise RegraNegocioError(
+            f"Ano de publicação fora da faixa aceita "
+            f"({ANO_MINIMO}–{ANO_MAXIMO}): {n}.")
+
+
+def _validar_isbn_inedito(cur, isbn: str,
+                          ignorar_livro_id: Optional[int] = None) -> None:
+    """Recusa ISBN que já está em outro livro ativo do acervo.
+
+    ISBN identifica uma edição. Dois registros com o mesmo ISBN são o
+    mesmo livro cadastrado duas vezes — e é assim que o acervo ganha
+    títulos duplicados que ninguém consegue conciliar depois.
+    """
+    isbn = (isbn or "").strip()
+    if not isbn:
+        return
+    sql = "SELECT id, titulo FROM livro WHERE ativo = 1 AND isbn = ?"
+    params: list = [isbn]
+    if ignorar_livro_id is not None:
+        sql += " AND id != ?"
+        params.append(ignorar_livro_id)
+    cur.execute(sql, params)
+    ja = cur.fetchone()
+    if ja:
+        raise RegraNegocioError(
+            f"O ISBN {isbn} já está cadastrado em “{ja['titulo']}”. "
+            "Se for outro exemplar do mesmo livro, acrescente exemplares "
+            "ao registro existente em vez de cadastrar de novo.")
+
+
 def cadastrar_livro(
     *,
     titulo: str,
@@ -88,6 +134,16 @@ def cadastrar_livro(
     (id, codigo_barras)).
     """
     with db_cursor() as cur:
+        # A importação por planilha já recusava ano fora de faixa e ISBN
+        # repetido; o cadastro pela tela aceitava os dois calado. O mesmo
+        # acervo ficava com regra diferente conforme a porta de entrada,
+        # e a porta mais usada era a mais permissiva.
+        #
+        # A conferência mora aqui, na camada de serviço e dentro da
+        # transação, e não na tela: assim vale para o balcão, para a
+        # planilha e para qualquer caminho novo.
+        _validar_ano(ano)
+        _validar_isbn_inedito(cur, isbn)
         res = _inserir_livro_cur(
             cur, titulo=titulo, autores=autores, isbn=isbn, editora=editora,
             categoria=categoria, ano=ano, edicao=edicao, sinopse=sinopse,
@@ -259,6 +315,12 @@ def editar_livro(
                     (livro_id,))
         if not cur.fetchone():
             raise RegraNegocioError("Livro não encontrado.")
+
+        # As mesmas regras do cadastro. `ignorar_livro_id` deixa o
+        # próprio livro manter o ISBN que já é dele — sem isso, salvar a
+        # edição sem mexer no ISBN acusaria conflito consigo mesmo.
+        _validar_ano(ano)
+        _validar_isbn_inedito(cur, isbn, ignorar_livro_id=livro_id)
 
         editora = (editora or "").strip()
         categoria = (categoria or "").strip()
