@@ -2,6 +2,73 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.12.1] — 2026-09-04
+
+Correção de emergência. A bibliotecária deu baixa num exemplar por
+engano e descobriu que não havia volta.
+
+### Desfazer uma baixa
+
+Na tela de detalhes do livro, **"Dar baixa no exemplar" ficava encostado
+em "Corrigir tombo" e "Mudar prateleira"**, com a mesma aparência. Ela
+clicou no errado. E a baixa não é só o exemplar: quando o livro está com
+alguém, ela **encerra o empréstimo e lança a multa de atraso**. Um clique
+tirou um livro do acervo, fechou um empréstimo que continuava de pé — o
+livro segue na mochila da aluna — e cobrou dela R$ 13,50 que não existiam.
+
+- **Detalhes do livro → "Reverter baixa"**. O exemplar volta ao acervo
+  com a situação certa: EMPRESTADO se o livro está com alguém,
+  DISPONIVEL se estava na estante. A multa lançada pela baixa é apagada,
+  porque ela nunca deveria ter sido lançada
+- A tela diz **o que vai voltar antes de perguntar** qualquer coisa — o
+  contrário da que causou o problema, onde o efeito só apareceu depois.
+  A justificativa é obrigatória e fica no histórico do exemplar
+- **Quem perdeu a reserva volta para a fila**, na mesma posição. Quando a
+  baixa deixa o título sem nenhum exemplar, ela cancela as reservas — e
+  essas pessoas perderam o lugar por causa do clique, não por decisão
+  delas. Era o estrago que não aparecia em tela nenhuma
+- **A reserva que já ganhou outro exemplar não é mexida**: tirar isso de
+  quem já foi legitimamente atendido seria trocar um erro por outro
+- Se a multa já foi quitada ou isentada, a reversão é recusada com o
+  motivo. Mexer num valor já movimentado é problema de gente, não de
+  sistema
+
+### O botão que causou o engano
+
+- "Dar baixa no exemplar" ganhou **cor de perigo** e saiu de perto dos
+  botões inofensivos. As ações agora estão em duas faixas: o que
+  **corrige** (etiquetas, tombo, prateleira) numa, o que **tira ou
+  devolve o exemplar ao acervo** na outra
+- De quebra, a faixa de botões daquela tela estava sendo esmagada pela
+  tabela — dava para ver a cor de cada botão e nada mais. É o mesmo
+  defeito de `pack` de sempre, e agora as faixas são reservadas antes da
+  tabela
+
+### Para as baixas antigas
+
+Baixas dadas antes desta versão não registram qual empréstimo
+encerraram, e o único indício é a data. **Indício não é prova**: um livro
+devolvido normalmente e baixado no mesmo dia casa pela data do mesmo
+jeito, e reabrir por conta própria inventaria um empréstimo para quem já
+entregou o livro. Então o sistema mostra o candidato — com nome e data —
+e espera alguém confirmar. Da versão nova em diante o vínculo fica
+registrado e não há pergunta nenhuma.
+
+### Testes
+
+- 626 no desktop (20 novos). O defeito foi reintroduzido de propósito
+  para confirmar que cada teste falha
+- Um dos testes existe por um erro cometido durante esta própria
+  correção: a primeira versão casava o empréstimo pela data e reabriu um
+  que tinha sido **devolvido de verdade**. O teste
+  `test_nao_ressuscita_emprestimo_devolvido_de_verdade` trava isso
+
+### Verificado rodando
+
+A baixa foi reproduzida no banco de teste e revertida pela tela:
+exemplar de BAIXADO para EMPRESTADO, acervo de 142 para 143, e a aluna
+de R$ 13,50 em multa para zero, com o empréstimo dela de pé.
+
 ## [1.12.0] — 2026-09-03
 
 Primeira rodada depois da FICTS, com o sistema descongelado. Duas

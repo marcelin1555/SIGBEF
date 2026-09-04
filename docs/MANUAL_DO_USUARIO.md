@@ -22,6 +22,7 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Acompanhar a fila de espera](#acompanhar-a-fila-de-espera)
   - [Ver o uso do acervo](#ver-o-uso-do-acervo)
   - [Quitar multa](#quitar-multa)
+  - [Desfazer uma baixa dada por engano](#desfazer-uma-baixa-dada-por-engano)
   - [Emprestar o livro-texto para a turma inteira](#emprestar-o-livro-texto-para-a-turma-inteira)
   - [Gerar relatórios](#gerar-relatórios)
 - [Para o Administrador](#para-o-administrador)
@@ -345,6 +346,42 @@ livro — o sistema avisa e, ao confirmar, encerra o empréstimo e lança a
 multa de atraso, se houver. Não é preciso esperar uma devolução que não
 vai acontecer. O histórico de quem leu aquele exemplar continua
 guardado.
+
+### Desfazer uma baixa dada por engano
+
+"Dar baixa no exemplar" fica na mesma tela que "Corrigir tombo" e "Mudar
+prateleira". Se o clique foi no botão errado, dá para voltar.
+
+1. Menu lateral → **Livros e exemplares**, selecione o livro e clique em
+   **Ver detalhes / código de barras**.
+2. Clique na linha do exemplar baixado (a coluna **Status** mostra o
+   motivo, como "Extraviado").
+3. Clique em **Reverter baixa**, escreva por que está revertendo e
+   confirme.
+
+**O que volta:**
+
+- O exemplar volta ao acervo. Se o livro estava com alguém, o empréstimo
+  reabre e o exemplar fica como **emprestado** — porque o livro nunca
+  chegou a voltar para a estante.
+- **A multa que a baixa lançou é apagada.** Ela nunca deveria ter
+  existido: não houve atraso, houve um clique errado.
+- Quem perdeu a reserva porque o exemplar saiu do acervo volta para a
+  fila, na mesma posição.
+
+**O que não volta:** a reserva de quem já recebeu outro exemplar no
+lugar. Tirar dessa pessoa um livro que já foi separado para ela seria
+trocar um erro por outro.
+
+> **Se a multa já foi paga ou perdoada**, o sistema recusa a reversão e
+> avisa. Resolva a multa primeiro — mexer em dinheiro que já entrou é
+> decisão de pessoa, não do sistema.
+
+> **Baixas antigas.** Se a baixa foi feita antes da versão 1.12.1, o
+> sistema não sabe qual empréstimo ela encerrou e mostra o que bate com
+> a data, com nome e data, para você confirmar. Confirme só se for mesmo
+> aquele: um livro devolvido normalmente no mesmo dia apareceria ali
+> também.
 
 ### Conferir o acervo (inventário)
 

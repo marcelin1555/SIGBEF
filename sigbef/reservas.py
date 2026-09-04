@@ -115,9 +115,13 @@ def liberar_reservas_do_exemplar_cur(cur, exemplar_id: int) -> list[dict]:
         restantes = cur.fetchone()["n"]
 
         if not restantes:
+            # Guarda QUAL baixa cancelou: se ela for revertida, esta
+            # reserva volta junto. Quem estava na fila perdeu o lugar
+            # por causa do exemplar que saiu, não por decisão própria.
             cur.execute(
-                "UPDATE reserva SET status = 'CANCELADA' WHERE id = ?",
-                (r["id"],))
+                "UPDATE reserva SET status = 'CANCELADA', "
+                "cancelada_por_baixa = ? WHERE id = ?",
+                (exemplar_id, r["id"]))
             r["desfecho"] = "cancelada_sem_exemplar"
         else:
             r["desfecho"] = "devolvida_a_fila"

@@ -868,6 +868,194 @@ def listar_exemplares_para_etiquetas(
         return [dict(r) for r in cur.fetchall()]
 
 
+def candidato_de_reabertura(codigo: str) -> Optional[dict]:
+    """O empréstimo que *provavelmente* foi encerrado por uma baixa.
+
+    Existe para o caso das baixas dadas antes de o vínculo
+    `encerrado_por_baixa` existir — nelas não há registro de qual
+    empréstimo a baixa fechou, e o único indício é a data.
+
+    **Indício não é prova, e por isso isto não decide nada.** Um livro
+    devolvido normalmente e baixado no mesmo dia casa pela data do mesmo
+    jeito; reabrir por conta própria inventaria um empréstimo em aberto
+    para um aluno que já entregou o livro. Quem confirma é a
+    bibliotecária, olhando o nome e a data.
+
+    @return None quando não há dúvida — ou porque não há candidato, ou
+        porque o vínculo está registrado e `reverter_baixa` resolve
+        sozinha.
+    """
+    ex = localizar_exemplar(codigo)
+    if not ex or ex["status"] != "BAIXADO":
+        return None
+    with db_cursor() as cur:
+        cur.execute("SELECT data_baixa FROM exemplar WHERE id = ?",
+                    (ex["id"],))
+        data_baixa = cur.fetchone()["data_baixa"]
+
+        cur.execute("SELECT id FROM emprestimo WHERE exemplar_id = ? "
+                    "AND encerrado_por_baixa = 1 LIMIT 1", (ex["id"],))
+        if cur.fetchone() or not data_baixa:
+            return None      # sem dúvida a resolver
+
+        cur.execute(
+            """SELECT e.id, e.data_emprestimo, e.data_prevista, e.multa,
+                      u.nome, u.matricula
+                 FROM emprestimo e JOIN usuario u ON u.id = e.usuario_id
+                WHERE e.exemplar_id = ? AND date(e.data_devolucao) = date(?)
+             ORDER BY e.id DESC LIMIT 1""", (ex["id"], data_baixa))
+        linha = cur.fetchone()
+    return dict(linha) if linha else None
+
+
+def reverter_baixa(codigo: str, justificativa: str,
+                   usuario_id: Optional[int] = None,
+                   reabrir_emprestimo_id: Optional[int] = None) -> dict:
+    """Desfaz uma baixa dada por engano, devolvendo o exemplar ao acervo.
+
+    Existe por um caso real: na tela de detalhes do livro, "Dar baixa no
+    exemplar" fica ao lado de "Corrigir tombo" e "Mudar prateleira" —
+    dois botões inofensivos — e a bibliotecária clicou no errado. Até
+    aqui não havia volta, e a baixa não é só o exemplar: ela **encerra
+    o empréstimo e lança a multa** de quem estava com o livro. O engano
+    de um clique cobrava de um aluno uma multa que não existia.
+
+    O que é desfeito:
+
+    · O exemplar volta ao acervo. Se havia um empréstimo encerrado pela
+      baixa, ele reabre e o exemplar volta a EMPRESTADO — porque o livro
+      continua com a pessoa; nada nunca esteve na estante.
+    · A multa lançada pela baixa é apagada. Ela nunca deveria ter sido
+      lançada: não houve atraso, houve um clique errado.
+    · A reserva que a baixa **cancelou** — porque não sobrou exemplar
+      nenhum do título — volta, na posição em que estava. Essa pessoa
+      perdeu o lugar por causa do clique, não por decisão dela, e é um
+      estrago que não aparece em tela nenhuma.
+
+    O que não é desfeito: **a reserva que já ganhou outro exemplar.** A
+    baixa devolveu as reservas à fila e pode ter separado outra cópia
+    para o primeiro da vez; tirar isso dele seria trocar um erro por
+    outro. O exemplar volta e, se estiver livre, entra na fila pela
+    porta da frente.
+
+    @param justificativa obrigatória: reverter uma baixa é corrigir o
+        histórico do acervo, e histórico corrigido sem motivo escrito é
+        histórico em que ninguém confia depois.
+    @param reabrir_emprestimo_id só para baixas anteriores ao vínculo
+        `encerrado_por_baixa`, em que o empréstimo a reabrir foi
+        deduzido pela data e **confirmado por uma pessoa**. Ver
+        `candidato_de_reabertura`.
+    """
+    justificativa = (justificativa or "").strip()
+    if not justificativa:
+        raise RegraNegocioError(
+            "Explique por que a baixa está sendo revertida. Fica no "
+            "histórico do exemplar.")
+
+    ex = localizar_exemplar(codigo)
+    if not ex:
+        raise RegraNegocioError(
+            "Exemplar não encontrado. Confira o código de barras ou o tombo.")
+    if ex["status"] != "BAIXADO":
+        raise RegraNegocioError(
+            "Este exemplar está no acervo; não há baixa para reverter.")
+
+    with db_cursor() as cur:
+        cur.execute("SELECT data_baixa, motivo_baixa, numero_tombo "
+                    "FROM exemplar WHERE id = ?", (ex["id"],))
+        antes = cur.fetchone()
+
+        # O empréstimo que a baixa encerrou, pelo vínculo registrado.
+        cur.execute(
+            "SELECT id, multa, multa_paga, multa_isenta FROM emprestimo "
+            "WHERE exemplar_id = ? AND encerrado_por_baixa = 1 "
+            "ORDER BY id DESC LIMIT 1", (ex["id"],))
+        emp = cur.fetchone()
+        confirmado = False
+
+        if emp is None and reabrir_emprestimo_id is not None:
+            # Baixa antiga, sem vínculo: só reabre o que uma pessoa
+            # apontou, e mesmo assim conferindo que o empréstimo é deste
+            # exemplar e foi encerrado no dia da baixa.
+            cur.execute(
+                "SELECT id, multa, multa_paga, multa_isenta FROM emprestimo "
+                "WHERE id = ? AND exemplar_id = ? "
+                "AND date(data_devolucao) = date(?)",
+                (reabrir_emprestimo_id, ex["id"], antes["data_baixa"]))
+            emp = cur.fetchone()
+            if emp is None:
+                raise RegraNegocioError(
+                    "O empréstimo indicado não é deste exemplar ou não foi "
+                    "encerrado na data da baixa.")
+            confirmado = True
+
+        multa_apagada = 0.0
+        if emp is not None:
+            movimentado = (float(emp["multa_paga"] or 0)
+                           + float(emp["multa_isenta"] or 0))
+            if movimentado > 0:
+                # Dinheiro já entrou ou já foi perdoado. Reabrir o
+                # empréstimo aqui bagunçaria o caixa; quem resolve isso é
+                # gente, não o sistema.
+                raise RegraNegocioError(
+                    "A multa deste empréstimo já foi quitada ou isentada. "
+                    "Reverter a baixa mexeria num valor já movimentado — "
+                    "resolva a multa primeiro e tente de novo.")
+            multa_apagada = float(emp["multa"] or 0)
+            cur.execute(
+                "UPDATE emprestimo SET data_devolucao = NULL, multa = 0, "
+                "encerrado_por_baixa = 0 WHERE id = ?", (emp["id"],))
+
+        # Emprestado se o livro voltou para a mão de alguém; disponível
+        # se estava na estante quando a baixa aconteceu.
+        novo_status = "EMPRESTADO" if emp is not None else "DISPONIVEL"
+        cur.execute(
+            "UPDATE exemplar SET status = ?, motivo_baixa = NULL, "
+            "data_baixa = NULL WHERE id = ?", (novo_status, ex["id"]))
+
+        # Quem foi cancelado por esta baixa volta para a fila, na
+        # posição de antes: `criado_em` nunca foi tocado.
+        cur.execute(
+            "SELECT COUNT(*) AS n FROM reserva "
+            "WHERE cancelada_por_baixa = ? AND status = 'CANCELADA'",
+            (ex["id"],))
+        reservas_restauradas = cur.fetchone()["n"]
+        if reservas_restauradas:
+            cur.execute(
+                "UPDATE reserva SET status = 'ATIVA', "
+                "cancelada_por_baixa = NULL "
+                "WHERE cancelada_por_baixa = ? AND status = 'CANCELADA'",
+                (ex["id"],))
+
+        promovida = None
+        if novo_status == "DISPONIVEL":
+            from .reservas import _promover_fila_cur
+            promovida = _promover_fila_cur(cur, ex["livro_id"], ex["id"])
+
+    registrar_auditoria(
+        usuario_id, "BAIXA_REVERTIDA",
+        f"exemplar={ex['codigo_barras']} livro={ex['titulo']} "
+        f"motivo_original={antes['motivo_baixa'] or '?'} "
+        f"justificativa={justificativa}"
+        + (f" emprestimo_reaberto={emp['id']}" if emp is not None else "")
+        + (" (reabertura confirmada por pessoa: baixa sem vinculo"
+           " registrado)" if confirmado else "")
+        + (f" reservas_restauradas={reservas_restauradas}"
+           if reservas_restauradas else ""))
+
+    return {
+        "titulo": ex["titulo"],
+        "codigo": ex["codigo_barras"],
+        "status": novo_status,
+        "emprestimo_reaberto": emp["id"] if emp is not None else None,
+        "reabertura_confirmada": confirmado,
+        "multa_apagada": round(multa_apagada, 2),
+        "tombo": antes["numero_tombo"] or "",
+        "reserva_atendida": promovida,
+        "reservas_restauradas": reservas_restauradas,
+    }
+
+
 def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
     """Exclusão lógica do livro (e de seus exemplares)."""
     with db_cursor() as cur:
@@ -966,8 +1154,12 @@ def baixar_exemplar(codigo: str, motivo: str,
         emp = cur.fetchone()
         if emp:
             _, multa = _atraso_e_multa(emp["data_prevista"])
+            # `encerrado_por_baixa` marca que este empréstimo não
+            # terminou numa devolução de verdade. É o que permite
+            # `reverter_baixa` reabrir exatamente este, sem adivinhar.
             cur.execute("""UPDATE emprestimo
-                              SET data_devolucao = ?, multa = ?
+                              SET data_devolucao = ?, multa = ?,
+                                  encerrado_por_baixa = 1
                             WHERE id = ?""",
                         (hoje, multa, emp["id"]))
 
