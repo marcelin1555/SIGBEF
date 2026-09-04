@@ -179,7 +179,13 @@ CREATE TABLE IF NOT EXISTS emprestimo (
     -- usuario, porque quem responde pelos livros e o professor e ele
     -- pode levar colecao para mais de uma turma no mesmo bimestre.
     colecao_id TEXT,
-    colecao_turma TEXT
+    colecao_turma TEXT,
+    -- Marca o emprestimo que foi encerrado por uma BAIXA de exemplar, e
+    -- nao por uma devolucao de verdade. E o que permite desfazer uma
+    -- baixa dada por engano sem adivinhar qual emprestimo reabrir: sem
+    -- este vinculo so restaria casar pela data, que erra quando o mesmo
+    -- exemplar teve mais de um movimento no dia.
+    encerrado_por_baixa INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS reserva (
@@ -190,7 +196,13 @@ CREATE TABLE IF NOT EXISTS reserva (
     status TEXT NOT NULL DEFAULT 'ATIVA'
         CHECK (status IN ('ATIVA','ATENDIDA','CANCELADA','EXPIRADA')),
     criado_em TEXT NOT NULL DEFAULT (datetime('now','localtime')),
-    disponivel_ate TEXT
+    disponivel_ate TEXT,
+    -- Qual baixa de exemplar cancelou esta reserva, quando foi esse o
+    -- motivo. Sem isto, desfazer uma baixa dada por engano devolveria o
+    -- exemplar ao acervo e deixaria de fora quem perdeu o lugar na fila
+    -- por causa do mesmo clique -- um estrago que nao aparece em tela
+    -- nenhuma e que ninguem descobriria depois.
+    cancelada_por_baixa INTEGER REFERENCES exemplar(id)
 );
 
 CREATE TABLE IF NOT EXISTS notificacao (
@@ -366,6 +378,16 @@ def _migrar_schema(cur) -> None:
     for coluna in ("colecao_id", "colecao_turma"):
         if coluna not in colunas:
             cur.execute("ALTER TABLE emprestimo ADD COLUMN %s TEXT" % coluna)
+
+    if "encerrado_por_baixa" not in colunas:
+        cur.execute("ALTER TABLE emprestimo ADD COLUMN "
+                    "encerrado_por_baixa INTEGER NOT NULL DEFAULT 0")
+
+    cur.execute("PRAGMA table_info(reserva)")
+    colunas = {r["name"] for r in cur.fetchall()}
+    if "cancelada_por_baixa" not in colunas:
+        cur.execute("ALTER TABLE reserva ADD COLUMN "
+                    "cancelada_por_baixa INTEGER REFERENCES exemplar(id)")
 
     cur.execute("PRAGMA table_info(exemplar)")
     colunas = {r["name"] for r in cur.fetchall()}

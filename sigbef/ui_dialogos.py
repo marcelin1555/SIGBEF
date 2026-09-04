@@ -1589,6 +1589,137 @@ class DialogoBaixaExemplar(tk.Toplevel):
 
 
 # ---------------------------------------------------------------------------
+# Diálogo: reverter uma baixa dada por engano
+# ---------------------------------------------------------------------------
+class DialogoReverterBaixa(tk.Toplevel):
+    """Devolve ao acervo um exemplar baixado por engano.
+
+    Nasceu de um caso real: "Dar baixa no exemplar" fica ao lado de
+    "Corrigir tombo" e "Mudar prateleira", e a bibliotecária clicou no
+    errado. Não havia volta — e a baixa não é só o exemplar, ela encerra
+    o empréstimo e lança a multa de quem está com o livro.
+
+    A tela diz **o que vai voltar** antes de perguntar qualquer coisa. É
+    o contrário da que causou o problema, onde o efeito só apareceu
+    depois.
+    """
+
+    def __init__(self, parent, codigo: str, sessao=None, ao_confirmar=None):
+        super().__init__(parent)
+        self.codigo = codigo
+        self.sessao = sessao
+        self.ao_confirmar = ao_confirmar
+        self.title("Reverter baixa")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        tema.centralizar_janela(self, 560, 460)
+
+        ex = servicos.localizar_exemplar(codigo)
+        self.candidato = servicos.candidato_de_reabertura(codigo)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Reverter baixa",
+                  style="Titulo.TLabel").pack(anchor="w")
+        titulo = ex["titulo"] if ex else "(exemplar não encontrado)"
+        ttk.Label(wrap, text=f"{titulo}\nTombo/código: {codigo}",
+                  style="Hint.TLabel", justify="left").pack(anchor="w",
+                                                            pady=(4, 14))
+
+        ttk.Label(wrap, text="O que volta:", style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)).pack(anchor="w")
+        volta = ["• O exemplar volta para o acervo"]
+        if self.candidato:
+            volta.append(
+                "• O empréstimo de %s (matrícula %s) reabre, e a multa "
+                "lançada pela baixa é apagada"
+                % (self.candidato["nome"], self.candidato["matricula"]))
+        else:
+            volta.append(
+                "• O empréstimo encerrado pela baixa, se houver, reabre — "
+                "e a multa que ela lançou é apagada")
+        volta.append(
+            "• Quem perdeu a reserva porque o exemplar saiu volta para a "
+            "fila, na mesma posição")
+        ttk.Label(wrap, text="\n".join(volta), style="Hint.TLabel",
+                  justify="left", wraplength=500).pack(anchor="w",
+                                                       pady=(4, 12))
+
+        # O caso das baixas antigas: o sistema não sabe qual empréstimo a
+        # baixa encerrou e não pode adivinhar — livro devolvido
+        # normalmente e baixado no mesmo dia casaria pela data também.
+        self.var_reabrir = tk.BooleanVar(value=False)
+        if self.candidato:
+            ttk.Label(
+                wrap,
+                text=("Esta baixa é anterior à versão que registra qual "
+                      "empréstimo foi encerrado. O de baixo é o que bate "
+                      "com a data — confirme só se for mesmo ele:"),
+                style="Hint.TLabel", wraplength=500, justify="left"
+                ).pack(anchor="w")
+            ttk.Checkbutton(
+                wrap,
+                text="Reabrir o empréstimo de %s, de %s"
+                     % (self.candidato["nome"],
+                        data_br(self.candidato["data_emprestimo"][:10])),
+                variable=self.var_reabrir).pack(anchor="w", pady=(4, 12))
+
+        ttk.Label(wrap, text="Por que a baixa está sendo revertida?"
+                  ).pack(anchor="w")
+        self.ent_justificativa = ttk.Entry(wrap)
+        self.ent_justificativa.pack(fill="x", pady=(4, 0))
+        ttk.Label(wrap, text="Fica no histórico do exemplar.",
+                  style="Hint.TLabel").pack(anchor="w", pady=(2, 0))
+
+        self.lbl_msg = ttk.Label(wrap, text="", wraplength=500)
+        self.lbl_msg.pack(anchor="w", pady=(10, 0))
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(side="bottom", fill="x", pady=(16, 0))
+        ttk.Button(rodape, text="Cancelar",
+                   command=self.destroy).pack(side="right")
+        ttk.Button(rodape, text="Reverter baixa", style="Primario.TButton",
+                   command=self._confirmar).pack(side="right", padx=(0, 8))
+        self.ent_justificativa.focus_set()
+
+    def _confirmar(self):
+        reabrir = (self.candidato["id"]
+                   if self.candidato and self.var_reabrir.get() else None)
+        try:
+            r = servicos.reverter_baixa(
+                self.codigo, self.ent_justificativa.get(),
+                usuario_id=self.sessao.id if self.sessao else None,
+                reabrir_emprestimo_id=reabrir)
+        except RegraNegocioError as e:
+            self.lbl_msg.configure(text="⚠ %s" % e, foreground=tema.COR_ERRO)
+            return
+
+        partes = ["“%s” voltou para o acervo." % r["titulo"]]
+        if r["emprestimo_reaberto"]:
+            partes.append("O empréstimo foi reaberto — o livro continua "
+                          "com quem estava.")
+            if r["multa_apagada"]:
+                partes.append("A multa de %s, lançada pela baixa, foi "
+                              "apagada." % reais(r["multa_apagada"]))
+        if r["reservas_restauradas"]:
+            partes.append("%d reserva(s) voltaram para a fila."
+                          % r["reservas_restauradas"])
+        if r["reserva_atendida"]:
+            partes.append("O exemplar foi separado para %s, que estava "
+                          "esperando." % r["reserva_atendida"]["nome"])
+        if not r["tombo"]:
+            partes.append("Atenção: este exemplar está sem tombo — ele foi "
+                          "liberado na baixa. Use “Corrigir tombo” para "
+                          "dar um número a ele.")
+        messagebox.showinfo("Baixa revertida", "\n\n".join(partes),
+                            parent=self)
+        if self.ao_confirmar:
+            self.ao_confirmar()
+        self.destroy()
+
+
+# ---------------------------------------------------------------------------
 # Diálogo: mudar a prateleira de um exemplar
 # ---------------------------------------------------------------------------
 class DialogoLocalizacaoExemplar(tk.Toplevel):
@@ -1805,22 +1936,48 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self._livro_id = livro_id
         self.tree = tree
         self._preencher_exemplares(livro)
-        tema.empacotar_com_rolagem(tree, fill="both", expand=True)
+        # As ações em DUAS faixas, e as faixas antes da tabela.
+        #
+        # Duas coisas foram consertadas aqui de uma vez.
+        #
+        # A primeira é o de sempre: `pack` reparte na ordem em que é
+        # chamado, e a tabela com `expand=True` deixava a faixa de
+        # botões com poucos pixels de altura — dava para ver a cor de
+        # cada botão e nada mais.
+        #
+        # A segunda é a que causou o estrago real. "Dar baixa no
+        # exemplar" ficava encostado em "Corrigir tombo" e "Mudar
+        # prateleira", com a mesma cara, e a bibliotecária clicou no
+        # errado: o exemplar saiu do acervo, o empréstimo foi encerrado
+        # e a multa foi lançada num aluno que não devia nada. Agora o
+        # que **corrige** fica numa linha e o que **tira do acervo**
+        # fica em outra, com cor de perigo.
+        acoes_acervo = ttk.Frame(wrap)
+        acoes_acervo.pack(side="bottom", fill="x", pady=(8, 0))
+        ttk.Button(acoes_acervo, text="Dar baixa no exemplar",
+                   style="Perigo.TButton",
+                   command=self._dar_baixa).pack(side="left")
+        ttk.Button(acoes_acervo, text="Reverter baixa",
+                   command=self._reverter_baixa).pack(side="left",
+                                                      padx=(8, 0))
+        ttk.Label(acoes_acervo,
+                  text="Tira ou devolve o exemplar ao acervo.",
+                  style="Hint.TLabel").pack(side="left", padx=(12, 0))
 
-        botoes = ttk.Frame(wrap)
-        botoes.pack(fill="x", pady=(12, 0))
-        ttk.Button(botoes, text="Imprimir etiquetas (visualizar)",
+        correcoes = ttk.Frame(wrap)
+        correcoes.pack(side="bottom", fill="x", pady=(12, 0))
+        ttk.Button(correcoes, text="Imprimir etiquetas (visualizar)",
                    style="Primario.TButton",
                    command=lambda: VisualizadorBarcodes(self, livro)
                    ).pack(side="left")
-        ttk.Button(botoes, text="Corrigir tombo",
+        ttk.Button(correcoes, text="Corrigir tombo",
                    command=self._corrigir_tombo
                    ).pack(side="left", padx=(8, 0))
-        ttk.Button(botoes, text="Mudar prateleira",
+        ttk.Button(correcoes, text="Mudar prateleira",
                    command=self._mudar_localizacao
                    ).pack(side="left", padx=(8, 0))
-        ttk.Button(botoes, text="Dar baixa no exemplar",
-                   command=self._dar_baixa).pack(side="left", padx=(8, 0))
+
+        tema.empacotar_com_rolagem(tree, fill="both", expand=True)
 
     def _preencher_exemplares(self, livro: dict):
         for it in self.tree.get_children():
@@ -1846,6 +2003,26 @@ class DialogoDetalhesLivro(tk.Toplevel):
         valores = self.tree.item(sel[0])["values"]
         codigo = str(valores[1])
         DialogoBaixaExemplar(self, codigo, sessao=self.sessao,
+                             ao_confirmar=self._recarregar)
+
+    def _reverter_baixa(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showinfo("Selecione um exemplar",
+                                  "Escolha na lista o exemplar que foi "
+                                  "baixado por engano.", parent=self)
+            return
+        valores = self.tree.item(sel[0])["values"]
+        codigo = str(valores[1])
+        ex = servicos.localizar_exemplar(codigo)
+        if not ex or ex["status"] != "BAIXADO":
+            messagebox.showinfo(
+                "Este exemplar está no acervo",
+                "Só dá para reverter a baixa de um exemplar que saiu do "
+                "acervo. A situação dele aparece na última coluna.",
+                parent=self)
+            return
+        DialogoReverterBaixa(self, codigo, sessao=self.sessao,
                              ao_confirmar=self._recarregar)
 
     def _corrigir_tombo(self):

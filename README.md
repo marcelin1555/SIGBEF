@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.12.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.12.1-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
