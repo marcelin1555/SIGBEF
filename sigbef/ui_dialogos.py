@@ -1501,7 +1501,7 @@ class DialogoBaixaExemplar(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 520, 380)
+        tema.centralizar_janela(self, 520, 430)
 
         wrap = ttk.Frame(self, padding=20)
         wrap.pack(fill="both", expand=True)
@@ -1807,7 +1807,10 @@ class DialogoTomboExemplar(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        tema.centralizar_janela(self, 520, 300)
+        # 430, medido: com o botão de liberar o tombo e a explicação
+        # dele o conteúdo pede 413 px, e a altura antiga (300) cortava
+        # fora Salvar e Cancelar.
+        tema.centralizar_janela(self, 520, 430)
 
         wrap = ttk.Frame(self, padding=20)
         wrap.pack(fill="both", expand=True)
@@ -1827,8 +1830,20 @@ class DialogoTomboExemplar(tk.Toplevel):
         self.ent_tombo.pack(anchor="w", pady=(4, 2))
         self.ent_tombo.focus_set()
         self.ent_tombo.select_range(0, "end")
-        ttk.Label(wrap, text="É o número escrito no próprio livro. Deixe em "
-                  "branco para tirar o tombo.",
+        ttk.Label(wrap, text="É o número escrito no próprio livro.",
+                  style="Hint.TLabel").pack(anchor="w")
+        # O caminho para reaproveitar um número.
+        #
+        # Apagar o campo sempre liberou o tombo, mas isso estava dito
+        # como "deixe em branco para tirar o tombo", em letra de apoio —
+        # e ninguém liga "tirar" com "usar em outro exemplar". A
+        # bibliotecária acabou dando baixa no exemplar tentando
+        # conseguir isso, que tira o livro do acervo e nem sequer
+        # libera o número.
+        ttk.Button(wrap, text="Liberar este tombo para outro exemplar",
+                   command=self._liberar).pack(anchor="w", pady=(8, 0))
+        ttk.Label(wrap, text="O exemplar continua no acervo, só fica sem "
+                  "número até você dar outro a ele.",
                   style="Hint.TLabel").pack(anchor="w")
         ttk.Label(wrap, text="O tombo não pode se repetir no acervo: o balcão "
                   "acha o exemplar pelo tombo, e dois iguais fazem emprestar "
@@ -1836,13 +1851,22 @@ class DialogoTomboExemplar(tk.Toplevel):
                   style="Hint.TLabel", wraplength=460, justify="left"
                   ).pack(anchor="w", pady=(8, 0))
 
+        # `side="bottom"`: o rodapé reserva o lugar dele antes que o
+        # texto de apoio acima cresça. Sem isso, Salvar e Cancelar
+        # ficavam com poucos pixels de altura — dava para ver a cor dos
+        # botões e nada mais.
         rodape = ttk.Frame(wrap)
-        rodape.pack(fill="x", pady=(16, 0))
+        rodape.pack(side="bottom", fill="x", pady=(16, 0))
         ttk.Button(rodape, text="Cancelar",
                     command=self.destroy).pack(side="right")
         ttk.Button(rodape, text="Salvar", style="Primario.TButton",
                     command=self._confirmar).pack(side="right", padx=(0, 8))
         self.ent_tombo.bind("<Return>", lambda e: self._confirmar())
+
+    def _liberar(self):
+        """Esvazia o campo. Confirmar em seguida solta o número."""
+        self.ent_tombo.delete(0, "end")
+        self.ent_tombo.focus_set()
 
     def _confirmar(self):
         try:

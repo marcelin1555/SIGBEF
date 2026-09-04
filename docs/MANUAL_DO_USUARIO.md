@@ -22,6 +22,7 @@ perfil de usuário — vá direto para a seção que interessa.
   - [Acompanhar a fila de espera](#acompanhar-a-fila-de-espera)
   - [Ver o uso do acervo](#ver-o-uso-do-acervo)
   - [Quitar multa](#quitar-multa)
+  - [Reaproveitar um número de tombo](#reaproveitar-um-número-de-tombo)
   - [Desfazer uma baixa dada por engano](#desfazer-uma-baixa-dada-por-engano)
   - [Emprestar o livro-texto para a turma inteira](#emprestar-o-livro-texto-para-a-turma-inteira)
   - [Gerar relatórios](#gerar-relatórios)
@@ -346,6 +347,31 @@ livro — o sistema avisa e, ao confirmar, encerra o empréstimo e lança a
 multa de atraso, se houver. Não é preciso esperar uma devolução que não
 vai acontecer. O histórico de quem leu aquele exemplar continua
 guardado.
+
+### Reaproveitar um número de tombo
+
+O número do tombo é único no acervo: dois exemplares com o mesmo número
+fazem o balcão achar o livro errado. Para usar um número de novo, ele
+precisa ser liberado primeiro.
+
+1. Menu lateral → **Livros e exemplares** → selecione o livro → **Ver
+   detalhes / código de barras**.
+2. Clique no exemplar e depois em **Corrigir tombo**.
+3. Clique em **Liberar este tombo para outro exemplar** e confirme em
+   **Salvar**.
+
+O exemplar **continua no acervo** — ele só fica sem número até você dar
+outro a ele. Não é preciso dar baixa.
+
+> **Dar baixa não libera o tombo.** É de propósito: se o número se
+> soltasse junto com a baixa, por um instante dois exemplares teriam o
+> mesmo tombo, e é essa dupla que faz o balcão emprestar a cópia errada.
+> Na tela de baixa existe uma caixa para liberar o número, se for essa a
+> intenção.
+
+> **Ao excluir um livro inteiro**, o sistema pergunta se os números
+> devem ficar livres. Responda **não** para guardar a numeração como
+> está — é o mais comum.
 
 ### Desfazer uma baixa dada por engano
 

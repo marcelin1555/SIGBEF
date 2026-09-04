@@ -455,6 +455,29 @@ class SecaoLivros(SecaoBase):
         except RegraNegocioError as e:
             messagebox.showwarning("Atenção", str(e), parent=self.painel)
 
+    def _perguntar_tombos(self, quantos: int) -> bool:
+        """Os números de tombo devem ficar livres para reuso?
+
+        Pergunta separada, e com NÃO por padrão, por dois motivos. O
+        tombo de um exemplar excluído continuava **preso para sempre**:
+        a checagem de duplicidade não olha status nem se o livro está
+        ativo, e o livro sumia de todas as telas — então não havia como
+        chegar naquele número nem para soltá-lo. Por outro lado,
+        soltá-lo sozinho é o que faz dois exemplares terem o mesmo
+        número, e o balcão achar a cópia errada pelo tombo.
+
+        Entre um beco e um empréstimo errado, a saída é perguntar.
+        """
+        alvo = "deste livro" if quantos == 1 else "destes %d livros" % quantos
+        return messagebox.askyesno(
+            "Liberar os números de tombo?",
+            "Os números de tombo %s devem ficar livres para serem usados "
+            "em outros exemplares?\n\n"
+            "NÃO guarda a numeração como está — é o mais comum.\n"
+            "SIM libera os números para você reaproveitar no acervo."
+            % alvo,
+            icon="question", default="no", parent=self.painel)
+
     def _excluir(self):
         sel = self.tree.selection()
         if not sel:
@@ -476,8 +499,10 @@ class SecaoLivros(SecaoBase):
                     "empréstimos é preservado.",
                     parent=self.painel):
                 return
+            liberar = self._perguntar_tombos(1)
             try:
-                servicos.excluir_livro(livro_id, self.sessao.id)
+                servicos.excluir_livro(livro_id, self.sessao.id,
+                                       liberar_tombos=liberar)
             except RegraNegocioError as e:
                 messagebox.showwarning("Atenção", str(e), parent=self.painel)
             self.atualizar()
@@ -495,11 +520,13 @@ class SecaoLivros(SecaoBase):
                 parent=self.painel):
             return
 
+        liberar = self._perguntar_tombos(len(itens))
         falhas = []
         excluidos = 0
         for livro_id, titulo in itens:
             try:
-                servicos.excluir_livro(livro_id, self.sessao.id)
+                servicos.excluir_livro(livro_id, self.sessao.id,
+                                       liberar_tombos=liberar)
                 excluidos += 1
             except RegraNegocioError as e:
                 falhas.append(f"{titulo}: {e}")
