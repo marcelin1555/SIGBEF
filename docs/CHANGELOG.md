@@ -2,6 +2,52 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.12.2] — 2026-09-04
+
+Continuação do mesmo caso. A bibliotecária queria **reaproveitar um
+número de tombo** — foi isso que ela tentou fazer desde o começo. Deu
+baixa achando que era o caminho, o número continuou preso; excluiu o
+livro, o número continuou preso, e agora o livro tinha sumido de todas
+as telas.
+
+### Liberar um tombo
+
+A função já existia e ninguém achava. Apagar o campo em "Corrigir
+tombo" sempre liberou o número, com o exemplar seguindo no acervo — mas
+isso estava dito como *"deixe em branco para tirar o tombo"*, em letra
+de apoio, e ninguém liga "tirar" a "usar em outro exemplar".
+
+- **Corrigir tombo** ganhou um botão **"Liberar este tombo para outro
+  exemplar"**, com a explicação de que o exemplar continua no acervo
+- A janela subiu de 300 para 430 px. O conteúdo pedia 413, e Salvar e
+  Cancelar estavam sendo cortados fora
+
+### Excluir um livro deixava tombos presos para sempre
+
+A checagem de tombo repetido não olha status nem se o livro está ativo.
+Um título excluído sumia de todas as telas com os números dele
+ocupados, e não havia como chegar naqueles exemplares nem para
+soltá-los.
+
+- Ao excluir, o sistema **pergunta** se os números devem ficar livres,
+  com **não** por padrão. Vale para exclusão de um livro e em lote
+- Nasce desligado pelo mesmo motivo da caixa equivalente na baixa:
+  enquanto dois exemplares puderem ter o mesmo tombo, mesmo que por um
+  instante, o balcão pode achar a cópia errada
+
+### O que **não** mudou, de propósito
+
+Dar baixa continua **sem** liberar o tombo sozinha. Não é esquecimento:
+é a regra que impede a dupla de números. Quem quer o número usa a caixa
+da tela de baixa, ou agora o botão em "Corrigir tombo", que é mais
+direto e não tira o livro do acervo.
+
+### Testes
+
+- 639 no desktop (13 novos). Os três caminhos foram medidos antes e
+  depois: baixa não libera, exclusão não liberava, corrigir tombo com o
+  campo vazio sempre liberou
+
 ## [1.12.1] — 2026-09-04
 
 Correção de emergência. A bibliotecária deu baixa num exemplar por

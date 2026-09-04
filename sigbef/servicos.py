@@ -1056,8 +1056,25 @@ def reverter_baixa(codigo: str, justificativa: str,
     }
 
 
-def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
-    """Exclusão lógica do livro (e de seus exemplares)."""
+def excluir_livro(livro_id: int, usuario_id: Optional[int] = None,
+                  liberar_tombos: bool = False) -> None:
+    """Exclusão lógica do livro (e de seus exemplares).
+
+    @param liberar_tombos devolve os números de tombo ao uso, para que
+        possam ser escritos em outros exemplares.
+
+        Nasceu de um beco real. O tombo de um exemplar excluído
+        continuava ocupado — a checagem de duplicidade não olha status
+        nem se o livro está ativo — e o livro sumia de todas as telas.
+        Resultado: números presos por um título que ninguém consegue
+        mais abrir, sem caminho nenhum para soltá-los.
+
+        Nasce **desligado**, como a caixa equivalente na baixa: enquanto
+        dois exemplares puderem ter o mesmo tombo, mesmo que por um
+        instante, o balcão pode emprestar a cópia errada. Liberar é
+        escolha explícita de quem sabe que aquela numeração vai ser
+        reaproveitada.
+    """
     with db_cursor() as cur:
         cur.execute(
             "SELECT COUNT(*) AS abertos FROM emprestimo e "
@@ -1082,10 +1099,23 @@ def excluir_livro(livro_id: int, usuario_id: Optional[int] = None) -> None:
         )
         from .reservas import cancelar_reservas_do_livro_cur
         canceladas = cancelar_reservas_do_livro_cur(cur, livro_id)
+
+        tombos_soltos = 0
+        if liberar_tombos:
+            cur.execute(
+                "SELECT COUNT(*) AS n FROM exemplar "
+                "WHERE livro_id = ? AND numero_tombo IS NOT NULL",
+                (livro_id,))
+            tombos_soltos = cur.fetchone()["n"]
+            cur.execute(
+                "UPDATE exemplar SET numero_tombo = NULL WHERE livro_id = ?",
+                (livro_id,))
+
     registrar_auditoria(
         usuario_id, "EXCLUSAO_LIVRO",
         f"livro_id={livro_id}"
-        + (f" reservas_canceladas={canceladas}" if canceladas else ""))
+        + (f" reservas_canceladas={canceladas}" if canceladas else "")
+        + (f" tombos_liberados={tombos_soltos}" if tombos_soltos else ""))
 
 
 def _atraso_e_multa(data_prevista: str,
