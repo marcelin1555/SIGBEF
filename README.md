@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.12.2-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.13.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -127,19 +127,23 @@ Além do desktop, o projeto tem:
 |---|---|
 | Painel inicial | Indicadores em tempo real: acervo, exemplares disponíveis, empréstimos em aberto, atrasos, top 10 mais emprestados |
 | Cadastro de livros | Múltiplos autores, ISBN, editora, categoria, edição, sinopse e geração automática de exemplares com código de barras único |
+| Adicionar exemplares | Acrescenta cópias novas a um livro já cadastrado, com tombo e prateleira — sem criar um título duplicado no acervo |
 | Etiquetas de barras | Visualização gráfica das etiquetas de cada exemplar para impressão |
 | Cadastro de usuários | Cadastro com geração automática de cartão (código de barras) e definição de perfil |
 | Empréstimo de balcão | Aceita código de barras ou número de tombo; seletor de exemplares disponíveis e busca de usuário integrados |
+| Empréstimo de coleção | Para o professor levar a turma inteira: uma linha na tela, prazo de bimestre, sem esbarrar no limite de empréstimos simultâneos |
 | Devolução de balcão | Cálculo automático de multa por dias de atraso |
 | Renovação | Estende o prazo conforme perfil do usuário |
-| Quitação de multa | Registro manual de multas pagas |
+| Quitação e isenção de multa | Registro manual de multas pagas, ou isenção com motivo obrigatório — o valor lançado continua no histórico |
 | Fila de espera | Quem espera cada livro, com destaque para os exemplares já separados e o prazo de retirada |
 | Uso do acervo | Empréstimos por mês, turmas e categorias, taxa de atraso e a lista dos livros que nunca saíram |
 | Conferir acervo | Conferência com o leitor na estante: o que não foi encontrado, o que está emprestado e o que apareceu sem estar previsto |
 | Baixa de exemplar | Tira do acervo um exemplar extraviado, danificado, descartado ou doado, sem levar o título junto |
+| Reverter baixa | Desfaz uma baixa dada por engano: volta o exemplar ao acervo, apaga a multa indevida e devolve o lugar na fila de quem perdeu a reserva |
+| Liberar número de tombo | Reaproveitar um número em outro exemplar, sem precisar dar baixa nem excluir o livro — e excluir também pode liberar os tombos, se pedido |
 | Relatórios em CSV | Acervo, empréstimos abertos, usuários, mais emprestados, pendências dos leitores e a movimentação do período |
 | Período nos relatórios | Recorte por datas, com atalhos para o mês, o bimestre e o ano |
-| Cópia de segurança | Automática ao fechar o sistema, guardando as últimas 7 |
+| Cópia de segurança | Automática ao fechar o sistema, guardando as últimas 7, com restauração pela própria tela mediante confirmação digitada |
 | Pareamento de celular | QR code para o aluno conectar o aplicativo, e controle dos aparelhos ligados |
 | Configurações *(admin)* | Ajuste de prazos, limites e valores de multa |
 
@@ -667,23 +671,10 @@ Funcionalidades planejadas para versões futuras:
 
 ### Próxima versão
 
-- [x] **Restaurar uma cópia de segurança pela tela** — Configurações →
-      Ferramentas → "Restaurar backup...". Confere que o arquivo é mesmo
-      um banco do SIGBEF antes de qualquer coisa, mostra lado a lado o
-      que há hoje e o que há no arquivo, e exige a palavra RESTAURAR
-      digitada. Guarda o banco atual antes de trocar, com um nome que a
-      limpeza automática de backups não apaga — sem isso, restaurar por
-      engano seria irreversível
-- [x] **Isentar multa, com motivo** — o motivo é obrigatório, e o valor
-      lançado continua no histórico: isentar registra que a escola
-      perdoou, não que recebeu
-- [x] **Empréstimo de coleção para o professor** — Empréstimos →
-      "Emprestar coleção...". Sai no nome do professor com a turma
-      anotada, ocupa uma linha na tela em vez de trinta, tem prazo de
-      bimestre (60 dias) e não esbarra no limite de empréstimos
-      simultâneos — mas multa em aberto continua bloqueando. Continua
-      sendo uma linha por exemplar no banco, porque a conferência de
-      estante precisa saber que aqueles trinta não estão lá
+Nada em aberto no momento — o sistema está congelado até a III FICTS
+(ver aviso acima). Os itens que estavam aqui (restaurar backup pela
+tela, isentar multa, empréstimo de coleção, reverter baixa e liberar
+tombo) já foram lançados; ver "Concluído recentemente" abaixo.
 
 ### Para outra escola conseguir adotar sozinha
 
@@ -758,6 +749,35 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Acrescentar exemplares a um livro já cadastrado** — a segunda
+      leva do mesmo livro-texto entra no registro que já existe, em vez
+      de virar um título duplicado. De quebra, a numeração automática de
+      tombo passou a pular número já ocupado (v1.13.0)
+- [x] **Liberar um número de tombo para reuso**, sem precisar dar baixa
+      nem excluir o livro — e excluir do acervo passou a perguntar se
+      os tombos devem ficar livres também, com não por padrão (v1.12.2)
+- [x] **Reverter uma baixa dada por engano**: o exemplar volta ao
+      acervo com a situação certa, a multa indevida é apagada e quem
+      perdeu a reserva volta para a fila na mesma posição. "Dar baixa"
+      ganhou cor de perigo e saiu de perto dos botões inofensivos
+      (v1.12.1)
+- [x] **Restaurar uma cópia de segurança pela tela** — Configurações →
+      Ferramentas → "Restaurar backup...". Confere que o arquivo é mesmo
+      um banco do SIGBEF antes de qualquer coisa, mostra lado a lado o
+      que há hoje e o que há no arquivo, e exige a palavra RESTAURAR
+      digitada. Guarda o banco atual antes de trocar, com um nome que a
+      limpeza automática de backups não apaga — sem isso, restaurar por
+      engano seria irreversível (v1.12.0)
+- [x] **Isentar multa, com motivo** — o motivo é obrigatório, e o valor
+      lançado continua no histórico: isentar registra que a escola
+      perdoou, não que recebeu (v1.12.0)
+- [x] **Empréstimo de coleção para o professor** — Empréstimos →
+      "Emprestar coleção...". Sai no nome do professor com a turma
+      anotada, ocupa uma linha na tela em vez de trinta, tem prazo de
+      bimestre (60 dias) e não esbarra no limite de empréstimos
+      simultâneos — mas multa em aberto continua bloqueando. Continua
+      sendo uma linha por exemplar no banco, porque a conferência de
+      estante precisa saber que aqueles trinta não estão lá (v1.12.0)
 - [x] **Formulário de cadastrar livro compactado**, e nenhum diálogo do
       sistema nasce maior que a tela do computador, reportado de uso
       real numa escola com monitor pequeno (v1.10.4)
@@ -868,7 +888,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.10.4** — Agosto/2026
+**SIGBEF v1.13.0** — Setembro/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

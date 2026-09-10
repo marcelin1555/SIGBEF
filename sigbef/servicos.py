@@ -165,6 +165,44 @@ def _upsert_nome(cur, tabela: str, nome: str) -> int:
     return cur.fetchone()["id"]
 
 
+def _tombo_em_uso(cur, tombo: str) -> bool:
+    cur.execute("SELECT 1 FROM exemplar WHERE numero_tombo = ? LIMIT 1",
+                (tombo,))
+    return cur.fetchone() is not None
+
+
+def _validar_tombos_ineditos(cur, tombos_limpos: list[str]) -> None:
+    """Recusa tombo repetido no lote ou já em uso por outro exemplar.
+
+    Mesmo motivo de `alterar_tombo_exemplar`: o balcão procura por
+    `codigo_barras OR numero_tombo` com LIMIT 1, então dois exemplares
+    com o mesmo tombo fazem o empréstimo pegar a cópia errada em
+    silêncio. A coluna tem índice, mas não tem UNIQUE. Compartilhada
+    pelo cadastro de livro e por acrescentar exemplares a um já
+    existente — os dois caminhos escrevem tombo escolhido pela pessoa.
+    """
+    if not tombos_limpos:
+        return
+    repetido_no_lote = next(
+        (t for t in tombos_limpos if tombos_limpos.count(t) > 1), None)
+    if repetido_no_lote:
+        raise RegraNegocioError(
+            f"O tombo {repetido_no_lote} foi informado mais de uma vez. "
+            "Cada exemplar precisa do seu próprio número.")
+    marcadores = ", ".join("?" * len(tombos_limpos))
+    cur.execute(
+        f"""SELECT l.titulo, ex.numero_tombo
+               FROM exemplar ex JOIN livro l ON l.id = ex.livro_id
+               WHERE ex.numero_tombo IN ({marcadores}) LIMIT 1""",
+        tombos_limpos)
+    em_uso = cur.fetchone()
+    if em_uso:
+        raise RegraNegocioError(
+            f"O tombo {em_uso['numero_tombo']} já está com "
+            f"\"{em_uso['titulo']}\". Cada exemplar precisa do seu "
+            "próprio número.")
+
+
 def _inserir_livro_cur(
     cur,
     *,
@@ -198,31 +236,7 @@ def _inserir_livro_cur(
         raise RegraNegocioError(
             f"Número de tombos ({len(tombos_limpos)}) diferente da "
             f"quantidade de exemplares ({quantidade_exemplares}).")
-    if tombos_limpos:
-        # Mesmo motivo de `alterar_tombo_exemplar`: o balcão procura por
-        # `codigo_barras OR numero_tombo` com LIMIT 1, então dois
-        # exemplares com o mesmo tombo fazem o empréstimo pegar a cópia
-        # errada em silêncio. A coluna tem índice, mas não tem UNIQUE, e
-        # a importação CSV valida no laço dela. Aqui a checagem vale para
-        # todo mundo que cadastra livro, inclusive pela tela.
-        repetido_no_lote = next(
-            (t for t in tombos_limpos if tombos_limpos.count(t) > 1), None)
-        if repetido_no_lote:
-            raise RegraNegocioError(
-                f"O tombo {repetido_no_lote} foi informado mais de uma vez. "
-                "Cada exemplar precisa do seu próprio número.")
-        marcadores = ", ".join("?" * len(tombos_limpos))
-        cur.execute(
-            f"""SELECT l.titulo, ex.numero_tombo
-                   FROM exemplar ex JOIN livro l ON l.id = ex.livro_id
-                   WHERE ex.numero_tombo IN ({marcadores}) LIMIT 1""",
-            tombos_limpos)
-        em_uso = cur.fetchone()
-        if em_uso:
-            raise RegraNegocioError(
-                f"O tombo {em_uso['numero_tombo']} já está com "
-                f"\"{em_uso['titulo']}\". Cada exemplar precisa do seu "
-                "próprio número.")
+    _validar_tombos_ineditos(cur, tombos_limpos)
 
     editora = (editora or "").strip()
     categoria = (categoria or "").strip()
@@ -261,20 +275,52 @@ def _inserir_livro_cur(
 
 
 def adicionar_exemplares(livro_id: int, quantidade: int, localizacao: str = "",
-                         usuario_id: Optional[int] = None) -> list[tuple[int, str]]:
+                         usuario_id: Optional[int] = None,
+                         tombos: Optional[list[str]] = None
+                         ) -> list[tuple[int, str]]:
+    """Acrescenta exemplares a um livro que já está no acervo.
+
+    É o caminho para a segunda leva do mesmo título — a escola recebe
+    mais cópias de um livro-texto que já foi catalogado. Cadastrar de
+    novo criaria um título duplicado, com a busca mostrando o mesmo
+    livro duas vezes e a contagem do acervo errada.
+
+    `tombos`, quando informado, dá a cada exemplar novo o número que já
+    está escrito na cópia física, na ordem. Em branco, o sistema
+    continua gerando `{livro_id}-{sequência}`.
+    """
     if quantidade < 1:
         raise RegraNegocioError("Quantidade deve ser >= 1.")
+    tombos_limpos = [t.strip() for t in (tombos or []) if t and t.strip()]
+    if tombos_limpos and len(tombos_limpos) != quantidade:
+        raise RegraNegocioError(
+            f"Número de tombos ({len(tombos_limpos)}) diferente da "
+            f"quantidade de exemplares ({quantidade}).")
     exemplares: list[tuple[int, str]] = []
     from . import reservas
     with db_cursor() as cur:
         cur.execute("SELECT id FROM livro WHERE id = ? AND ativo = 1", (livro_id,))
         if not cur.fetchone():
             raise RegraNegocioError("Livro não encontrado.")
+        _validar_tombos_ineditos(cur, tombos_limpos)
         cur.execute("SELECT COUNT(*) AS qtd FROM exemplar WHERE livro_id = ?", (livro_id,))
         existente = cur.fetchone()["qtd"]
+        seq = existente
         for i in range(1, quantidade + 1):
             codigo = _codigo_barras_unico(cur, "exemplar", gerar_codigo_exemplar)
-            tombo = f"{livro_id:05d}-{(existente + i):03d}"
+            if tombos_limpos:
+                tombo = tombos_limpos[i - 1]
+            else:
+                # A sequência é contagem de exemplares, não o maior
+                # número já usado: um tombo corrigido na mão para
+                # `00012-004` fazia a próxima leva gerar `00012-004` de
+                # novo, e o balcão passa a achar a cópia errada pelo
+                # tombo. Aqui o número é pulado até sobrar um livre.
+                seq += 1
+                tombo = f"{livro_id:05d}-{seq:03d}"
+                while _tombo_em_uso(cur, tombo):
+                    seq += 1
+                    tombo = f"{livro_id:05d}-{seq:03d}"
             cur.execute(
                 """INSERT INTO exemplar(livro_id, codigo_barras, numero_tombo, localizacao)
                        VALUES (?, ?, ?, ?)""",

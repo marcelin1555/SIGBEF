@@ -1881,6 +1881,99 @@ class DialogoTomboExemplar(tk.Toplevel):
         self.destroy()
 
 
+class DialogoAdicionarExemplares(tk.Toplevel):
+    """Acrescenta cópias a um livro que já está no acervo.
+
+    Pedido da bibliotecária: quando chega a segunda leva do mesmo
+    livro-texto, o caminho que existia era cadastrar tudo de novo — e aí
+    o mesmo título aparece duas vezes na busca, com o acervo contando
+    dois livros onde há um. A função já existia em `servicos`, sem
+    nenhum botão que chegasse até ela.
+    """
+
+    def __init__(self, parent, livro_id: int, titulo: str,
+                 sessao=None, ao_confirmar=None):
+        super().__init__(parent)
+        self.livro_id = livro_id
+        self.sessao = sessao
+        self.ao_confirmar = ao_confirmar
+        self.title("Adicionar exemplares")
+        self.transient(parent)
+        self.grab_set()
+        self.configure(bg=tema.COR_FUNDO)
+        # 500, medido: o conteudo pede 460 px. Com os 430 que eu tinha
+        # posto primeiro, Adicionar e Cancelar ficavam com 17 px de
+        # altura -- `side="bottom"` escolhe o lado, nao a prioridade, e
+        # quem e empacotado por ultimo fica com o que sobrou.
+        tema.centralizar_janela(self, 540, 500)
+
+        wrap = ttk.Frame(self, padding=20)
+        wrap.pack(fill="both", expand=True)
+        ttk.Label(wrap, text="Adicionar exemplares",
+                  style="Titulo.TLabel").pack(anchor="w")
+        ttk.Label(wrap, text=titulo, style="Hint.TLabel", wraplength=480,
+                  justify="left").pack(anchor="w", pady=(4, 16))
+
+        ttk.Label(wrap, text="Quantos exemplares novos?").pack(anchor="w")
+        self.spin_qtd = tk.Spinbox(wrap, from_=1, to=50, width=6,
+                                    font=("Segoe UI", 10))
+        self.spin_qtd.delete(0, "end")
+        self.spin_qtd.insert(0, "1")
+        self.spin_qtd.pack(anchor="w", pady=(4, 12))
+        self.spin_qtd.focus_set()
+
+        ttk.Label(wrap, text="Localização (prateleira)").pack(anchor="w")
+        self.ent_local = ttk.Entry(wrap, width=48, font=("Segoe UI", 10))
+        self.ent_local.pack(anchor="w", pady=(4, 12))
+
+        ttk.Label(wrap, text="Tombo(s)").pack(anchor="w")
+        self.ent_tombos = ttk.Entry(wrap, width=48, font=("Segoe UI", 10))
+        self.ent_tombos.pack(anchor="w", pady=(4, 2))
+        ttk.Label(wrap, text="Opcional — em branco, o sistema gera. Vários "
+                  "exemplares: separe por ;", style="Hint.TLabel",
+                  wraplength=480, justify="left").pack(anchor="w")
+        ttk.Label(wrap, text="Os exemplares novos entram com o mesmo título, "
+                  "autor e ISBN já cadastrados. Se algum leitor estiver na "
+                  "fila deste livro, o primeiro exemplar já sai separado "
+                  "para ele.", style="Hint.TLabel", wraplength=480,
+                  justify="left").pack(anchor="w", pady=(8, 0))
+
+        rodape = ttk.Frame(wrap)
+        rodape.pack(side="bottom", fill="x", pady=(16, 0))
+        ttk.Button(rodape, text="Cancelar",
+                    command=self.destroy).pack(side="right")
+        ttk.Button(rodape, text="Adicionar", style="Primario.TButton",
+                    command=self._confirmar).pack(side="right", padx=(0, 8))
+
+    def _confirmar(self):
+        try:
+            qtd = int(self.spin_qtd.get())
+        except ValueError:
+            messagebox.showwarning("Atenção",
+                                    "A quantidade precisa ser um número.",
+                                    parent=self)
+            return
+        tombos = [t.strip() for t in re.split(
+            r"[;/]", self.ent_tombos.get()) if t.strip()]
+        try:
+            novos = servicos.adicionar_exemplares(
+                self.livro_id, qtd,
+                localizacao=self.ent_local.get().strip(),
+                usuario_id=self.sessao.id if self.sessao else None,
+                tombos=tombos)
+        except RegraNegocioError as e:
+            messagebox.showwarning("Não foi possível", str(e), parent=self)
+            return
+        messagebox.showinfo(
+            "Exemplares adicionados",
+            f"{len(novos)} exemplar(es) entraram no acervo. Imprima as "
+            "etiquetas de código de barras para colar nos livros novos.",
+            parent=self)
+        if self.ao_confirmar:
+            self.ao_confirmar()
+        self.destroy()
+
+
 # ---------------------------------------------------------------------------
 # Diálogo: detalhes do livro + código de barras dos exemplares
 # ---------------------------------------------------------------------------
@@ -1902,11 +1995,13 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
         self.configure(bg=tema.COR_FUNDO)
-        # 800, e nao 720: os quatro botoes do rodape pedem 736 px e a
-        # largura antiga dava 672, entao "Dar baixa no exemplar" ficava
-        # cortado pela borda. `centralizar_janela` reduz sozinha se a
-        # tela for menor que isso.
-        tema.centralizar_janela(self, 800, 640)
+        # 880, e nao 800: com "Adicionar exemplares" a faixa de correcoes
+        # passou a pedir 729 px, e a largura antiga deixava 752 uteis --
+        # 23 px de folga, que uma fonte um pouco maior come. Esta e a
+        # terceira vez que uma faixa de botoes desta tela estoura, entao
+        # a folga agora e de verdade. `centralizar_janela` reduz sozinha
+        # se a tela for menor que isso.
+        tema.centralizar_janela(self, 880, 640)
 
         livro = servicos.detalhes_livro(livro_id)
         if not livro:
@@ -1958,6 +2053,7 @@ class DialogoDetalhesLivro(tk.Toplevel):
         tree.column("loc", width=180, anchor="w")
         tree.column("status", width=110, anchor="w")
         self._livro_id = livro_id
+        self._titulo = livro["titulo"]
         self.tree = tree
         self._preencher_exemplares(livro)
         # As ações em DUAS faixas, e as faixas antes da tabela.
@@ -1999,6 +2095,9 @@ class DialogoDetalhesLivro(tk.Toplevel):
                    ).pack(side="left", padx=(8, 0))
         ttk.Button(correcoes, text="Mudar prateleira",
                    command=self._mudar_localizacao
+                   ).pack(side="left", padx=(8, 0))
+        ttk.Button(correcoes, text="Adicionar exemplares",
+                   command=self._adicionar_exemplares
                    ).pack(side="left", padx=(8, 0))
 
         tema.empacotar_com_rolagem(tree, fill="both", expand=True)
@@ -2060,6 +2159,14 @@ class DialogoDetalhesLivro(tk.Toplevel):
         codigo, atual = str(valores[1]), str(valores[0] or "")
         DialogoTomboExemplar(self, codigo, atual, sessao=self.sessao,
                               ao_confirmar=self._recarregar)
+
+    def _adicionar_exemplares(self):
+        """Não pede exemplar selecionado: é sobre o título, não sobre uma
+        cópia. As outras três ações desta tela agem no que está marcado
+        na lista, e essa diferença precisa ficar clara no diálogo."""
+        DialogoAdicionarExemplares(self, self._livro_id, self._titulo,
+                                    sessao=self.sessao,
+                                    ao_confirmar=self._recarregar)
 
     def _mudar_localizacao(self):
         sel = self.tree.selection()

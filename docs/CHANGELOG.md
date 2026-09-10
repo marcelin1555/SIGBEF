@@ -2,6 +2,58 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.13.0] — 2026-09-10
+
+Pedido da bibliotecária, e o mesmo padrão dos últimos três: a função já
+existia em `servicos`, com teste, e **nenhum botão chegava até ela**.
+
+### Acrescentar exemplares a um livro já cadastrado
+
+Chega a segunda leva do mesmo livro-texto — dez cópias a mais de um
+título que já está no acervo. O único caminho na tela era cadastrar
+tudo de novo, e aí o mesmo livro fica duas vezes na busca, o acervo
+conta dois títulos onde há um, e a fila de espera fica dividida entre
+dois registros que ninguém concilia depois.
+
+- **Detalhes do livro → "Adicionar exemplares"**. Pergunta quantos, a
+  prateleira e, opcional, os números de tombo já escritos nas cópias
+  novas — o mesmo formato do cadastro (separados por `;`)
+- Fica na faixa das **correções**, longe de "Dar baixa": é a única ação
+  daquela tela que trata do título e não do exemplar marcado na lista,
+  e o diálogo diz isso
+- Exemplar novo de livro com fila **já sai separado** para quem espera.
+  Esse comportamento existia no serviço desde sempre e nunca tinha sido
+  alcançável pela tela
+
+### Tombo gerado podia repetir (achado ao ligar o botão)
+
+A numeração automática usava a **contagem** de exemplares do livro, não
+o maior número já usado. Um tombo corrigido na mão para o número
+seguinte — `00012-004` num livro com três exemplares — fazia a próxima
+leva gerar `00012-004` de novo.
+
+Tombo repetido é o defeito que a v1.10.1 fechou no cadastro e que a
+v1.12.2 evitou na exclusão: o balcão acha o exemplar por
+`codigo_barras OR numero_tombo` com LIMIT 1, então a dupla faz emprestar
+a cópia errada, calada. A sequência agora pula número ocupado, e a
+checagem de tombo repetido — que só o cadastro fazia — passou a valer
+também aqui.
+
+### Correções de tela minhas, achadas medindo
+
+- A faixa de correções passou a pedir 729 px e a janela dava 752 úteis.
+  Vinte e três pixels de folga é o que uma fonte um pouco maior come, e
+  esta já era a terceira vez que uma faixa de botões dessa tela
+  estourava: a janela subiu de 800 para 880
+- O diálogo novo nasceu com 430 px de altura para 460 px de conteúdo, e
+  **Adicionar e Cancelar ficaram com 17 px** — `side="bottom"` escolhe o
+  lado, não a prioridade. Medido e corrigido para 500
+
+### Testes
+
+- 656 no desktop (17 novos). O tombo repetido foi reintroduzido de
+  propósito para confirmar que o teste novo falha
+
 ## [1.12.2] — 2026-09-04
 
 Continuação do mesmo caso. A bibliotecária queria **reaproveitar um
