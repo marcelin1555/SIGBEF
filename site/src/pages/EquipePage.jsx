@@ -16,6 +16,8 @@ const linha_do_tempo = [
   { ano: 'jul/26', evento: 'v1.9.0: devolução em lote no balcão e aviso de vencimento no celular do aluno.' },
   { ano: 'ago/26', evento: 'Cinco funções pedidas pela bibliotecária Laiane Ramos: reiniciar o sistema para instalar em outra escola, editar livros do acervo, excluir em massa, editar a localização do exemplar e mostrar a prateleira na etiqueta.' },
   { ano: 'ago/26', evento: 'A equipe prepara a inscrição na III FICTS e I FECETS, feira de iniciação científica do Seridó, com apresentação presencial em Caicó no dia 16 de setembro.' },
+  { ano: 'set/26', evento: 'v1.12.0: restaurar backup pela tela, empréstimo de coleção para a turma e isenção de multa — as últimas mudanças antes do sistema congelar para a feira.' },
+  { ano: 'set/26', evento: 'v1.12.1 e v1.12.2, correções de emergência num caso real da biblioteca: reverter uma baixa dada por engano e liberar o número de tombo para reuso.' },
 ]
 
 export default function EquipePage() {

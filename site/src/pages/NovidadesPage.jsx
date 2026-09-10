@@ -21,9 +21,69 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.13.0',
+    data: '10 de setembro de 2026',
+    destaque: true,
+    categorias: ['Acervo', 'Robustez'],
+    itens: [
+      { cat: 'Acervo', texto: 'Adicionar exemplares a um livro que já está no acervo: chegou mais uma leva do mesmo livro-texto, os exemplares entram no registro que já existe em vez de virar um título duplicado na busca' },
+      { cat: 'Acervo', texto: 'A janela pergunta quantos, a prateleira e — opcional — os números de tombo já escritos nas cópias novas, no mesmo formato do cadastro' },
+      { cat: 'Acervo', texto: 'Exemplar novo de livro com fila de espera já sai separado para quem espera' },
+      { cat: 'Robustez', texto: 'A numeração automática de tombo podia repetir um número: ela contava exemplares em vez de olhar o maior número já usado, e um tombo corrigido na mão fazia a leva seguinte gerar o mesmo. Tombo repetido faz o balcão emprestar a cópia errada — agora a sequência pula número ocupado' },
+    ],
+  },
+  {
+    numero: '1.12.2',
+    data: '4 de setembro de 2026',
+    categorias: ['Acervo', 'Robustez'],
+    itens: [
+      { cat: 'Acervo', texto: 'Liberar um número de tombo para reaproveitar em outro exemplar, sem precisar dar baixa nem excluir o livro — a função já existia escondida em "deixe em branco para tirar o tombo", agora é um botão com esse nome' },
+      { cat: 'Acervo', texto: 'Excluir um livro do acervo passa a perguntar se os números de tombo dele devem ficar livres para reuso, com "não" por padrão — antes ficavam presos para sempre, porque o livro sumia de toda tela' },
+      { cat: 'Robustez', texto: 'Dar baixa continua sem liberar o tombo sozinha, de propósito: é a regra que impede dois exemplares com o mesmo número' },
+      { cat: 'Robustez', texto: 'A janela de corrigir tombo cortava os botões Salvar e Cancelar fora da tela — corrigida' },
+    ],
+  },
+  {
+    numero: '1.12.1',
+    data: '4 de setembro de 2026',
+    categorias: ['Robustez'],
+    itens: [
+      { cat: 'Robustez', texto: 'Reverter baixa: desfaz uma baixa dada por engano, devolvendo o exemplar ao acervo com a situação certa (emprestado ou disponível)' },
+      { cat: 'Robustez', texto: 'A multa lançada pela baixa é apagada — ela nunca deveria ter sido cobrada — e quem perdeu a reserva por causa da baixa volta para a fila na mesma posição' },
+      { cat: 'Interface', texto: '"Dar baixa no exemplar" ganhou cor de perigo e saiu de perto de "Corrigir tombo" e "Mudar prateleira", que tinham a mesma aparência e causaram o clique errado' },
+    ],
+  },
+  {
+    numero: '1.12.0',
+    data: '3 de setembro de 2026',
+    categorias: ['Acervo', 'Robustez', 'Multiplataforma'],
+    itens: [
+      { cat: 'Robustez', texto: 'Restaurar uma cópia de segurança pela própria tela: Configurações → Ferramentas. Compara o banco de hoje com o do arquivo antes de qualquer coisa e exige a palavra RESTAURAR digitada' },
+      { cat: 'Acervo', texto: 'Empréstimo de coleção: o professor leva a turma inteira com uma linha na tela, prazo de bimestre, sem esbarrar no limite de empréstimos simultâneos' },
+      { cat: 'Acervo', texto: 'Isentar multa, com motivo obrigatório — o valor lançado continua no histórico, diferente de quitar' },
+      { cat: 'Robustez', texto: 'Cadastro de livro pela tela passa a recusar ano inválido e ISBN repetido, do mesmo jeito que a importação por planilha já fazia' },
+      { cat: 'Robustez', texto: 'Cartão de alerta que ficava preso na cor vermelha mesmo com o atraso zerado — corrigido' },
+      { cat: 'Robustez', texto: 'As 14 tabelas do sistema ganharam barra de rolagem própria, vertical sempre e horizontal quando as colunas não cabem' },
+      { cat: 'Multiplataforma', texto: 'Tema escuro de verdade no aplicativo Android: as telas usavam as cores do tema claro mesmo com o celular no escuro' },
+    ],
+  },
+  {
+    numero: '1.11.0',
+    data: '27 de agosto de 2026',
+    categorias: ['Acervo', 'Robustez', 'Multiplataforma'],
+    itens: [
+      { cat: 'Acervo', texto: 'Devolução em lote corrigida: anunciada na v1.9.0, o botão nunca chegou a funcionar de fato, e ficou quase um mês assim sem ninguém perceber' },
+      { cat: 'Acervo', texto: 'Quitar multa parou de apagar o próprio histórico — o valor lançado agora fica registrado mesmo depois de recebido' },
+      { cat: 'Acervo', texto: 'Isenção de multa (primeira versão), com motivo obrigatório' },
+      { cat: 'Robustez', texto: 'Tela de Configurações passa a validar antes de gravar, e aceita vírgula nos valores em reais' },
+      { cat: 'Robustez', texto: 'Janela do painel forçada maior que a tela em notebooks pequenos — corrigida' },
+      { cat: 'Robustez', texto: 'Autoatendimento: Enter no campo do cartão disparava duas ações ao mesmo tempo — corrigido' },
+      { cat: 'Multiplataforma', texto: 'Aplicativo do aluno: corrigida a quebra no Android 7, a câmera que ficava presa ao sair do leitor de QR, e o status de atraso que congelava sem rede' },
+    ],
+  },
+  {
     numero: '1.10.4',
     data: '18 de agosto de 2026',
-    destaque: true,
     categorias: ['Interface', 'Robustez'],
     itens: [
       { cat: 'Interface', texto: 'Formulário de cadastrar livro mais compacto: Editora/Categoria, Ano/Edição e Localização/Quantidade lado a lado, sinopse menor. A janela cai de 790 para 600 pixels de altura' },
