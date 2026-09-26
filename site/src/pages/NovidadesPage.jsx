@@ -9,6 +9,8 @@ const CATEGORIA_COR = {
   Segurança: 'bg-red-50 text-red-700',
   Multiplataforma: 'bg-indigo-50 text-indigo-700',
   API: 'bg-cyan-50 text-cyan-700',
+  Busca: 'bg-sky-50 text-sky-700',
+  Acessibilidade: 'bg-teal-50 text-teal-700',
 }
 
 function Badge({ texto }) {
@@ -21,9 +23,24 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.14.0',
+    data: '26 de setembro de 2026',
+    destaque: true,
+    categorias: ['Busca', 'Interface', 'Acessibilidade'],
+    itens: [
+      { cat: 'Busca', texto: 'A pesquisa não liga mais para acento nem maiúscula: "joao" acha "João", "coracao" acha "Coração". Antes, quem digitava sem acento não achava nada' },
+      { cat: 'Busca', texto: 'As palavras podem vir em qualquer ordem ("machado casmurro"), e a busca também acha pelo número de tombo e pelo ISBN, com ou sem hífen. Os resultados vêm do mais relevante para o menos' },
+      { cat: 'Busca', texto: 'Mais rápida: num acervo de 250 mil livros, uma busca que levava 6,6 segundos (e não achava nada) passou para 0,17 s' },
+      { cat: 'Interface', texto: 'Um botão principal por tela. Editar, excluir, renovar e imprimir cartão ficam na própria linha (botão direito); o que se usa de vez em quando fica no menu "Mais"' },
+      { cat: 'Interface', texto: 'A busca acontece enquanto se digita, sem botão "Pesquisar". No balcão, emprestar e devolver ficam lado a lado, e Configurações virou abas' },
+      { cat: 'Interface', texto: 'Na primeira vez que cada pessoa entra, um passo a passo curto explica o sistema; ele volta pelo botão "Como usar" ou pela tecla F1' },
+      { cat: 'Acessibilidade', texto: 'Dá para usar sem mouse: Enter abre a linha, Esc fecha a janela, Ctrl+1 a Ctrl+9 trocam de seção, e o foco do teclado fica visível' },
+      { cat: 'Acessibilidade', texto: 'Tamanho do texto ajustável (Normal, Grande, Muito grande) e cores com contraste medido: o laranja de aviso estava em 2,9:1, abaixo do mínimo de 4,5:1' },
+    ],
+  },
+  {
     numero: '1.13.0',
     data: '10 de setembro de 2026',
-    destaque: true,
     categorias: ['Acervo', 'Robustez'],
     itens: [
       { cat: 'Acervo', texto: 'Adicionar exemplares a um livro que já está no acervo: chegou mais uma leva do mesmo livro-texto, os exemplares entram no registro que já existe em vez de virar um título duplicado na busca' },

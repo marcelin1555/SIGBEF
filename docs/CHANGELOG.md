@@ -2,7 +2,13 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
-## [Não lançado]
+## [1.14.0] — 2026-09-26
+
+Três mudanças para quem usa o sistema todo dia: a **busca** passa a
+achar o que se digita, sem se preocupar com acento; a **tela** ficou
+com um botão principal por seção e um passo a passo na primeira vez; e
+dá para usar o SIGBEF **sem mouse**, com texto maior e cores com
+contraste de verdade.
 
 ### Busca que acha o que o aluno digita
 
