@@ -2,6 +2,19 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.14.1] — 2026-09-26
+
+Mesmo conteúdo da 1.14.0, agora **com o instalador do Windows**.
+
+O instalador da 1.14.0 não foi gerado: um teste novo, o que confere o
+tamanho do texto, comparava a escala com três casas decimais, e o Tk
+do Windows usado na compilação arredonda esse número por dentro (1,15
+virou 1,1485). O sistema estava certo; o teste era exigente demais. Ele
+agora aceita 1% de diferença — ainda pega o defeito que existe para
+pegar, que é o fator se acumular (daria 1,32).
+
+Tudo o que mudou na 1.14.0 está logo abaixo.
+
 ## [1.14.0] — 2026-09-26
 
 Três mudanças para quem usa o sistema todo dia: a **busca** passa a

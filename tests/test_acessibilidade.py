@@ -132,8 +132,12 @@ class TestEscalaNaJanela(_ComTk):
         tema.salvar_tamanho_texto("grande")
         tema.aplicar_tema(self.root)
         tema.aplicar_tema(self.root)  # reaplicar não multiplica de novo
-        self.assertAlmostEqual(float(self.root.tk.call("tk", "scaling")),
-                               base * 1.15, places=3)
+        # Tolerância relativa: o Tk arredonda a escala por dentro (no
+        # Windows do GitHub, 1,15 virou 1,1485), e uma comparação com três
+        # casas decimais barrou o instalador da v1.14.0 sem defeito real.
+        # Acumular o fator daria 1,32 — bem longe desta margem de 1%.
+        fator = float(self.root.tk.call("tk", "scaling")) / base
+        self.assertAlmostEqual(fator, 1.15, delta=0.01)
 
     def test_janela_cresce_com_o_texto(self):
         tema.ESCALA = 1.15

@@ -23,6 +23,14 @@ function Badge({ texto }) {
 
 const versoes = [
   {
+    numero: '1.14.1',
+    data: '26 de setembro de 2026',
+    categorias: ['Robustez'],
+    itens: [
+      { cat: 'Robustez', texto: 'Mesmo conteúdo da 1.14.0, agora com o instalador do Windows — o da 1.14.0 não foi gerado porque um teste novo era exigente demais com o arredondamento do tamanho do texto' },
+    ],
+  },
+  {
     numero: '1.14.0',
     data: '26 de setembro de 2026',
     destaque: true,
