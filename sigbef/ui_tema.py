@@ -744,6 +744,15 @@ class FaixaDeBotoes(ttk.Frame):
     "Importar CSV", e voltava a acontecer com o texto em tamanho Grande.
     Aqui, o que não cabe desce para uma segunda linha e continua inteiro.
 
+    Cada linha é um quadro próprio, e os botões são empacotados dentro
+    dele (`in_`). Assim quem calcula a altura da faixa é o próprio Tk.
+    A primeira versão posicionava os botões com `place` e ajustava a
+    altura na mão a cada `<Configure>`: quando esse evento não chegava
+    na hora certa, a faixa ficava com 1 pixel e os botões sumiam — no
+    cabeçalho de Livros sobrou só um risco onde deviam estar "Mais" e
+    "Cadastrar livro". Agora, sem medida nenhuma, tudo fica numa linha
+    só, visível.
+
     Os botões são criados com esta faixa como pai e registrados com
     `adicionar`, na ordem em que aparecem da esquerda para a direita.
     """
@@ -753,11 +762,13 @@ class FaixaDeBotoes(ttk.Frame):
         self._espaco = espaco
         self._alinhar = alinhar
         self._botoes: list = []
+        self._quadros: list = []
+        self._arranjo: list = []
         self.bind("<Configure>", self._arrumar, add="+")
 
     def adicionar(self, widget):
         self._botoes.append(widget)
-        self.after_idle(self._arrumar)
+        self._arrumar()
         return widget
 
     def _linhas(self, largura: int) -> list:
@@ -775,21 +786,31 @@ class FaixaDeBotoes(ttk.Frame):
     def _arrumar(self, _evento=None):
         try:
             largura = self.winfo_width()
-            if largura <= 1 or not self._botoes:
-                return
-            y = 0
-            for linha in self._linhas(largura):
-                ocupada = (sum(b.winfo_reqwidth() for b in linha)
-                           + self._espaco * (len(linha) - 1))
-                altura = max(b.winfo_reqheight() for b in linha)
-                x = max(0, largura - ocupada) if self._alinhar == "right" else 0
-                for botao in linha:
-                    botao.place(x=x, y=y + (altura - botao.winfo_reqheight()) // 2)
-                    x += botao.winfo_reqwidth() + self._espaco
-                y += altura + self._espaco
-            altura_total = max(1, y - self._espaco)
-            if int(self.cget("height") or 0) != altura_total:
-                self.configure(height=altura_total)
+            if largura <= 1:
+                largura = 10 ** 6  # ainda sem medida: tudo numa linha
+            linhas = self._linhas(largura)
+            arranjo = [[str(b) for b in linha] for linha in linhas]
+            if arranjo == self._arranjo:
+                return  # nada mudou; evita laço com o próprio <Configure>
+            self._arranjo = arranjo
+
+            for botao in self._botoes:
+                botao.pack_forget()
+            for quadro in self._quadros:
+                quadro.pack_forget()
+            while len(self._quadros) < len(linhas):
+                self._quadros.append(ttk.Frame(self))
+
+            lado = "e" if self._alinhar == "right" else "w"
+            for n, (quadro, linha) in enumerate(zip(self._quadros, linhas)):
+                quadro.pack(side="top", anchor=lado,
+                            pady=(self._espaco if n else 0, 0))
+                for i, botao in enumerate(linha):
+                    botao.pack(in_=quadro, side="left",
+                               padx=(self._espaco if i else 0, 0))
+                    # O quadro foi criado depois do botão e ficaria por
+                    # cima dele, escondendo-o.
+                    botao.lift(quadro)
         except tk.TclError:
             pass  # janela sendo fechada
 

@@ -177,6 +177,18 @@ class TestFaixaDeBotoes(_ComTk):
         self.assertAlmostEqual(ultimo.winfo_x() + ultimo.winfo_width(),
                                faixa.winfo_width(), delta=1)
 
+    def test_botoes_aparecem_mesmo_sem_evento_de_tamanho(self):
+        # Defeito real: a faixa dependia de um <Configure> para ganhar
+        # altura; sem ele ficava com 1 px e o cabeçalho de Livros mostrava
+        # só um risco no lugar de "Mais" e "Cadastrar livro".
+        faixa = tema.FaixaDeBotoes(self.root)  # nem empacotada
+        botao = faixa.adicionar(ttk.Button(faixa, text="Cadastrar livro"))
+        self.root.update_idletasks()
+        self.assertGreaterEqual(faixa.winfo_reqheight(),
+                                botao.winfo_reqheight())
+        self.assertGreaterEqual(faixa.winfo_reqwidth(),
+                                botao.winfo_reqwidth())
+
     def test_alinhada_a_esquerda(self):
         _faixa, botoes = self.montar(900, alinhar="left")
         self.assertEqual(botoes[0].winfo_x(), 0)
