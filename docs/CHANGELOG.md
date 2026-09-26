@@ -2,6 +2,188 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [1.14.0] — 2026-09-26
+
+Três mudanças para quem usa o sistema todo dia: a **busca** passa a
+achar o que se digita, sem se preocupar com acento; a **tela** ficou
+com um botão principal por seção e um passo a passo na primeira vez; e
+dá para usar o SIGBEF **sem mouse**, com texto maior e cores com
+contraste de verdade.
+
+### Busca que acha o que o aluno digita
+
+A busca era um `LIKE`, e o `LIKE` do SQLite só ignora maiúscula em
+ASCII: `Á` e `á` eram letras diferentes, e `ã` não era `a`. Medido no
+acervo real do CEFE:
+
+| O aluno digita | Achava | Com o acento certo |
+|---|---|---|
+| `joao` | 0 | `João` → 61 |
+| `memorias` | 0 | `Memórias` → 27 |
+| `coracao` | 0 | `Coração` → 14 |
+| `matematica` | 0 | `Matemática` → 6 |
+| `machado casmurro` | 0 | — |
+
+Quem digita no celular quase nunca põe acento. E a planilha importada
+veio metade sem acento, então o contrário também acontecia: `portugues`
+achava 23 livros e `Português` só 2. Quem escrevia certo era punido.
+
+- A busca agora usa o **FTS5** do próprio SQLite, com o tokenizador que
+  tira acento. Sem dependência nova: vem junto com o Python
+- **Acento e maiúscula não importam mais**, nos dois sentidos
+- **Palavras em qualquer ordem e em qualquer campo**: `machado casmurro`
+  acha o livro pelo autor e pelo título ao mesmo tempo
+- **Prefixo enquanto digita**: `casm` acha *Dom Casmurro*
+- **Busca por tombo**, que o README prometia e não existia. E ISBN com
+  ou sem hífen acham o mesmo livro
+- **O mais relevante primeiro**: quem digita `1984` recebe o livro
+  *1984* no topo, e não o que vier antes em ordem alfabética
+
+Vale para todas as buscas: acervo da bibliotecária, pesquisa do aluno,
+seletor do empréstimo de coleção e a API — então o **aplicativo Android
+melhora sem mudar uma linha de Kotlin**.
+
+### E ficou mais rápida — muito, no caso que mais importava
+
+Medido com 250 mil livros:
+
+| Busca | Antes | Depois |
+|---|---|---|
+| `historia` | **0 livros em 5,2 s** | 25.370 em 125 ms |
+| `joao` | **0 livros em 6,6 s** | 31.250 em 166 ms |
+| `História` | 25.370 em 306 ms | 25.370 em 143 ms |
+
+A busca antiga era **mais lenta justamente quando não achava nada**:
+sem casar no título, o `OR` descia na subconsulta de autores linha por
+linha, 250 mil vezes. O aluno sem acento esperava seis segundos para
+ouvir "nada encontrado".
+
+### Mudança de comportamento, deliberada
+
+**Pedaço do meio de uma palavra não acha mais.** O `LIKE` achava
+`ética` dentro de *Poética* e *Aritmética* — no acervo do CEFE, 8 dos 9
+resultados eram ruído; o único livro de fato sobre ética era *PCN
+Transversais e Ética*, que continua aparecendo. Busca por prefixo de
+palavra é o que qualquer buscador faz.
+
+### Como o índice fica certo
+
+- **Mantido por gatilhos no banco**, e não por chamadas espalhadas no
+  código. Cadastro, edição, importação, tombo, exclusão e reset mexem
+  no acervo por caminhos diferentes; um índice que depende de cada um
+  lembrar de avisá-lo fica desatualizado no primeiro que esquecer
+- **Empréstimo não custa nada à busca**: os gatilhos de exemplar só
+  olham tombo, então mudar o status numa devolução não reindexa
+- **O banco da escola se atualiza sozinho** na primeira subida: 54 ms
+  para o acervo do CEFE, 3,2 s para 250 mil livros, uma vez só. Se o
+  índice estiver incompleto — subida interrompida, backup antigo
+  restaurado —, ele se refaz
+- **Entrada hostil não derruba**: aspas, parênteses, dois-pontos,
+  asterisco e `AND`/`OR`/`NOT` são operadores do FTS5, e digitados crus
+  dariam erro de sintaxe. Só letras e números chegam à consulta
+- **SQLite sem FTS5 não derruba o sistema**: volta a busca antiga
+
+### Testes
+
+- 696 no desktop (40 novos). Com a busca antiga forçada, **20 dos 40
+  falham** — o que prova que pegam o defeito. O de relevância foi
+  refeito depois de passar por coincidência: o livro concorrente agora
+  vem antes em ordem alfabética, então só a relevância explica o
+  resultado
+
+### Menos botões, e um passo a passo na primeira vez
+
+**Cada tela ficou com um botão colorido só** — a ação do dia a dia. O
+resto foi para onde faz sentido:
+
+| Tela | Antes | Agora |
+|---|---|---|
+| Livros | 7 botões + Pesquisar | **Cadastrar livro** + menu **Mais** (importar planilha, etiquetas em massa). Ver, editar e excluir estão na linha |
+| Usuários | 5 botões + Pesquisar | **Cadastrar usuário**. Editar, cartão, ativar e excluir estão na linha |
+| Empréstimos | 10 botões, cartões empilhados | Emprestar e Devolver **lado a lado** (a tabela ganhou altura); **Devolver selecionado** + **Mais ações**; lote e coleções no **Mais** |
+| Detalhes do livro | 6 botões em duas faixas | **Imprimir etiquetas**, **+ Adicionar exemplares** e o menu **Exemplar marcado** |
+| Pesquisa do aluno | Buscar, Ver detalhes, Pegar emprestado, Reservar | **Um botão** que vira "Entrar na fila de espera" quando não há exemplar |
+| Configurações | uma página longa com 19 botões | **Abas**: Regras, Backup e dados, Celular e internet, Aparência, Avançado |
+| Fila de espera, Conferir acervo, Uso | 2 botões cada | menu na linha ou um menu só |
+
+- **Ações de uma linha ficam na linha**: Enter ou duplo clique abre;
+  **botão direito** (ou Shift+F10) mostra editar, excluir, renovar,
+  imprimir cartão...; **Delete** exclui, sempre com confirmação
+- **A busca acontece enquanto se digita** — os botões Pesquisar/Buscar
+  saíram de todas as telas. Enter continua pesquisando na hora
+- Botões secundários ganharam aparência discreta (fundo branco), para o
+  olho achar logo o botão que importa
+- **"Dar baixa"** continua separado das correções — agora por uma linha
+  no menu — e ainda passa pela confirmação com motivo. Foi o botão que
+  já causou estrago quando ficava encostado em "Corrigir tombo"
+- **Aluno e professor não veem mais** as ações de acervo (baixa, tombo,
+  prateleira) na janela de detalhes do livro
+- Na Aparência, as cinco predefinições viraram uma lista e a própria
+  amostra de cor abre o seletor (sem os quatro "Escolher")
+
+**Boas-vindas.** Na primeira vez que cada pessoa entra, um passo a passo
+curto explica o sistema: cinco passos para a equipe da biblioteca (o
+menu, o balcão, onde ficaram as ações, atalhos) e três para aluno e
+professor (pesquisar, pegar emprestado, fila). Dá para pular, navegar
+pelas setas do teclado e rever a qualquer hora no botão **Como usar** do
+cabeçalho ou com **F1**.
+
+- 737 testes (15 novos em `test_interface_enxuta.py`), incluindo um que
+  confere que o texto de cada passo cabe acima dos botões — o passo 4
+  foi cortado na primeira versão
+
+### Acessibilidade no desktop
+
+**Dá para usar o SIGBEF sem mouse.** Antes, várias coisas só
+funcionavam com clique:
+
+| O quê | Antes | Agora |
+|---|---|---|
+| Abrir livro, editar usuário, devolver, pegar emprestado | só duplo clique | **Enter** na linha também |
+| Fechar uma janela | só o X | **Esc** (faz o mesmo que o X; nunca fecha a janela principal) |
+| Botão com foco | só barra de espaço | **Enter** também |
+| Trocar de seção | só clicando no menu | **Ctrl+1** a **Ctrl+9**, na ordem do menu |
+| Chegar numa tabela pelo Tab | nenhuma linha marcada, setas não faziam nada | a primeira linha fica marcada |
+| Tab num formulário longo | o foco ia para um campo fora da vista | a tela rola até o campo |
+| Cartões do autoatendimento | só toque/clique | Tab + Enter, com moldura de foco |
+
+**Dá para ver onde o teclado está.** O menu lateral escondia o anel de
+foco de propósito; agora o item focado fica mais claro e com anel
+branco. Botões coloridos ganharam anel branco (o escuro de antes sumia
+no azul), e o campo em foco ganha fundo levemente colorido além da
+borda.
+
+**Contraste.** Medido pela fórmula da WCAG (mínimo 4,5:1 para texto):
+
+| Cor | Antes | Agora |
+|---|---|---|
+| Laranja de aviso, como texto | 2,9:1 | 4,9:1 |
+| Texto branco no botão laranja | 3,1:1 | 5,9:1 |
+| Verde de sucesso no fundo Roxo | 4,2:1 | 5,4:1 |
+| Botões na predefinição Verde Floresta | 3,3:1 | 4,5:1 ou mais |
+| Linhas de empréstimo devolvido | 3,5:1 | 4,8:1 |
+
+Cor personalizada clara demais para texto branco não é recusada: o
+sistema usa um tom mais escuro dela só onde há texto por cima.
+
+**Tamanho do texto** em Configurações → Aparência: Normal, Grande
+(+15%) e Muito grande (+30%). Aumenta todas as letras de uma vez e as
+janelas crescem junto, sem passar do tamanho da tela. As faixas de
+botões de Livros e Empréstimos agora **quebram linha** quando falta
+largura — antes o botão da ponta era espremido até sumir.
+
+Conferido tela por tela numa janela de 1366×720: em Grande, tudo
+cabe. Em Muito grande, Empréstimos fica apertado na altura, e a própria
+tela de configuração avisa isso.
+
+**O que não dá:** leitor de tela (NVDA, Narrador). O Tkinter no Windows
+não expõe os controles para eles — é limite da biblioteca, não algo que
+se conserte tela a tela.
+
+- 722 testes no desktop (26 novos em `test_acessibilidade.py`: contraste
+  de toda cor fixa em toda predefinição, tamanho do texto, Esc, Enter,
+  foco na tabela, faixa que quebra linha)
+
 ## [1.13.0] — 2026-09-10
 
 Pedido da bibliotecária, e o mesmo padrão dos últimos três: a função já

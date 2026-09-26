@@ -199,14 +199,22 @@ class TerminalAutoatendimento(tk.Tk):
              "desfazer", tema.COR_AVISO, self._mostrar_devolver),
             ("Meus empréstimos",
              "Veja os livros que estão com você.",
-             "leitor", tema.COR_SECUNDARIA, self._mostrar_meus),
+             "leitor", tema.legivel_com_branco(tema.COR_SECUNDARIA),
+             self._mostrar_meus),
         ]):
-            card = tk.Frame(centro, bg=cor, cursor="hand2")
+            # Cartão alcançável pelo Tab, com moldura de foco bem visível
+            # e acionado por Enter ou espaço — antes, só pelo mouse.
+            card = tk.Frame(centro, bg=cor, cursor="hand2", takefocus=1,
+                            highlightthickness=4,
+                            highlightcolor=tema.COR_TEXTO,
+                            highlightbackground=tema.COR_FUNDO)
             card.grid(row=0, column=col, padx=10, sticky="nsew",
                        ipadx=20, ipady=20)
             centro.columnconfigure(col, weight=1)
             centro.rowconfigure(0, weight=1)
             card.bind("<Button-1>", lambda e, c=callback: c())
+            for tecla in ("<Return>", "<KP_Enter>", "<space>"):
+                card.bind(tecla, lambda e, c=callback: (c(), "break")[1])
             tk.Label(card, bg=cor,
                      image=icones.icone(nome_icone, "branco", 40)
                      ).pack(pady=(40, 12))

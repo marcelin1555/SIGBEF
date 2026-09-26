@@ -14,7 +14,7 @@
 [![Tkinter](https://img.shields.io/badge/UI-Tkinter-F2A900?style=for-the-badge)](https://docs.python.org/3/library/tkinter.html)
 
 [![Status](https://img.shields.io/badge/status-em%20produção-2E7D32?style=flat)](#)
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.13.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-1.14.0-2E75B6?style=flat&logo=semver&logoColor=white)](#)
 [![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Android-6B7280?style=flat)](#)
 [![Sem dependências](https://img.shields.io/badge/dependências-só%20std%20lib-2E7D32?style=flat&logo=python&logoColor=white)](#)
 [![Idioma](https://img.shields.io/badge/idioma-pt--BR-009C3B?style=flat&logo=googletranslate&logoColor=white)](#)
@@ -90,7 +90,8 @@ escolar, substituindo controles manuais e planilhas por uma plataforma
 única que integra:
 
 - **Cadastro do acervo** com geração automática de código de barras por exemplar
-- **Pesquisa** flexível por título, autor, categoria, ISBN ou tombo
+- **Pesquisa** por título, autor, categoria, ISBN ou tombo — sem se
+  preocupar com acento, maiúscula ou ordem das palavras
 - **Empréstimos e devoluções** no balcão e em terminal de autoatendimento
 - **Reservas com fila de espera**, com separação automática do exemplar
   na devolução e aviso por e-mail (opt-in)
@@ -749,6 +750,15 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Busca sem acento e por tombo** — "joao" acha "João", as palavras
+      vêm em qualquer ordem, e tombo e ISBN também são achados; num
+      acervo de 250 mil livros, de 6,6 s para 0,17 s (v1.14.0)
+- [x] **Interface enxuta e boas-vindas** — um botão principal por tela,
+      ações da linha no botão direito, busca enquanto se digita, e um
+      passo a passo na primeira vez de cada pessoa (v1.14.0)
+- [x] **Acessibilidade no desktop** — uso completo pelo teclado, foco
+      visível, contraste medido pela WCAG e tamanho de texto ajustável
+      (v1.14.0)
 - [x] **Acrescentar exemplares a um livro já cadastrado** — a segunda
       leva do mesmo livro-texto entra no registro que já existe, em vez
       de virar um título duplicado. De quebra, a numeração automática de
@@ -888,7 +898,7 @@ O planejamento original de abril está preservado em
 
 <div align="center">
 
-**SIGBEF v1.13.0** — Setembro/2026
+**SIGBEF v1.14.0** — Setembro/2026
 
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 

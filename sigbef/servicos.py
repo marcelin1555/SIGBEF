@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Optional, Sequence
 
+from . import database
 from .auth import gerar_hash
 from .barcode_util import gerar_codigo_exemplar, gerar_codigo_usuario
 from .database import db_cursor, get_config, set_config, registrar_auditoria
@@ -463,17 +464,88 @@ def remover_brasao(usuario_id: Optional[int] = None) -> None:
     registrar_auditoria(usuario_id, "BRASAO_REMOVIDO", "")
 
 
+_PALAVRA = re.compile(r"\w+", re.UNICODE)
+
+
+def consulta_de_busca(termo: str) -> Optional[str]:
+    """Traduz o que a pessoa digitou numa consulta FTS5 segura.
+
+    Cada palavra vira um prefixo ("casm" acha "Casmurro") e todas
+    precisam aparecer, em qualquer ordem e em qualquer campo: "machado
+    casmurro" acha o livro pelo autor e pelo título ao mesmo tempo.
+
+    A entrada nunca chega crua ao MATCH. Aspas, parênteses, dois-pontos,
+    asterisco e hífen são operadores do FTS5, e "Dom Casmurro: edição
+    crítica" ou "C++" digitados como vieram derrubariam a busca com erro
+    de sintaxe. Só as sequências de letras e números passam, e sempre
+    entre aspas -- o que também desarma AND, OR e NOT digitados como
+    palavra.
+
+    Um código com separador ("978-85-359-1066-3", "00012-004") vira duas
+    alternativas: as partes em sequência, que acham o tombo; e tudo
+    junto, que acha o ISBN guardado sem hífen.
+
+    Prefixo só a partir de duas letras. "C++" vira "C", e "C" como
+    prefixo acharia toda palavra que começa com C -- no acervo do CEFE,
+    1.422 dos 2.867 livros. Com uma letra, a palavra tem de ser
+    exatamente ela.
+
+    Devolve None quando não sobra nada pesquisável.
+    """
+    blocos = []
+    for pedaco in (termo or "").split():
+        partes = _PALAVRA.findall(pedaco)
+        if not partes:
+            continue
+        prefixo = "*" if len(partes[-1]) >= 2 else ""
+        frase = '"%s"%s' % (" ".join(partes), prefixo)
+        if len(partes) > 1 and any(ch.isdigit() for ch in pedaco):
+            frase = '(%s OR "%s"*)' % (frase, "".join(partes))
+        blocos.append(frase)
+    return " ".join(blocos) or None
+
+
 def _filtro_de_livros(termo: str, apenas_disponiveis: bool,
                       categoria: Optional[str], autor: Optional[str]):
-    """Monta o WHERE compartilhado entre listar e contar.
+    """Monta a junção e o WHERE compartilhados entre listar e contar.
 
     Existe para os dois nunca discordarem: um total que não bate com a
     lista é pior que total nenhum, porque a pessoa fica procurando o
-    livro que o contador prometeu.
+    livro que o contador prometeu. Por isso a busca textual entra como
+    JUNÇÃO, e não só no WHERE: listar precisa da relevância para ordenar,
+    e contar tem de passar exatamente pelas mesmas linhas.
+
+    Devolve (juncao, onde, params), com os parâmetros da junção antes
+    dos do WHERE, na ordem em que aparecem no SQL.
     """
-    termo_like = f"%{termo.strip()}%" if termo else "%"
-    params: list = [termo_like, termo_like, termo_like, termo_like]
-    onde = """l.ativo = 1
+    juncao = ""
+    params: list = []
+    onde = "l.ativo = 1"
+    termo = (termo or "").strip()
+
+    if termo and database.BUSCA_FTS:
+        consulta = consulta_de_busca(termo)
+        if consulta is None:
+            # Só pontuação: nada a procurar, e nada a mostrar -- o LIKE
+            # antigo também não achava título nenhum com "***".
+            onde += " AND 0"
+        else:
+            # Pesos do bm25 por coluna: acertar no título vale mais que
+            # no autor, que vale mais que na categoria. Um tombo ou ISBN
+            # costuma achar um livro só, então o peso ali pouco importa.
+            juncao = """JOIN (
+                SELECT rowid AS livro_id,
+                       bm25(livro_busca, 10.0, 5.0, 2.0, 1.0) AS relevancia
+                  FROM livro_busca
+                 WHERE livro_busca MATCH ?
+            ) busca ON busca.livro_id = l.id"""
+            params.append(consulta)
+    elif termo:
+        # SQLite sem FTS5: a busca de antes, que ainda tropeça em acento,
+        # mas mantém o sistema de pé.
+        termo_like = f"%{termo}%"
+        params += [termo_like, termo_like, termo_like, termo_like]
+        onde += """
           AND (
                 l.titulo LIKE ?
                 OR IFNULL(l.isbn, '') LIKE ?
@@ -498,7 +570,7 @@ def _filtro_de_livros(termo: str, apenas_disponiveis: bool,
         # com menos livros do que cabia nela.
         onde += (" AND EXISTS (SELECT 1 FROM exemplar ex2 "
                  "WHERE ex2.livro_id = l.id AND ex2.status = 'DISPONIVEL')")
-    return onde, params
+    return juncao, onde, params
 
 
 def contar_livros(termo: str = "", apenas_disponiveis: bool = False,
@@ -509,10 +581,11 @@ def contar_livros(termo: str = "", apenas_disponiveis: bool = False,
     Barato porque não monta os agregados de exemplar nem os autores:
     é a contagem que a tela mostra ao lado da página exibida.
     """
-    onde, params = _filtro_de_livros(termo, apenas_disponiveis,
-                                      categoria, autor)
+    juncao, onde, params = _filtro_de_livros(termo, apenas_disponiveis,
+                                              categoria, autor)
     with db_cursor() as cur:
         cur.execute(f"""SELECT COUNT(*) FROM livro l
+                        {juncao}
                         LEFT JOIN categoria c ON c.id = l.categoria_id
                         WHERE {onde}""", params)
         return cur.fetchone()[0]
@@ -535,8 +608,14 @@ def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
     50 vezes três, não 250 mil vezes três. Sem limite, o comportamento é
     o de antes — quem exporta CSV precisa mesmo de tudo.
     """
-    onde, params = _filtro_de_livros(termo, apenas_disponiveis,
-                                      categoria, autor)
+    juncao, onde, params = _filtro_de_livros(termo, apenas_disponiveis,
+                                              categoria, autor)
+    # Com busca, o mais relevante primeiro: quem digita "1984" quer o
+    # livro "1984" no topo, não enterrado entre os títulos que começam
+    # com "19". Sem busca, a ordem alfabética de sempre. O título e o id
+    # desempatam, para "Carregar mais" nunca repetir nem pular um livro.
+    ordem = ("busca.relevancia, l.titulo, l.id" if juncao
+             else "l.titulo, l.id")
     paginacao = ""
     if limite is not None:
         paginacao = " LIMIT ? OFFSET ?"
@@ -564,10 +643,11 @@ def listar_livros(termo: str = "", apenas_disponiveis: bool = False,
             (SELECT COUNT(*) FROM exemplar ex
                 WHERE ex.livro_id = l.id AND ex.status = 'DISPONIVEL') AS disponiveis
         FROM livro l
+        {juncao}
         LEFT JOIN categoria c ON c.id = l.categoria_id
         LEFT JOIN editora e ON e.id = l.editora_id
         WHERE {onde}
-        ORDER BY l.titulo, l.id{paginacao}
+        ORDER BY {ordem}{paginacao}
     """
     with db_cursor() as cur:
         cur.execute(sql, params)
