@@ -13,6 +13,7 @@ Fluxo de inicialização:
 """
 from __future__ import annotations
 
+import os
 import sys
 
 from . import seed
@@ -45,6 +46,12 @@ def main(argv: list[str] | None = None) -> int:
         except KeyboardInterrupt:
             servidor.server_close()
         return 0
+
+    # --demo tambem liga o cartao de credenciais na tela de login. Vale
+    # mesmo com o banco ja populado: numa banca de feira o acervo e o de
+    # verdade, e o que falta e so poder entrar sem decorar senha.
+    if "--demo" in argv or "--popular-demo" in argv:
+        os.environ["SIGBEF_DEMO"] = "1"
 
     # 2. Primeira execução: nenhum usuário cadastrado
     if seed.banco_vazio():
