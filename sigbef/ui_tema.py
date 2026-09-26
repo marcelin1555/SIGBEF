@@ -330,6 +330,28 @@ def aplicar_tema(root):
     style.map("Aviso.TButton", background=[("active", _ajustar_cor(COR_AVISO, 0.8)),
                                            ("disabled", "#E0B79A")])
 
+    # Botões secundários discretos: fundo branco, texto na cor primária.
+    # Cada tela tem UM botão colorido (a ação principal); o resto fica
+    # nesta aparência calma, para o olho achar logo o que importa.
+    style.configure("Discreto.TButton", font=FONTE_BOTAO, padding=(14, 7),
+                    background=COR_CARD, foreground=COR_PRIMARIA,
+                    bordercolor=COR_BORDA, lightcolor=COR_CARD,
+                    darkcolor=COR_CARD, borderwidth=1,
+                    focuscolor=COR_PRIMARIA, focusthickness=1)
+    style.map("Discreto.TButton",
+              background=[("pressed", COR_FUNDO_ESCURO), ("active", COR_FUNDO)],
+              bordercolor=[("active", COR_PRIMARIA), ("focus", COR_PRIMARIA)],
+              foreground=[("disabled", "#8A94A0")])
+    # O menu "Mais ▾" tem a mesma aparência discreta
+    style.configure("TMenubutton", font=FONTE_BOTAO, padding=(14, 7),
+                    background=COR_CARD, foreground=COR_PRIMARIA,
+                    bordercolor=COR_BORDA, lightcolor=COR_CARD,
+                    darkcolor=COR_CARD, borderwidth=1,
+                    arrowcolor=COR_PRIMARIA, focuscolor=COR_PRIMARIA)
+    style.map("TMenubutton",
+              background=[("pressed", COR_FUNDO_ESCURO), ("active", COR_FUNDO)],
+              bordercolor=[("active", COR_PRIMARIA), ("focus", COR_PRIMARIA)])
+
     style.configure("Sidebar.TButton", font=FONTE_BOTAO_GRANDE,
                     background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO,
                     padding=(20, 14), borderwidth=0, anchor="w",
@@ -386,6 +408,7 @@ def aplicar_tema(root):
 
     for tecla in ("<Return>", "<KP_Enter>"):
         root.bind_class("TButton", tecla, acionar)
+        root.bind_class("TMenubutton", tecla, _abrir_menubutton)
 
     root.bind_all("<Escape>", _esc_fecha_dialogo, add="+")
     return style
@@ -414,6 +437,118 @@ def _esc_fecha_dialogo(evento):
     else:
         janela.destroy()
     return "break"
+
+
+def _abrir_menubutton(evento):
+    """Enter abre o menu "Mais ▾" (o Tk só abre com espaço ou clique)."""
+    try:
+        evento.widget.tk.call("ttk::menubutton::Popdown", evento.widget)
+    except tk.TclError:
+        pass
+    return "break"
+
+
+def _montar_menu(pai, itens) -> tk.Menu:
+    """Menu a partir de [(rótulo, comando), None (separador), ...]."""
+    menu = tk.Menu(pai, tearoff=0, font=FONTE_BASE,
+                   activebackground=legivel_com_branco(COR_SECUNDARIA),
+                   activeforeground=COR_TEXTO_CLARO)
+    for item in itens:
+        if item is None:
+            menu.add_separator()
+        else:
+            rotulo, comando = item
+            menu.add_command(label=rotulo, command=comando)
+    return menu
+
+
+def botao_menu(pai, texto: str, itens) -> ttk.Menubutton:
+    """Botão "Mais ▾": junta ações usadas de vez em quando num só lugar.
+
+    As telas tinham um botão para cada coisa — Livros chegou a sete na
+    mesma faixa. A ação do dia a dia fica à vista; o resto mora aqui,
+    a um clique, sem disputar atenção.
+    """
+    botao = ttk.Menubutton(pai, text=texto)
+    botao["menu"] = _montar_menu(botao, itens)
+    return botao
+
+
+def menu_de_linha(tabela, itens) -> tk.Menu:
+    """Menu das ações de uma linha: botão direito, Shift+F10 ou tecla Menu.
+
+    Substitui a fileira de botões "Editar · Excluir · Ver detalhes" que
+    ficava sobre cada tabela. Pelo mouse, o botão direito marca a linha
+    clicada antes de abrir, para a ação cair na linha certa.
+    """
+    menu = _montar_menu(tabela, itens)
+
+    def abrir(x, y):
+        try:
+            menu.tk_popup(x, y)
+        finally:
+            menu.grab_release()
+
+    def pelo_mouse(evento):
+        linha = tabela.identify_row(evento.y)
+        if not linha:
+            return
+        if linha not in tabela.selection():
+            tabela.selection_set(linha)
+        tabela.focus(linha)
+        abrir(evento.x_root, evento.y_root)
+
+    def pelo_teclado(_evento):
+        linha = tabela.focus() or next(iter(tabela.selection()), "")
+        if linha:
+            caixa = tabela.bbox(linha) or (0, 0, 0, 0)
+            abrir(tabela.winfo_rootx() + 40,
+                  tabela.winfo_rooty() + caixa[1] + caixa[3])
+        return "break"
+
+    tabela.bind("<Button-3>", pelo_mouse, add="+")
+    for tecla in ("<Shift-F10>", "<App>"):
+        try:
+            tabela.bind(tecla, pelo_teclado)
+        except tk.TclError:
+            pass  # tecla Menu não existe neste sistema
+    return menu
+
+
+def busca_ao_digitar(campo, acao, atraso: int = 350) -> None:
+    """Pesquisa enquanto a pessoa digita, sem botão "Pesquisar".
+
+    Espera uma pausa curta na digitação para não pesquisar a cada letra.
+    Enter continua pesquisando na hora.
+    """
+    estado = {"agendado": None, "ultimo": campo.get()}
+
+    def cancelar():
+        if estado["agendado"]:
+            campo.after_cancel(estado["agendado"])
+            estado["agendado"] = None
+
+    def disparar():
+        estado["agendado"] = None
+        acao()
+
+    def ao_soltar_tecla(_evento):
+        texto = campo.get()
+        if texto == estado["ultimo"]:
+            return  # setas, Shift, Tab: nada mudou
+        estado["ultimo"] = texto
+        cancelar()
+        estado["agendado"] = campo.after(atraso, disparar)
+
+    def agora(_evento):
+        cancelar()
+        estado["ultimo"] = campo.get()
+        acao()
+        return "break"
+
+    campo.bind("<KeyRelease>", ao_soltar_tecla, add="+")
+    campo.bind("<Return>", agora)
+    campo.bind("<KP_Enter>", agora)
 
 
 def ao_ativar_linha(tabela, acao) -> None:
@@ -657,6 +792,32 @@ class FaixaDeBotoes(ttk.Frame):
                 self.configure(height=altura_total)
         except tk.TclError:
             pass  # janela sendo fechada
+
+
+def area_com_rolagem(pai):
+    """Área com barra de rolagem vertical; devolve o quadro interno.
+
+    Roda do mouse só enquanto o ponteiro está em cima dela, e o Tab
+    leva a rolagem junto (rolar_ate_o_foco).
+    """
+    canvas = tk.Canvas(pai, bg=COR_FUNDO, highlightthickness=0)
+    barra = ttk.Scrollbar(pai, orient="vertical", command=canvas.yview)
+    canvas.configure(yscrollcommand=barra.set)
+    barra.pack(side="right", fill="y")
+    canvas.pack(side="left", fill="both", expand=True)
+    interior = ttk.Frame(canvas)
+    janela = canvas.create_window((0, 0), window=interior, anchor="nw")
+    canvas.bind("<Configure>",
+                lambda e: canvas.itemconfig(janela, width=e.width))
+    interior.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+
+    def rodinha(evento):
+        canvas.yview_scroll(int(-1 * (evento.delta / 120)), "units")
+    canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", rodinha))
+    canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+    rolar_ate_o_foco(canvas, interior)
+    return interior
 
 
 def rolar_ate_o_foco(canvas, interior) -> None:

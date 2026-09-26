@@ -85,6 +85,47 @@ palavra é o que qualquer buscador faz.
   vem antes em ordem alfabética, então só a relevância explica o
   resultado
 
+### Menos botões, e um passo a passo na primeira vez
+
+**Cada tela ficou com um botão colorido só** — a ação do dia a dia. O
+resto foi para onde faz sentido:
+
+| Tela | Antes | Agora |
+|---|---|---|
+| Livros | 7 botões + Pesquisar | **Cadastrar livro** + menu **Mais** (importar planilha, etiquetas em massa). Ver, editar e excluir estão na linha |
+| Usuários | 5 botões + Pesquisar | **Cadastrar usuário**. Editar, cartão, ativar e excluir estão na linha |
+| Empréstimos | 10 botões, cartões empilhados | Emprestar e Devolver **lado a lado** (a tabela ganhou altura); **Devolver selecionado** + **Mais ações**; lote e coleções no **Mais** |
+| Detalhes do livro | 6 botões em duas faixas | **Imprimir etiquetas**, **+ Adicionar exemplares** e o menu **Exemplar marcado** |
+| Pesquisa do aluno | Buscar, Ver detalhes, Pegar emprestado, Reservar | **Um botão** que vira "Entrar na fila de espera" quando não há exemplar |
+| Configurações | uma página longa com 19 botões | **Abas**: Regras, Backup e dados, Celular e internet, Aparência, Avançado |
+| Fila de espera, Conferir acervo, Uso | 2 botões cada | menu na linha ou um menu só |
+
+- **Ações de uma linha ficam na linha**: Enter ou duplo clique abre;
+  **botão direito** (ou Shift+F10) mostra editar, excluir, renovar,
+  imprimir cartão...; **Delete** exclui, sempre com confirmação
+- **A busca acontece enquanto se digita** — os botões Pesquisar/Buscar
+  saíram de todas as telas. Enter continua pesquisando na hora
+- Botões secundários ganharam aparência discreta (fundo branco), para o
+  olho achar logo o botão que importa
+- **"Dar baixa"** continua separado das correções — agora por uma linha
+  no menu — e ainda passa pela confirmação com motivo. Foi o botão que
+  já causou estrago quando ficava encostado em "Corrigir tombo"
+- **Aluno e professor não veem mais** as ações de acervo (baixa, tombo,
+  prateleira) na janela de detalhes do livro
+- Na Aparência, as cinco predefinições viraram uma lista e a própria
+  amostra de cor abre o seletor (sem os quatro "Escolher")
+
+**Boas-vindas.** Na primeira vez que cada pessoa entra, um passo a passo
+curto explica o sistema: cinco passos para a equipe da biblioteca (o
+menu, o balcão, onde ficaram as ações, atalhos) e três para aluno e
+professor (pesquisar, pegar emprestado, fila). Dá para pular, navegar
+pelas setas do teclado e rever a qualquer hora no botão **Como usar** do
+cabeçalho ou com **F1**.
+
+- 737 testes (15 novos em `test_interface_enxuta.py`), incluindo um que
+  confere que o texto de cada passo cabe acima dos botões — o passo 4
+  foi cortado na primeira versão
+
 ### Acessibilidade no desktop
 
 **Dá para usar o SIGBEF sem mouse.** Antes, várias coisas só

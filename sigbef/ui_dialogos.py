@@ -2057,49 +2057,48 @@ class DialogoDetalhesLivro(tk.Toplevel):
         self._titulo = livro["titulo"]
         self.tree = tree
         self._preencher_exemplares(livro)
-        # As ações em DUAS faixas, e as faixas antes da tabela.
+        # As ações ficam numa faixa só, antes da tabela, no rodapé.
         #
-        # Duas coisas foram consertadas aqui de uma vez.
+        # `pack` reparte na ordem em que é chamado: empacotada depois da
+        # tabela com `expand=True`, a faixa ficava com poucos pixels de
+        # altura — dava para ver a cor de cada botão e nada mais.
         #
-        # A primeira é o de sempre: `pack` reparte na ordem em que é
-        # chamado, e a tabela com `expand=True` deixava a faixa de
-        # botões com poucos pixels de altura — dava para ver a cor de
-        # cada botão e nada mais.
+        # Eram seis botões em duas faixas. Agora: a ação principal
+        # (etiquetas), acrescentar exemplares, e o que se faz com UM
+        # exemplar num menu — o mesmo do botão direito na linha.
         #
-        # A segunda é a que causou o estrago real. "Dar baixa no
-        # exemplar" ficava encostado em "Corrigir tombo" e "Mudar
-        # prateleira", com a mesma cara, e a bibliotecária clicou no
-        # errado: o exemplar saiu do acervo, o empréstimo foi encerrado
-        # e a multa foi lançada num aluno que não devia nada. Agora o
-        # que **corrige** fica numa linha e o que **tira do acervo**
-        # fica em outra, com cor de perigo.
-        acoes_acervo = ttk.Frame(wrap)
-        acoes_acervo.pack(side="bottom", fill="x", pady=(8, 0))
-        ttk.Button(acoes_acervo, text="Dar baixa no exemplar",
-                   style="Perigo.TButton",
-                   command=self._dar_baixa).pack(side="left")
-        ttk.Button(acoes_acervo, text="Reverter baixa",
-                   command=self._reverter_baixa).pack(side="left",
-                                                      padx=(8, 0))
-        ttk.Label(acoes_acervo,
-                  text="Tira ou devolve o exemplar ao acervo.",
-                  style="Hint.TLabel").pack(side="left", padx=(12, 0))
-
-        correcoes = ttk.Frame(wrap)
-        correcoes.pack(side="bottom", fill="x", pady=(12, 0))
-        ttk.Button(correcoes, text="Imprimir etiquetas (visualizar)",
+        # "Dar baixa" já causou estrago real quando era um botão igual
+        # aos outros, encostado em "Corrigir tombo": a bibliotecária
+        # clicou no errado, o exemplar saiu do acervo e a multa caiu num
+        # aluno que não devia nada. No menu ela fica separada das
+        # correções por uma linha, e continua abrindo a confirmação com
+        # motivo antes de fazer qualquer coisa.
+        acoes = ttk.Frame(wrap)
+        acoes.pack(side="bottom", fill="x", pady=(12, 0))
+        ttk.Button(acoes, text="Imprimir etiquetas",
                    style="Primario.TButton",
                    command=lambda: VisualizadorBarcodes(self, livro)
                    ).pack(side="left")
-        ttk.Button(correcoes, text="Corrigir tombo",
-                   command=self._corrigir_tombo
-                   ).pack(side="left", padx=(8, 0))
-        ttk.Button(correcoes, text="Mudar prateleira",
-                   command=self._mudar_localizacao
-                   ).pack(side="left", padx=(8, 0))
-        ttk.Button(correcoes, text="Adicionar exemplares",
-                   command=self._adicionar_exemplares
-                   ).pack(side="left", padx=(8, 0))
+
+        # Aluno e professor também abrem esta janela pela pesquisa; para
+        # eles, ela só mostra — mexer no acervo é coisa da biblioteca.
+        if self.sessao is None or self.sessao.is_bibliotecario:
+            acoes_exemplar = [
+                ("Corrigir número de tombo...", self._corrigir_tombo),
+                ("Mudar de prateleira...", self._mudar_localizacao),
+                None,
+                ("Dar baixa (tirar do acervo)...", self._dar_baixa),
+                ("Reverter baixa...", self._reverter_baixa),
+            ]
+            ttk.Button(acoes, text="+ Adicionar exemplares",
+                       style="Discreto.TButton",
+                       command=self._adicionar_exemplares
+                       ).pack(side="left", padx=(8, 0))
+            tema.botao_menu(acoes, "Exemplar marcado", acoes_exemplar).pack(
+                side="left", padx=(8, 0))
+            tema.menu_de_linha(tree, acoes_exemplar)
+            ttk.Label(acoes, text="ou botão direito no exemplar",
+                      style="Hint.TLabel").pack(side="left", padx=(10, 0))
 
         tema.empacotar_com_rolagem(tree, fill="both", expand=True)
 

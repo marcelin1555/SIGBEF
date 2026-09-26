@@ -58,6 +58,13 @@ class PainelPrincipal(tk.Tk):
         self.bind("<F5>", lambda e: self._atualizar_secao_atual())
         self.bind("<Control-f>", lambda e: self._focar_busca())
         self.bind("<Control-F>", lambda e: self._focar_busca())
+        self.bind("<F1>", lambda e: self._como_usar())
+
+        # Primeira vez desta pessoa no sistema: o passo a passo abre
+        # sozinho, depois que a janela já apareceu por trás dele.
+        from . import ui_boas_vindas
+        if not ui_boas_vindas.ja_viu(sessao.id):
+            self.after(500, self._como_usar)
 
         # API REST opt-in: sobe junto com o painel quando está ativa
         from . import api
@@ -100,6 +107,9 @@ class PainelPrincipal(tk.Tk):
         ttk.Button(cabecalho, text="Sair",
                    image=icones.icone("sair"), compound="left",
                    command=self._sair).pack(side="right", padx=(0, 12))
+        ttk.Button(cabecalho, text="Como usar",
+                   style="Discreto.TButton",
+                   command=self._como_usar).pack(side="right", padx=(0, 8))
 
         # Corpo (sidebar + área principal)
         corpo = tk.Frame(self, bg=tema.COR_FUNDO)
@@ -154,7 +164,7 @@ class PainelPrincipal(tk.Tk):
         dica = tk.Label(sidebar, bg=tema.COR_PRIMARIA,
                         fg=tema.COR_PRIMARIA_SUAVE,
                         text=("Teclado: Ctrl+1 a Ctrl+%d trocam de seção, "
-                              "Ctrl+F busca, Enter abre a linha, "
+                              "Ctrl+F busca, Enter abre a linha, F1 ajuda, "
                               "Esc fecha a janela." % min(len(itens), 9)),
                         font=("Segoe UI", 9), justify="left",
                         wraplength=tema.escalar(224))
@@ -215,6 +225,10 @@ class PainelPrincipal(tk.Tk):
             btn.state(["selected"] if k == chave else ["!selected"])
         self._secoes[chave].pack(fill="both", expand=True)
         self._secoes[chave].atualizar()
+
+    def _como_usar(self):
+        from .ui_boas_vindas import DialogoBoasVindas
+        DialogoBoasVindas(self, self.sessao)
 
     def _ir_para_secao(self, chave: str):
         """Atalho de teclado: mostra a seção e leva o foco para dentro dela.
@@ -284,6 +298,28 @@ class SecaoBase(ttk.Frame):
 
     def atualizar(self) -> None:
         """Sobrescreva para recarregar dados ao mostrar a seção."""
+
+    def _cabecalho(self, titulo: str, subtitulo: str = ""):
+        """Título à esquerda e faixa de botões à direita, na mesma linha.
+
+        Devolve a faixa: quem chama adiciona os botões, da esquerda para
+        a direita, deixando a ação principal por último (na ponta).
+        """
+        linha = ttk.Frame(self)
+        linha.pack(fill="x")
+        ttk.Label(linha, text=titulo, style="Titulo.TLabel").pack(
+            side="left", anchor="n")
+        faixa = tema.FaixaDeBotoes(linha)
+        faixa.pack(side="left", fill="x", expand=True, padx=(16, 0),
+                   pady=(6, 0))
+        if subtitulo:
+            ttk.Label(self, text=subtitulo, style="Hint.TLabel").pack(
+                anchor="w")
+        return faixa
+
+    def _dica_de_linha(self, pai, texto: str):
+        """Lembrete discreto de que as ações da linha estão nela."""
+        return ttk.Label(pai, text=texto, style="Hint.TLabel")
 
 
 # ---------------------------------------------------------------------------
@@ -356,53 +392,40 @@ class SecaoLivros(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
 
-        topo = ttk.Frame(self)
-        topo.pack(fill="x")
-        ttk.Label(topo, text="Livros e exemplares",
-                  style="Titulo.TLabel").pack(side="left")
-
-        # Os botões ficam numa faixa própria, abaixo do título.
+        # Um botão colorido — a ação do dia a dia — e o resto no "Mais".
         #
-        # Eram seis, na mesma linha do título. Somados, passavam da
-        # largura útil, e o último empacotado — "Importar CSV" — era
-        # espremido até desaparecer, sobrando só uma lasca azul colada no
-        # título. A função existia e não tinha como ser alcançada.
-        #
-        # Com o texto em tamanho Grande, nem a faixa própria bastava: por
-        # isso ela quebra linha em vez de espremer o primeiro botão.
-        topo = tema.FaixaDeBotoes(self)
-        topo.pack(fill="x", pady=(10, 0))
-        for texto, comando in (
-                ("Importar CSV", self._importar_csv),
-                ("Etiquetas em massa", self._etiquetas_massa),
-                ("Excluir do acervo", self._excluir),
-                ("Editar", self._editar),
-                ("Ver detalhes / código de barras", self._detalhes)):
-            topo.adicionar(ttk.Button(topo, text=texto, command=comando))
+        # Esta faixa chegou a ter sete botões lado a lado ("Importar CSV",
+        # "Etiquetas em massa", "Excluir", "Editar", "Ver detalhes"...),
+        # e a bibliotecária tinha de ler todos para achar o que queria.
+        # Editar, excluir e ver detalhes são ações de UMA linha: agora
+        # moram na própria linha (Enter, duplo clique ou botão direito).
+        topo = self._cabecalho("Livros e exemplares")
+        topo.adicionar(tema.botao_menu(topo, "Mais", [
+            ("Importar livros de planilha (CSV)...", self._importar_csv),
+            ("Imprimir etiquetas em massa...", self._etiquetas_massa),
+        ]))
         topo.adicionar(ttk.Button(topo, text=" Cadastrar livro",
                                   image=icones.icone("mais", "branco", 14),
                                   compound="left",
                                   style="Primario.TButton",
                                   command=self._novo_livro))
 
-        # Filtros
+        # Filtros — a busca acontece enquanto se digita
         filtros = ttk.Frame(self, padding=(0, 12))
         filtros.pack(fill="x")
         ttk.Label(filtros, text="Buscar:").pack(side="left")
         self.ent_busca = ttk.Entry(filtros, width=32)
         self.ent_busca.pack(side="left", padx=8)
-        self.ent_busca.bind("<Return>", lambda e: self.atualizar())
+        tema.busca_ao_digitar(self.ent_busca, self.atualizar)
         ttk.Label(filtros, text="Categoria:").pack(side="left")
         self.cbo_categoria = ttk.Combobox(filtros, width=18, state="readonly")
         self.cbo_categoria.pack(side="left", padx=(4, 8))
         self.cbo_categoria.bind("<<ComboboxSelected>>",
                                  lambda e: self.atualizar())
         self.var_disponiveis = tk.BooleanVar(value=False)
-        ttk.Checkbutton(filtros, text="Apenas com exemplares disponíveis",
+        ttk.Checkbutton(filtros, text="Só com exemplar disponível",
                         variable=self.var_disponiveis,
                         command=self.atualizar).pack(side="left", padx=8)
-        ttk.Button(filtros, text="Pesquisar",
-                    command=self.atualizar).pack(side="left")
 
         cols = ("id", "titulo", "autores", "categoria", "ano",
                 "total", "disp")
@@ -439,9 +462,22 @@ class SecaoLivros(SecaoBase):
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(8, 0))
         tema.ao_ativar_linha(self.tree, self._detalhes)
+        tema.menu_de_linha(self.tree, [
+            ("Ver detalhes e exemplares", self._detalhes),
+            ("Editar dados do livro", self._editar),
+            None,
+            ("Imprimir etiquetas dos selecionados", self._etiquetas_massa),
+            None,
+            ("Excluir do acervo...", self._excluir),
+        ])
+        self.tree.bind("<Delete>", lambda e: self._excluir())
         self.lbl_contagem = ttk.Label(rodape, text="")
         self.lbl_contagem.pack(side="left")
+        self._dica_de_linha(
+            rodape, "   ·   Enter abre o livro · botão direito: editar, "
+                    "excluir, etiquetas").pack(side="left")
         self.btn_mais = ttk.Button(rodape, text="Carregar mais",
+                                    style="Discreto.TButton",
                                     command=self._carregar_mais)
         self.btn_mais.pack(side="right")
         self.btn_mais.pack_forget()
@@ -671,36 +707,26 @@ class SecaoUsuarios(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
 
-        topo = ttk.Frame(self)
-        topo.pack(fill="x")
-        ttk.Label(topo, text="Usuários", style="Titulo.TLabel").pack(side="left")
-        ttk.Button(topo, text=" Cadastrar usuário",
-                    image=icones.icone("mais", "branco", 14),
-                    compound="left",
-                    style="Primario.TButton",
-                    command=self._novo_usuario
-                    ).pack(side="right")
-        ttk.Button(topo, text="Ativar/Desativar",
-                    command=self._toggle_status
-                    ).pack(side="right", padx=8)
-        ttk.Button(topo, text="Excluir",
-                    command=self._excluir
-                    ).pack(side="right")
-        ttk.Button(topo, text="Imprimir cartão",
-                    command=self._imprimir_cartao
-                    ).pack(side="right", padx=8)
-        ttk.Button(topo, text="Editar",
-                    command=self._editar
-                    ).pack(side="right")
+        # Editar, cartão, ativar e excluir eram quatro botões fixos acima
+        # da tabela; agem sobre UM usuário, então moram na linha dele.
+        topo = self._cabecalho("Usuários")
+        topo.adicionar(ttk.Button(topo, text=" Cadastrar usuário",
+                                  image=icones.icone("mais", "branco", 14),
+                                  compound="left",
+                                  style="Primario.TButton",
+                                  command=self._novo_usuario))
 
         filtros = ttk.Frame(self, padding=(0, 12))
         filtros.pack(fill="x")
         ttk.Label(filtros, text="Buscar:").pack(side="left")
         self.ent_busca = ttk.Entry(filtros, width=40)
         self.ent_busca.pack(side="left", padx=8)
-        self.ent_busca.bind("<Return>", lambda e: self.atualizar())
-        ttk.Button(filtros, text="Pesquisar",
-                    command=self.atualizar).pack(side="left")
+        tema.busca_ao_digitar(self.ent_busca, self.atualizar)
+
+        self._dica_de_linha(
+            self, "Enter abre o cadastro · botão direito: imprimir cartão, "
+                  "ativar/desativar, excluir"
+        ).pack(side="bottom", anchor="w", pady=(8, 0))
 
         cols = ("id", "nome", "matricula", "turma", "perfil", "email",
                 "cartao", "ativo")
@@ -718,6 +744,14 @@ class SecaoUsuarios(SecaoBase):
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(8, 0))
         tema.ao_ativar_linha(self.tree, self._editar)
+        tema.menu_de_linha(self.tree, [
+            ("Editar cadastro", self._editar),
+            ("Imprimir cartão", self._imprimir_cartao),
+            ("Ativar / desativar acesso", self._toggle_status),
+            None,
+            ("Excluir usuário...", self._excluir),
+        ])
+        self.tree.bind("<Delete>", lambda e: self._excluir())
 
     def _novo_usuario(self):
         DialogoUsuario(self.painel, self.sessao, ao_salvar=self.atualizar)
@@ -768,7 +802,8 @@ class SecaoUsuarios(SecaoBase):
                 f'Excluir definitivamente "{nome}"?\n\n'
                 "Só é possível excluir usuários sem histórico de "
                 "empréstimos. Para bloquear o acesso preservando o "
-                "histórico, use 'Ativar/Desativar'.",
+                "histórico, use 'Ativar / desativar acesso' (botão "
+                "direito na linha).",
                 parent=self.painel):
             return
         try:
@@ -826,74 +861,87 @@ class SecaoUsuarios(SecaoBase):
 class SecaoEmprestimos(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
-        ttk.Label(self, text="Empréstimos e devoluções",
-                  style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(self, text=("Operações de balcão para apoiar o atendimento "
-                               "presencial. Aceita código de barras OU número "
-                               "de tombo."),
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+        # Operações em grupo (turma inteira, coleção) são raras: ficam no
+        # "Mais", e o balcão do dia a dia fica limpo.
+        topo = self._cabecalho(
+            "Empréstimos e devoluções",
+            "Use o leitor de código de barras ou digite o número de tombo.")
+        topo.adicionar(tema.botao_menu(topo, "Mais", [
+            ("Devolver vários livros de uma vez...", self._devolver_em_lote),
+            None,
+            ("Emprestar coleção para uma turma...", self._emprestar_colecao),
+            ("Devolver coleção", self._devolver_colecao),
+        ]))
 
-        # ------ Card de empréstimo ------
-        emp_card = ttk.Frame(self, style="Card.TFrame", padding=18)
-        emp_card.pack(fill="x")
-        ttk.Label(emp_card, text="Empréstimo rápido",
+        # ------ Balcão: emprestar e devolver lado a lado ------
+        # Eram dois cartões empilhados, que comiam a altura da tabela
+        # logo abaixo. Lado a lado, a tabela ganha várias linhas.
+        balcao = ttk.Frame(self)
+        balcao.pack(fill="x", pady=(12, 0))
+        balcao.columnconfigure(0, weight=3, uniform="balcao")
+        balcao.columnconfigure(1, weight=2, uniform="balcao")
+
+        emp_card = ttk.Frame(balcao, style="Card.TFrame", padding=16)
+        emp_card.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        emp_card.columnconfigure(1, weight=1)
+        ttk.Label(emp_card, text="Emprestar",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 12)).grid(row=0, column=0,
-                                                         columnspan=5,
+                                                         columnspan=3,
                                                          sticky="w",
-                                                         pady=(0, 10))
-        ttk.Label(emp_card, text="Matrícula ou cartão:",
-                  style="Card.TLabel").grid(row=1, column=0, sticky="e", padx=(0, 6))
-        self.ent_emp_matr = ttk.Entry(emp_card, width=20)
-        self.ent_emp_matr.grid(row=1, column=1, sticky="w")
-        ttk.Button(emp_card, text="Buscar usuário...",
+                                                         pady=(0, 8))
+        ttk.Label(emp_card, text="Leitor (matrícula ou cartão):",
+                  style="Card.TLabel").grid(row=1, column=0, sticky="w",
+                                             padx=(0, 6))
+        self.ent_emp_matr = ttk.Entry(emp_card, width=18)
+        self.ent_emp_matr.grid(row=1, column=1, sticky="ew")
+        ttk.Button(emp_card, text="Procurar...", style="Discreto.TButton",
                     command=self._selecionar_usuario
-                    ).grid(row=1, column=2, padx=8)
+                    ).grid(row=1, column=2, padx=(8, 0))
 
-        ttk.Label(emp_card, text="Código ou tombo:",
-                  style="Card.TLabel").grid(row=2, column=0, sticky="e",
+        ttk.Label(emp_card, text="Livro (código ou tombo):",
+                  style="Card.TLabel").grid(row=2, column=0, sticky="w",
                                              padx=(0, 6), pady=(8, 0))
-        self.ent_emp_cod = ttk.Entry(emp_card, width=26)
-        self.ent_emp_cod.grid(row=2, column=1, sticky="w", pady=(8, 0))
-        ttk.Button(emp_card, text="Selecionar exemplar...",
+        self.ent_emp_cod = ttk.Entry(emp_card, width=18)
+        self.ent_emp_cod.grid(row=2, column=1, sticky="ew", pady=(8, 0))
+        ttk.Button(emp_card, text="Procurar...", style="Discreto.TButton",
                     command=self._selecionar_exemplar_emprestimo
-                    ).grid(row=2, column=2, padx=8, pady=(8, 0))
+                    ).grid(row=2, column=2, padx=(8, 0), pady=(8, 0))
         ttk.Button(emp_card, text=" Registrar empréstimo",
                     image=icones.icone("confirmar", "branco", 14),
                     compound="left",
                     style="Sucesso.TButton",
                     command=self._emprestar
-                    ).grid(row=2, column=3, padx=(8, 0), pady=(8, 0))
+                    ).grid(row=3, column=0, columnspan=3, sticky="e",
+                           pady=(10, 0))
 
-        self.lbl_msg_emp = ttk.Label(emp_card, text="",
+        self.lbl_msg_emp = ttk.Label(emp_card, text="", wraplength=420,
                                        style="Card.TLabel")
-        self.lbl_msg_emp.grid(row=3, column=0, columnspan=5,
-                               sticky="w", pady=(10, 0))
+        self.lbl_msg_emp.grid(row=4, column=0, columnspan=3,
+                               sticky="w", pady=(6, 0))
 
-        # ------ Card de devolução ------
-        dev_card = ttk.Frame(self, style="Card.TFrame", padding=18)
-        dev_card.pack(fill="x", pady=(12, 0))
-        ttk.Label(dev_card, text="Devolução rápida",
+        dev_card = ttk.Frame(balcao, style="Card.TFrame", padding=16)
+        dev_card.grid(row=0, column=1, sticky="nsew")
+        dev_card.columnconfigure(0, weight=1)
+        ttk.Label(dev_card, text="Devolver",
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 12)).grid(row=0, column=0,
-                                                         columnspan=4,
                                                          sticky="w",
-                                                         pady=(0, 10))
-        ttk.Label(dev_card, text="Código ou tombo:",
-                  style="Card.TLabel").grid(row=1, column=0, sticky="e",
-                                             padx=(0, 6))
-        self.ent_dev_cod = ttk.Entry(dev_card, width=26)
-        self.ent_dev_cod.grid(row=1, column=1, sticky="w")
+                                                         pady=(0, 8))
+        ttk.Label(dev_card, text="Livro (código ou tombo):",
+                  style="Card.TLabel").grid(row=1, column=0, sticky="w")
+        self.ent_dev_cod = ttk.Entry(dev_card, width=18)
+        self.ent_dev_cod.grid(row=2, column=0, sticky="ew", pady=(4, 0))
         ttk.Button(dev_card, text=" Registrar devolução",
                     image=icones.icone("desfazer", "branco", 14),
                     compound="left",
                     style="Aviso.TButton",
                     command=self._devolver
-                    ).grid(row=1, column=2, padx=(8, 0))
+                    ).grid(row=3, column=0, sticky="e", pady=(10, 0))
 
-        self.lbl_msg_dev = ttk.Label(dev_card, text="", style="Card.TLabel")
-        self.lbl_msg_dev.grid(row=2, column=0, columnspan=4,
-                               sticky="w", pady=(10, 0))
+        self.lbl_msg_dev = ttk.Label(dev_card, text="", wraplength=300,
+                                       style="Card.TLabel")
+        self.lbl_msg_dev.grid(row=4, column=0, sticky="w", pady=(6, 0))
 
         self.ent_emp_cod.bind("<Return>", lambda e: self._emprestar())
         self.ent_emp_matr.bind("<Return>", lambda e: self.ent_emp_cod.focus_set())
@@ -901,7 +949,7 @@ class SecaoEmprestimos(SecaoBase):
 
         # Tabela de empréstimos abertos
         ttk.Label(self, text="Empréstimos em aberto",
-                  style="Subtitulo.TLabel").pack(anchor="w", pady=(20, 6))
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(16, 6))
 
         cols = ("id", "usuario", "matricula", "turma", "titulo", "codigo",
                 "emprestado", "previsto", "atrasado")
@@ -929,7 +977,7 @@ class SecaoEmprestimos(SecaoBase):
         # do mesmo tipo das outras.
         self.tree.tag_configure("colecao",
                                   font=("Segoe UI Semibold", 9))
-        # A barra de botões é empacotada ANTES da tabela, e no rodapé.
+        # O rodapé é empacotado ANTES da tabela, com side="bottom".
         #
         # A ordem é o conserto, não estilo. O `pack` do Tk atende na ordem
         # em que é chamado: a tabela, com `expand=True`, tomava a área
@@ -938,46 +986,35 @@ class SecaoEmprestimos(SecaoBase):
         # "Quitar multa", "Isentar multa" e "Devolver em lote"
         # simplesmente não existiam, sem aviso e sem rolagem.
         #
-        # Limitar o tamanho da janela à tela (v1.11.0) não resolveu isto:
-        # aquilo fez a janela caber no monitor, e este faz o conteúdo
-        # caber na janela. São dois problemas diferentes.
-        # A dica primeiro, depois a barra de botões: com `side="bottom"`
-        # quem é empacotado antes fica mais embaixo, então esta ordem é
-        # a que põe a dica no rodapé e os botões logo acima dela.
-        #
-        # Ela saiu de dentro da barra de botões porque com seis botões
-        # não cabia mais ao lado deles: numa tela de 1366 px sobrava a
-        # letra "D" e o resto ficava fora da janela. É o mesmo defeito
-        # de `pack` de sempre — dar à dica o lugar dela, em vez de
-        # deixá-la disputar a sobra com quem cresce.
-        ttk.Label(self,
-                  text=("Dica: duplo clique ou Enter numa linha devolve o "
-                        "livro — ou a coleção inteira, se a linha for de "
-                        "coleção."),
-                  style="Hint.TLabel").pack(side="bottom", anchor="w",
-                                             pady=(6, 0))
-
-        # Quebra linha quando falta largura (texto Grande, tela de 1366 px)
-        op = tema.FaixaDeBotoes(self, alinhar="left")
+        # Hoje o rodapé tem um botão só. Renovar, quitar e isentar multa
+        # são ações de uma linha e estão nela (botão direito), e também
+        # no "Mais ações", para quem não usa o botão direito.
+        op = ttk.Frame(self)
         op.pack(side="bottom", fill="x", pady=(8, 0))
 
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
         # Devolução com um clique: duplo clique na linha devolve o livro
         tema.ao_ativar_linha(self.tree, self._devolver_selecionado)
+        acoes_da_linha = [
+            ("Devolver", self._devolver_selecionado),
+            ("Renovar prazo", self._renovar),
+            None,
+            ("Quitar multa", self._quitar),
+            ("Isentar multa...", self._isentar),
+        ]
+        tema.menu_de_linha(self.tree, acoes_da_linha)
 
-        op.adicionar(ttk.Button(op, text=" Devolver selecionado",
-                                image=icones.icone("confirmar", "branco", 14),
-                                compound="left",
-                                style="Sucesso.TButton",
-                                command=self._devolver_selecionado))
-        for texto, comando in (
-                ("Renovar selecionado", self._renovar),
-                ("Quitar multa", self._quitar),
-                ("Isentar multa", self._isentar),
-                ("Devolver em lote", self._devolver_em_lote),
-                ("Emprestar coleção...", self._emprestar_colecao),
-                ("Devolver coleção", self._devolver_colecao)):
-            op.adicionar(ttk.Button(op, text=texto, command=comando))
+        ttk.Button(op, text=" Devolver selecionado",
+                   image=icones.icone("confirmar", "branco", 14),
+                   compound="left",
+                   style="Sucesso.TButton",
+                   command=self._devolver_selecionado).pack(side="left")
+        tema.botao_menu(op, "Mais ações", acoes_da_linha[1:]).pack(
+            side="left", padx=(8, 0))
+        self._dica_de_linha(
+            op, "Enter devolve a linha (ou a coleção inteira) · "
+                "botão direito: renovar, multa").pack(side="left",
+                                                       padx=(12, 0))
 
     def _devolver_em_lote(self):
         DialogoDevolucaoEmLote(self.painel, self.sessao,
@@ -1344,10 +1381,10 @@ class SecaoUso(SecaoBase):
         rodape.pack(side="bottom", fill="x", pady=(12, 0))
         self.lbl_parados = ttk.Label(rodape, text="", style="Hint.TLabel")
         self.lbl_parados.pack(side="left")
-        ttk.Button(rodape, text="Ver livros parados",
-                    command=self._ver_parados).pack(side="right", padx=(8, 0))
-        ttk.Button(rodape, text="Exportar CSV",
-                    command=self._exportar_parados).pack(side="right")
+        tema.botao_menu(rodape, "Livros parados", [
+            ("Ver a lista", self._ver_parados),
+            ("Exportar planilha (CSV)...", self._exportar_parados),
+        ]).pack(side="right")
 
         # ------ Movimento mês a mês ------
         ttk.Label(self, text="Empréstimos por mês",
@@ -1530,18 +1567,18 @@ class SecaoReservas(SecaoBase):
         # Separado = tem exemplar guardado esperando o aluno aparecer.
         self.tree.tag_configure("separado",
                                   background=tema.COR_PRIMARIA_SUAVE)
-        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
-
+        # "Atualizar" saiu: a lista recarrega ao abrir a seção e com F5.
+        # Cancelar age numa linha, então mora nela.
         op = ttk.Frame(self)
-        op.pack(fill="x", pady=(8, 0))
-        ttk.Button(op, text="Cancelar reserva selecionada",
-                    command=self._cancelar).pack(side="left", padx=(0, 8))
-        ttk.Button(op, text="Atualizar",
-                    command=self.atualizar).pack(side="left")
+        op.pack(side="bottom", fill="x", pady=(8, 0))
         ttk.Label(op,
-                  text=("Dica: quem aparece destacado já tem o exemplar "
-                        "separado no balcão."),
-                  style="Hint.TLabel").pack(side="left", padx=(16, 0))
+                  text=("Destacado: exemplar já separado no balcão · "
+                        "botão direito ou Delete cancela a reserva"),
+                  style="Hint.TLabel").pack(side="left")
+        tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
+        tema.menu_de_linha(self.tree, [
+            ("Cancelar esta reserva...", self._cancelar)])
+        self.tree.bind("<Delete>", lambda e: self._cancelar())
 
     def atualizar(self) -> None:
         from . import reservas
@@ -1685,10 +1722,10 @@ class SecaoInventario(SecaoBase):
 
         rodape = ttk.Frame(self)
         rodape.pack(fill="x", pady=(10, 0))
-        ttk.Button(rodape, text="Ver resultado parcial",
-                    command=self._resultado_parcial).pack(side="left")
-        ttk.Button(rodape, text="Exportar último resultado (CSV)",
-                    command=self._exportar).pack(side="left", padx=(8, 0))
+        tema.botao_menu(rodape, "Resultado", [
+            ("Ver resultado parcial", self._resultado_parcial),
+            ("Exportar último resultado (CSV)...", self._exportar),
+        ]).pack(side="left")
 
     # ------------------------------------------------------------------
     def atualizar(self):
@@ -2203,13 +2240,11 @@ class SecaoAuditoria(SecaoBase):
         ttk.Label(filtros, text="Buscar:").pack(side="left")
         self.ent_busca = ttk.Entry(filtros, width=32)
         self.ent_busca.pack(side="left", padx=8)
-        self.ent_busca.bind("<Return>", lambda e: self.atualizar())
+        tema.busca_ao_digitar(self.ent_busca, self.atualizar)
         ttk.Label(filtros, text="Ação:").pack(side="left")
         self.cbo_acao = ttk.Combobox(filtros, width=22, state="readonly")
         self.cbo_acao.pack(side="left", padx=(4, 8))
         self.cbo_acao.bind("<<ComboboxSelected>>", lambda e: self.atualizar())
-        ttk.Button(filtros, text="Pesquisar",
-                    command=self.atualizar).pack(side="left")
 
         cols = ("quando", "usuario", "acao", "detalhes")
         self.tree = tema.criar_tabela(self, columns=cols, show="headings",
@@ -2292,39 +2327,26 @@ class SecaoConfig(SecaoBase):
     def __init__(self, parent, painel):
         super().__init__(parent, painel)
 
-        # ---- Scroll container (conteudo passa do tamanho da viewport) ----
-        canvas = tk.Canvas(self, bg=tema.COR_FUNDO, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self, orient="vertical",
-                                  command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-        body = ttk.Frame(canvas)
-        inner_window = canvas.create_window((0, 0), window=body,
-                                            anchor="nw")
-
-        def _on_canvas_configure(e):
-            canvas.itemconfig(inner_window, width=e.width)
-        canvas.bind("<Configure>", _on_canvas_configure)
-
-        def _on_inner_configure(e):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-        body.bind("<Configure>", _on_inner_configure)
-
-        def _on_mousewheel(e):
-            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        canvas.bind("<Enter>",
-                    lambda e: canvas.bind_all("<MouseWheel>",
-                                              _on_mousewheel))
-        canvas.bind("<Leave>",
-                    lambda e: canvas.unbind_all("<MouseWheel>"))
-        tema.rolar_ate_o_foco(canvas, body)
-
-        ttk.Label(body, text="Configurações do sistema",
+        ttk.Label(self, text="Configurações",
                   style="Titulo.TLabel").pack(anchor="w")
-        ttk.Label(body, text=("Ajuste prazos, limites e valores de multa. As "
-                               "alterações entram em vigor imediatamente."),
-                  style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
+
+        # Eram uma página só, com rolagem longa e dezenove botões — o de
+        # apagar tudo no fim da mesma tela do prazo de empréstimo. Agora
+        # cada assunto tem a sua aba, e o que é perigoso fica em
+        # "Avançado", longe do uso diário.
+        abas = ttk.Notebook(self)
+        abas.pack(fill="both", expand=True, pady=(12, 0))
+        self._abas = abas
+
+        def aba(titulo):
+            moldura = ttk.Frame(abas, padding=(0, 16, 0, 0))
+            abas.add(moldura, text=titulo)
+            return tema.area_com_rolagem(moldura)
+
+        body = aba("Regras")
+        ttk.Label(body, text=("Prazos, limites e multas. As alterações "
+                               "entram em vigor imediatamente."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
 
         from .database import get_config
 
@@ -2354,8 +2376,7 @@ class SecaoConfig(SecaoBase):
                     command=self._salvar).pack(anchor="e", pady=(16, 0))
 
         # ---------------- Ferramentas adicionais ----------------
-        ttk.Label(body, text="Ferramentas",
-                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        body = aba("Backup e dados")
 
         ferramentas = ttk.Frame(body, style="Card.TFrame", padding=16)
         ferramentas.pack(fill="x")
@@ -2428,8 +2449,11 @@ class SecaoConfig(SecaoBase):
                             padx=12, pady=(14, 0))
 
         # ---------------- Integrações ----------------
-        ttk.Label(body, text="Integrações (online)",
-                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        body = aba("Celular e internet")
+        ttk.Label(body, text=("Tudo aqui vem desligado e só funciona se "
+                               "você ligar. O resto do sistema não precisa "
+                               "de internet."),
+                  style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
         integ = ttk.Frame(body, style="Card.TFrame", padding=16)
         integ.pack(fill="x")
         self.var_isbn = tk.BooleanVar(value=servicos.isbn_lookup_ativo())
@@ -2493,12 +2517,13 @@ class SecaoConfig(SecaoBase):
         self.lbl_email_msg = ttk.Label(botoes_email, text="",
                                         style="CardHint.TLabel")
         self.lbl_email_msg.pack(side="left")
-        ttk.Button(botoes_email, text="Enviar avisos agora",
-                    style="Primario.TButton",
-                    command=self._enviar_avisos_email
-                    ).pack(side="right")
         ttk.Button(botoes_email, text="Salvar dados de e-mail",
+                    style="Primario.TButton",
                     command=self._salvar_email
+                    ).pack(side="right")
+        ttk.Button(botoes_email, text="Enviar avisos agora",
+                    style="Discreto.TButton",
+                    command=self._enviar_avisos_email
                     ).pack(side="right", padx=(0, 8))
 
         # ---- API REST somente leitura ----
@@ -2560,18 +2585,18 @@ class SecaoConfig(SecaoBase):
                                       style="CardHint.TLabel")
         self.lbl_api_msg.pack(side="left")
         self._refrescar_status_api()
-        ttk.Button(botoes_api, text="Novo token completo",
-                    command=lambda: self._gerar_token_api("completo")
-                    ).pack(side="right")
-        ttk.Button(botoes_api, text="Novo token de consulta",
-                    command=lambda: self._gerar_token_api("consulta")
-                    ).pack(side="right", padx=(0, 8))
-        ttk.Button(botoes_api, text="Copiar completo",
-                    command=lambda: self._copiar_token_api("completo")
-                    ).pack(side="right", padx=(0, 8))
         ttk.Button(botoes_api, text="Parear celular",
                     command=self._parear_celular
-                    ).pack(side="right", padx=(0, 8))
+                    ).pack(side="right")
+        tema.botao_menu(botoes_api, "Tokens", [
+            ("Copiar token completo",
+             lambda: self._copiar_token_api("completo")),
+            None,
+            ("Gerar novo token completo",
+             lambda: self._gerar_token_api("completo")),
+            ("Gerar novo token de consulta",
+             lambda: self._gerar_token_api("consulta")),
+        ]).pack(side="right", padx=(0, 8))
 
         # Aparelhos pareados
         aparelhos = ttk.Frame(integ, style="CardInner.TFrame")
@@ -2585,8 +2610,7 @@ class SecaoConfig(SecaoBase):
         self._refrescar_aparelhos()
 
         # ---------------- Aparencia ----------------
-        ttk.Label(body, text="Aparência",
-                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+        body = aba("Aparência")
         ttk.Label(body,
                   text=("Personalize as cores da interface. As cores de "
                         "sucesso, erro e aviso seguem convenção universal "
@@ -2601,13 +2625,17 @@ class SecaoConfig(SecaoBase):
                   style="Card.TLabel",
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=0, column=0, sticky="w", pady=(0, 8))
-        presets_frame = ttk.Frame(aparencia, style="CardInner.TFrame")
-        presets_frame.grid(row=0, column=1, columnspan=3, sticky="w",
-                           padx=12, pady=(0, 8))
-        for chave_p, preset in tema.PRESETS.items():
-            ttk.Button(presets_frame, text=preset["nome"],
-                       command=lambda c=chave_p: self._aplicar_preset_aparencia(c)
-                       ).pack(side="left", padx=(0, 6))
+        # Eram cinco botões, um por paleta; uma lista faz o mesmo.
+        nomes_presets = {p["nome"]: c for c, p in tema.PRESETS.items()}
+        cbo_preset = ttk.Combobox(aparencia, state="readonly", width=22,
+                                  values=list(nomes_presets))
+        cbo_preset.grid(row=0, column=1, columnspan=3, sticky="w",
+                        padx=12, pady=(0, 8))
+        cbo_preset.set("Escolha uma paleta...")
+        cbo_preset.bind(
+            "<<ComboboxSelected>>",
+            lambda e: self._aplicar_preset_aparencia(
+                nomes_presets[cbo_preset.get()]))
 
         # 4 cores editaveis
         self._cor_entries = {}
@@ -2623,17 +2651,25 @@ class SecaoConfig(SecaoBase):
             ttk.Label(aparencia, text=rotulo, style="Card.TLabel"
                       ).grid(row=i + 1, column=0, sticky="w", pady=6)
             valor = get_config(db_chave, padrao) or padrao
-            swatch = tk.Frame(aparencia, bg=valor, width=32, height=24,
-                              highlightthickness=1,
-                              highlightbackground=tema.COR_BORDA)
+            # A própria amostra é o botão: um "Escolher" ao lado de cada
+            # cor eram quatro botões iguais repetidos.
+            swatch = tk.Frame(aparencia, bg=valor, width=40, height=26,
+                              cursor="hand2", takefocus=1,
+                              highlightthickness=2,
+                              highlightbackground=tema.COR_BORDA,
+                              highlightcolor=tema.COR_TEXTO)
             swatch.grid(row=i + 1, column=1, padx=(8, 8))
             swatch.grid_propagate(False)
+            for evento in ("<Button-1>", "<Return>", "<space>"):
+                swatch.bind(evento,
+                            lambda e, c=chave_c: self._escolher_cor(c))
             ent = ttk.Entry(aparencia, width=10)
             ent.insert(0, valor)
             ent.grid(row=i + 1, column=2, sticky="w", padx=(0, 8))
-            ttk.Button(aparencia, text="Escolher",
-                       command=lambda c=chave_c: self._escolher_cor(c)
-                       ).grid(row=i + 1, column=3, sticky="w")
+            if i == 0:
+                ttk.Label(aparencia, text="clique na cor para trocar",
+                          style="CardHint.TLabel"
+                          ).grid(row=1, column=3, sticky="w")
             self._cor_entries[chave_c] = ent
             self._cor_swatches[chave_c] = swatch
 
@@ -2658,7 +2694,7 @@ class SecaoConfig(SecaoBase):
                            sticky="e", padx=(12, 0))
         ttk.Button(botoes_brasao, text="Escolher imagem...",
                    command=self._escolher_brasao).pack(side="left")
-        ttk.Button(botoes_brasao, text="Remover",
+        ttk.Button(botoes_brasao, text="Remover", style="Discreto.TButton",
                    command=self._remover_brasao
                    ).pack(side="left", padx=(8, 0))
         self._refrescar_status_brasao()
@@ -2686,7 +2722,7 @@ class SecaoConfig(SecaoBase):
                         "Vale depois de reabrir o SIGBEF. \"Muito grande\" "
                         "pede monitor maior: numa tela de 1366×768, algumas "
                         "telas ficam apertadas."),
-                  style="CardHint.TLabel"
+                  style="CardHint.TLabel", wraplength=640
                   ).grid(row=11, column=0, columnspan=4, sticky="w",
                          pady=(6, 0))
 
@@ -2697,9 +2733,6 @@ class SecaoConfig(SecaoBase):
                    style="Primario.TButton",
                    command=self._salvar_aparencia
                    ).pack(side="right")
-        ttk.Button(botoes_aparencia, text="Restaurar padrão",
-                   command=self._restaurar_aparencia_padrao
-                   ).pack(side="right", padx=(0, 8))
         ttk.Label(body,
                   text="As alterações de cor têm efeito após reiniciar o sistema.",
                   style="Hint.TLabel").pack(anchor="w", pady=(8, 0))
@@ -2707,8 +2740,9 @@ class SecaoConfig(SecaoBase):
         # ---------------- Zona de risco ----------------
         # Sempre por último na tela, de propósito: é a última coisa que
         # a bibliotecária deveria clicar sem pensar duas vezes.
+        body = aba("Avançado")
         ttk.Label(body, text="Zona de risco",
-                  style="Subtitulo.TLabel").pack(anchor="w", pady=(24, 8))
+                  style="Subtitulo.TLabel").pack(anchor="w", pady=(0, 8))
         risco = ttk.Frame(body, style="Card.TFrame", padding=16)
         risco.pack(fill="x")
         linha_risco = ttk.Frame(risco, style="CardInner.TFrame")
@@ -3179,20 +3213,6 @@ class SecaoConfig(SecaoBase):
             "Reinicie o SIGBEF para ver as mudanças.",
             parent=self.painel)
 
-    def _restaurar_aparencia_padrao(self):
-        if not messagebox.askyesno(
-            "Restaurar padrao",
-            "Voltar ao tema azul institucional padrao?\n\n"
-            "As cores personalizadas serao substituidas.",
-            parent=self.painel):
-            return
-        tema.restaurar_padrao(executor_id=self.sessao.id)
-        self._aplicar_preset_aparencia("padrao")
-        messagebox.showinfo(
-            "Padrao restaurado",
-            "Tema padrao restaurado.\n\nReinicie o SIGBEF para aplicar.",
-            parent=self.painel)
-
 
 # ---------------------------------------------------------------------------
 # Pesquisa para alunos/professores
@@ -3203,27 +3223,24 @@ class SecaoPesquisaAluno(SecaoBase):
         ttk.Label(self, text="Pesquisar livros",
                   style="Titulo.TLabel").pack(anchor="w")
         ttk.Label(self,
-                  text=("Busque por título, autor, categoria ou ISBN. "
-                        "Selecione um livro disponível e clique em "
-                        "'Pegar emprestado' para registrar o empréstimo."),
+                  text=("Digite título, autor, categoria ou ISBN — os "
+                        "resultados aparecem enquanto você digita."),
                   style="Hint.TLabel").pack(anchor="w", pady=(0, 16))
 
         f = ttk.Frame(self)
         f.pack(fill="x")
         self.ent = ttk.Entry(f, font=("Segoe UI", 12))
         self.ent.pack(side="left", fill="x", expand=True, ipady=4)
-        self.ent.bind("<Return>", lambda e: self.atualizar())
+        tema.busca_ao_digitar(self.ent, self.atualizar)
         self.cbo_categoria = ttk.Combobox(f, width=16, state="readonly")
         self.cbo_categoria.pack(side="left", padx=8)
         self.cbo_categoria.bind("<<ComboboxSelected>>",
                                  lambda e: self.atualizar())
         self.var_disp = tk.BooleanVar(value=True)
-        ttk.Checkbutton(f, text="Apenas disponíveis",
+        ttk.Checkbutton(f, text="Só disponíveis",
                           variable=self.var_disp,
                           command=self.atualizar).pack(side="left",
                                                          padx=8)
-        ttk.Button(f, text="Buscar", style="Primario.TButton",
-                    command=self.atualizar).pack(side="left", padx=(8, 0))
 
         cols = ("id", "titulo", "autores", "categoria", "ano", "disp")
         self.tree = tema.criar_tabela(self, columns=cols, show="headings",
@@ -3240,12 +3257,26 @@ class SecaoPesquisaAluno(SecaoBase):
         self.tree.column("categoria", width=160, anchor="w")
         self.tree.column("ano", width=70, anchor="center")
         self.tree.column("disp", width=110, anchor="center")
+
+        # Rodapé antes da tabela, no fundo: com a tabela expandindo, o que
+        # vem depois dela fica sem altura em tela pequena.
+        rodape = ttk.Frame(self)
+        rodape.pack(side="bottom", fill="x", pady=(10, 0))
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(12, 0))
-        tema.ao_ativar_linha(self.tree, self._pegar_emprestado)
+        # Um botão só, que muda conforme o livro: "Pegar emprestado" se
+        # tem exemplar na estante, "Entrar na fila" se não tem. Eram três
+        # botões lado a lado, e o aluno tentava pegar o que não havia.
+        tema.ao_ativar_linha(self.tree, self._acao_principal)
+        tema.menu_de_linha(self.tree, [
+            ("Pegar emprestado", self._pegar_emprestado),
+            ("Entrar na fila de espera", self._reservar),
+            None,
+            ("Ver detalhes do livro", self._detalhes),
+        ])
+        self.tree.bind("<<TreeviewSelect>>",
+                       lambda e: self._ajustar_botao(), add="+")
 
-        rodape = ttk.Frame(self)
-        rodape.pack(fill="x", pady=(10, 0))
         self.lbl_msg = ttk.Label(rodape, text="", style="Hint.TLabel")
         self.lbl_msg.pack(side="left")
         # Contagem separada da mensagem: uma diz quanto tem, a outra diz
@@ -3253,20 +3284,44 @@ class SecaoPesquisaAluno(SecaoBase):
         self.lbl_contagem = ttk.Label(rodape, text="", style="Hint.TLabel")
         self.lbl_contagem.pack(side="left", padx=(12, 0))
         self.btn_mais = ttk.Button(rodape, text="Carregar mais",
+                                    style="Discreto.TButton",
                                     command=self._carregar_mais)
         self.btn_mais.pack(side="left", padx=(12, 0))
         self.btn_mais.pack_forget()
         self._carregados = 0
         self._total = 0
-        ttk.Button(rodape, text="Ver detalhes",
-                    command=self._detalhes).pack(side="right", padx=(8, 0))
-        ttk.Button(rodape, text=" Pegar emprestado",
-                    image=icones.icone("confirmar", "branco", 14),
-                    compound="left",
-                    style="Sucesso.TButton",
-                    command=self._pegar_emprestado).pack(side="right")
-        ttk.Button(rodape, text="Reservar",
-                    command=self._reservar).pack(side="right", padx=(0, 8))
+        self.btn_acao = ttk.Button(rodape, text=" Pegar emprestado",
+                                   image=icones.icone("confirmar", "branco", 14),
+                                   compound="left",
+                                   style="Sucesso.TButton",
+                                   command=self._acao_principal)
+        self.btn_acao.pack(side="right")
+
+    def _tem_disponivel(self) -> bool | None:
+        """True/False para o livro marcado; None se nada está marcado."""
+        sel = self.tree.selection()
+        if not sel:
+            return None
+        disp = str(self.tree.item(sel[0])["values"][-1])
+        try:
+            return int(disp.split("/")[0]) > 0
+        except ValueError:
+            return True
+
+    def _ajustar_botao(self):
+        if self._tem_disponivel() is False:
+            self.btn_acao.configure(text="Entrar na fila de espera",
+                                    image="", style="TButton")
+        else:
+            self.btn_acao.configure(text=" Pegar emprestado",
+                                    image=icones.icone("confirmar", "branco", 14),
+                                    style="Sucesso.TButton")
+
+    def _acao_principal(self):
+        if self._tem_disponivel() is False:
+            self._reservar()
+        else:
+            self._pegar_emprestado()
 
     def _reservar(self):
         """Entra na fila de espera de um livro sem exemplar disponível."""
