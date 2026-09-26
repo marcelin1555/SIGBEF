@@ -15,9 +15,13 @@ COR_PRIMARIA = "#1F4E79"
 COR_SECUNDARIA = "#2E75B6"
 COR_DESTAQUE = "#F2A900"
 COR_FUNDO = "#F5F7FA"
-COR_SUCESSO = "#2E7D32"
+COR_SUCESSO = "#276B2B"
 COR_ERRO = "#C62828"
-COR_AVISO = "#EF6C00"
+# Verde e laranja escurecidos de propósito. O laranja anterior (#EF6C00)
+# tinha contraste de 2,9:1 como texto sobre o fundo; o verde (#2E7D32)
+# caía para 4,2:1 no fundo da predefinição Roxo. O mínimo da WCAG para
+# texto do tamanho que usamos é 4,5:1, em qualquer predefinição.
+COR_AVISO = "#B23C0A"
 COR_FUNDO_ESCURO = "#E8ECF1"
 COR_TEXTO = "#1A1A1A"
 COR_TEXTO_CLARO = "#FFFFFF"
@@ -31,6 +35,17 @@ FONTE_BOTAO = ("Segoe UI Semibold", 10)
 FONTE_BOTAO_GRANDE = ("Segoe UI Semibold", 14)
 FONTE_DISPLAY = ("Segoe UI Semibold", 32)
 FONTE_MONO = ("Consolas", 10)
+
+
+#: Tamanhos de texto oferecidos em Configurações → Aparência.
+#: chave gravada no banco → (rótulo, fator sobre o tamanho normal)
+TAMANHOS_TEXTO = {
+    "normal": ("Normal", 1.0),
+    "grande": ("Grande", 1.15),
+    "muito_grande": ("Muito grande", 1.3),
+}
+#: Fator em uso, lido do banco em carregar_personalizacao().
+ESCALA = 1.0
 
 
 PRESETS = {
@@ -53,7 +68,7 @@ PRESETS = {
 
 
 def carregar_personalizacao():
-    global COR_PRIMARIA, COR_SECUNDARIA, COR_DESTAQUE, COR_FUNDO
+    global COR_PRIMARIA, COR_SECUNDARIA, COR_DESTAQUE, COR_FUNDO, ESCALA
     try:
         from .database import get_config
     except Exception:
@@ -63,8 +78,30 @@ def carregar_personalizacao():
         COR_SECUNDARIA = get_config("tema.cor_secundaria", COR_SECUNDARIA) or COR_SECUNDARIA
         COR_DESTAQUE = get_config("tema.cor_destaque", COR_DESTAQUE) or COR_DESTAQUE
         COR_FUNDO = get_config("tema.cor_fundo", COR_FUNDO) or COR_FUNDO
+        tamanho = get_config("tema.tamanho_texto", "normal") or "normal"
+        ESCALA = TAMANHOS_TEXTO.get(tamanho, TAMANHOS_TEXTO["normal"])[1]
     except Exception:
         pass
+
+
+def salvar_tamanho_texto(chave: str, executor_id=None) -> bool:
+    """Grava o tamanho de texto escolhido (vale a partir da próxima abertura)."""
+    if chave not in TAMANHOS_TEXTO:
+        return False
+    from .servicos import definir_config_auditada
+    definir_config_auditada("tema.tamanho_texto", chave, executor_id,
+                            "TEMA_ALTERADO")
+    return True
+
+
+def escalar(pixels: int) -> int:
+    """Converte uma medida pensada para o texto normal ao tamanho em uso.
+
+    Para larguras e alturas fixas em pixels (menu lateral, cabeçalho,
+    altura de linha das tabelas): o texto cresce com o `tk scaling`, mas
+    o que foi medido em pixels não — e o texto maior seria cortado.
+    """
+    return round(pixels * ESCALA)
 
 
 #: Ordem fixa das chaves de cor — usada pelas três funções abaixo.
@@ -145,6 +182,23 @@ def primaria_clara_demais(cor_primaria: str) -> bool:
     return contraste(cor_primaria, "#FFFFFF") < 3.0
 
 
+def legivel_com_branco(cor_hex: str, minimo: float = 4.5) -> str:
+    """Escurece a cor até o texto branco sobre ela ter contraste `minimo`.
+
+    Os botões e a linha selecionada das tabelas põem texto branco sobre a
+    cor secundária. Nas paletas personalizadas — e na predefinição Verde
+    Floresta, com 3,3:1 — essa cor pode ser clara demais. Em vez de
+    recusar a escolha, usamos um tom mais escuro da mesma cor só onde
+    há texto por cima.
+    """
+    cor = cor_hex
+    for _ in range(30):
+        if contraste(cor, "#FFFFFF") >= minimo:
+            return cor
+        cor = _ajustar_cor(cor, 0.93)
+    return cor
+
+
 def _mesclar_branco(cor_hex: str, proporcao: float) -> str:
     """Mistura a cor com branco (proporcao 0..1 = quanto de branco).
 
@@ -169,10 +223,20 @@ COR_PRIMARIA_SUAVE = _mesclar_branco(COR_PRIMARIA, 0.65)
 COR_PRIMARIA_ESCURA = _ajustar_cor(COR_PRIMARIA, 0.72)
 
 
+def _suave_sobre_primaria(cor_primaria: str) -> str:
+    """Tom claro para texto secundário sobre a cor primária, com 4,5:1."""
+    proporcao = 0.65
+    suave = _mesclar_branco(cor_primaria, proporcao)
+    while contraste(suave, cor_primaria) < 4.5 and proporcao < 0.95:
+        proporcao += 0.05
+        suave = _mesclar_branco(cor_primaria, proporcao)
+    return suave
+
+
 def aplicar_tema(root):
     global COR_PRIMARIA_SUAVE, COR_PRIMARIA_ESCURA
     carregar_personalizacao()
-    COR_PRIMARIA_SUAVE = _mesclar_branco(COR_PRIMARIA, 0.65)
+    COR_PRIMARIA_SUAVE = _suave_sobre_primaria(COR_PRIMARIA)
     COR_PRIMARIA_ESCURA = _ajustar_cor(COR_PRIMARIA, 0.72)
     style = ttk.Style(root)
     try:
@@ -180,13 +244,26 @@ def aplicar_tema(root):
     except tk.TclError:
         pass
 
+    # Tamanho do texto: o `tk scaling` diz quantos pixels vale um ponto,
+    # então aumentá-lo aumenta toda fonte dada em pontos — que são todas
+    # as do sistema — sem mexer em cada tela. O valor original fica
+    # guardado para o fator não se acumular se o tema for reaplicado.
+    base = getattr(root, "_escala_base", None)
+    if base is None:
+        base = float(root.tk.call("tk", "scaling"))
+        root._escala_base = base
+    root.tk.call("tk", "scaling", base * ESCALA)
+
     root.configure(bg=COR_FUNDO)
+
+    # Onde há texto branco sobre a secundária, a versão legível dela
+    sec = legivel_com_branco(COR_SECUNDARIA)
 
     # Estados derivados da paleta ativa (funciona com qualquer preset)
     hover_prim = _ajustar_cor(COR_PRIMARIA, 0.80)
     press_prim = _ajustar_cor(COR_PRIMARIA, 0.65)
-    hover_sec = _ajustar_cor(COR_SECUNDARIA, 0.85)
-    press_sec = _ajustar_cor(COR_SECUNDARIA, 0.70)
+    hover_sec = _ajustar_cor(sec, 0.85)
+    press_sec = _ajustar_cor(sec, 0.70)
 
     style.configure(".", font=FONTE_BASE, background=COR_FUNDO, foreground=COR_TEXTO)
     style.configure("TFrame", background=COR_FUNDO)
@@ -214,19 +291,27 @@ def aplicar_tema(root):
     # Campos: borda sutil que ganha a cor do tema ao receber foco
     style.configure("TEntry", fieldbackground="white", padding=6,
                     bordercolor=COR_BORDA, lightcolor="white", darkcolor="white")
+    # A borda de 1 px mudando de cor é sutil demais para quem enxerga
+    # pouco: o campo em foco também ganha um fundo levemente colorido.
+    fundo_foco = _mesclar_branco(COR_SECUNDARIA, 0.88)
     style.map("TEntry",
-              bordercolor=[("focus", COR_SECUNDARIA)],
-              lightcolor=[("focus", COR_SECUNDARIA)],
-              darkcolor=[("focus", COR_SECUNDARIA)])
+              fieldbackground=[("focus", fundo_foco)],
+              bordercolor=[("focus", sec)],
+              lightcolor=[("focus", sec)],
+              darkcolor=[("focus", sec)])
     style.configure("TCombobox", fieldbackground="white", padding=4,
                     bordercolor=COR_BORDA, arrowcolor=COR_PRIMARIA)
-    style.map("TCombobox", bordercolor=[("focus", COR_SECUNDARIA)])
+    style.map("TCombobox", bordercolor=[("focus", sec)])
     style.configure("TSpinbox", fieldbackground="white", padding=4,
                     bordercolor=COR_BORDA, arrowcolor=COR_PRIMARIA)
-    style.map("TSpinbox", bordercolor=[("focus", COR_SECUNDARIA)])
+    style.map("TSpinbox", bordercolor=[("focus", sec)],
+              fieldbackground=[("focus", fundo_foco)])
 
+    # Anel de foco branco: o padrão do clam é escuro e some sobre os
+    # botões coloridos — quem usa o teclado não via onde estava.
     style.configure("TButton", font=FONTE_BOTAO, padding=(14, 8),
-                    background=COR_SECUNDARIA, foreground=COR_TEXTO_CLARO, borderwidth=0)
+                    background=sec, foreground=COR_TEXTO_CLARO, borderwidth=0,
+                    focuscolor=COR_TEXTO_CLARO, focusthickness=2)
     style.map("TButton", background=[("pressed", press_sec), ("active", hover_sec),
                                       ("disabled", "#A9B2BD")])
 
@@ -242,29 +327,33 @@ def aplicar_tema(root):
     style.map("Perigo.TButton", background=[("active", "#8E1F1F"), ("disabled", "#D9A0A0")])
 
     style.configure("Aviso.TButton", background=COR_AVISO, foreground=COR_TEXTO_CLARO)
-    style.map("Aviso.TButton", background=[("active", "#B85400"), ("disabled", "#E0B79A")])
+    style.map("Aviso.TButton", background=[("active", _ajustar_cor(COR_AVISO, 0.8)),
+                                           ("disabled", "#E0B79A")])
 
     style.configure("Sidebar.TButton", font=FONTE_BOTAO_GRANDE,
                     background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO,
                     padding=(20, 14), borderwidth=0, anchor="w",
-                    focuscolor=COR_PRIMARIA)  # some com a borda pontilhada de foco
+                    focuscolor=COR_TEXTO_CLARO, focusthickness=2)
     style.map("Sidebar.TButton",
-              background=[("active", COR_SECUNDARIA), ("selected", COR_SECUNDARIA)],
-              focuscolor=[("selected", COR_SECUNDARIA)])
+              background=[("active", sec), ("selected", sec),
+                          ("focus", _mesclar_branco(COR_PRIMARIA, 0.15))])
 
     # Checkbuttons/radios sem "flash" cinza no hover
     style.configure("TCheckbutton", background=COR_FUNDO)
     style.map("TCheckbutton", background=[("active", COR_FUNDO)])
     style.configure("TRadiobutton", background=COR_FUNDO)
     style.map("TRadiobutton", background=[("active", COR_FUNDO)])
+    style.configure("Card.TRadiobutton", background=COR_CARD)
+    style.map("Card.TRadiobutton", background=[("active", COR_CARD)])
 
     style.configure("Treeview", background="white", fieldbackground="white",
-                    foreground=COR_TEXTO, rowheight=30, borderwidth=0, font=("Segoe UI", 10))
+                    foreground=COR_TEXTO, rowheight=escalar(30), borderwidth=0,
+                    font=("Segoe UI", 10))
     style.configure("Treeview.Heading", background=COR_PRIMARIA, foreground=COR_TEXTO_CLARO,
                     font=("Segoe UI Semibold", 10), padding=(8, 7), relief="flat")
     style.map("Treeview.Heading",
-              background=[("pressed", press_prim), ("active", COR_SECUNDARIA)])
-    style.map("Treeview", background=[("selected", COR_SECUNDARIA)],
+              background=[("pressed", press_prim), ("active", sec)])
+    style.map("Treeview", background=[("selected", sec)],
               foreground=[("selected", COR_TEXTO_CLARO)])
 
     # Scrollbars discretas, na paleta do tema
@@ -287,7 +376,81 @@ def aplicar_tema(root):
         root.bind_class(classe, "<Enter>",
                         lambda e: e.widget.configure(cursor="hand2"), add="+")
 
+    # Botão com foco responde a Enter, não só à barra de espaço (o
+    # padrão do Tk, que ninguém descobre sozinho).
+    # O "break" impede que o Enter chegue também ao atalho da janela
+    # (a tela de login liga Enter a "Entrar" — seriam dois logins).
+    def acionar(evento):
+        evento.widget.invoke()
+        return "break"
+
+    for tecla in ("<Return>", "<KP_Enter>"):
+        root.bind_class("TButton", tecla, acionar)
+
+    root.bind_all("<Escape>", _esc_fecha_dialogo, add="+")
     return style
+
+
+def _esc_fecha_dialogo(evento):
+    """Esc fecha a janela de diálogo em que o foco está.
+
+    Faz o mesmo que o X da janela — inclusive qualquer pergunta que o
+    diálogo tenha registrado para o fechamento —, então nunca é um
+    atalho mais perigoso que o mouse. A janela principal (tk.Tk) nunca
+    é fechada por Esc.
+    """
+    widget = evento.widget
+    if isinstance(widget, str):
+        return None  # lista aberta de um combobox: o próprio Tk trata o Esc
+    try:
+        janela = widget.winfo_toplevel()
+    except (tk.TclError, AttributeError):
+        return None
+    if not isinstance(janela, tk.Toplevel):
+        return None
+    comando = janela.protocol("WM_DELETE_WINDOW")
+    if comando:
+        janela.tk.call(comando)
+    else:
+        janela.destroy()
+    return "break"
+
+
+def ao_ativar_linha(tabela, acao) -> None:
+    """Liga a ação de uma linha ao duplo clique **e** ao Enter.
+
+    Antes, abrir os detalhes de um livro, editar um usuário ou devolver
+    um empréstimo só funcionava com duplo clique: quem navega pelo
+    teclado chegava na linha e não tinha como abri-la.
+    """
+    def executar(_evento):
+        acao()
+        return "break"
+
+    for evento in ("<Double-1>", "<Return>", "<KP_Enter>"):
+        tabela.bind(evento, executar)
+
+
+def _foco_na_primeira_linha(evento) -> None:
+    """Ao chegar numa tabela pelo Tab, deixa uma linha marcada.
+
+    Sem isso a tabela recebia o foco sem linha nenhuma em foco: as setas
+    não faziam nada e não havia sinal visível de onde se estava.
+    """
+    tabela = evento.widget
+    try:
+        if tabela.focus():
+            return
+        selecionadas = tabela.selection()
+        filhos = tabela.get_children()
+        alvo = selecionadas[0] if selecionadas else (filhos[0] if filhos else "")
+        if alvo:
+            tabela.focus(alvo)
+            if not selecionadas:
+                tabela.selection_set(alvo)
+            tabela.see(alvo)
+    except (tk.TclError, AttributeError):
+        pass
 
 
 def aplicar_zebra(tree, cor: str | None = None) -> None:
@@ -340,6 +503,11 @@ def centralizar_janela(janela, largura, altura, minimo=None):
     seguinte não é limite.
     """
     janela.update_idletasks()
+    # Texto maior precisa de janela maior, senão os botões do rodapé
+    # saem da área visível. O limite de tela logo abaixo continua valendo.
+    largura, altura = escalar(largura), escalar(altura)
+    if minimo:
+        minimo = (escalar(minimo[0]), escalar(minimo[1]))
     sw = janela.winfo_screenwidth()
     sh = janela.winfo_screenheight()
     # Folga pra barra de tarefas e pra moldura da janela, que a API de
@@ -368,6 +536,7 @@ def criar_tabela(parent, **kw):
     caixa = ttk.Frame(parent)
     tabela = ttk.Treeview(caixa, **kw)
     tabela._caixa = caixa
+    tabela.bind("<FocusIn>", _foco_na_primeira_linha, add="+")
     return tabela
 
 
@@ -430,6 +599,96 @@ def empacotar_com_rolagem(tabela, **pack_kw):
     tabela.bind("<Configure>", ajustar, add="+")
     tabela.after_idle(ajustar)
     return barra_v
+
+
+class FaixaDeBotoes(ttk.Frame):
+    """Faixa de botões que quebra linha quando falta largura.
+
+    Com `pack(side="right")`, quando os botões somam mais que a largura
+    o último empacotado é espremido até sumir — já aconteceu com
+    "Importar CSV", e voltava a acontecer com o texto em tamanho Grande.
+    Aqui, o que não cabe desce para uma segunda linha e continua inteiro.
+
+    Os botões são criados com esta faixa como pai e registrados com
+    `adicionar`, na ordem em que aparecem da esquerda para a direita.
+    """
+
+    def __init__(self, parent, espaco: int = 8, alinhar: str = "right", **kw):
+        super().__init__(parent, **kw)
+        self._espaco = espaco
+        self._alinhar = alinhar
+        self._botoes: list = []
+        self.bind("<Configure>", self._arrumar, add="+")
+
+    def adicionar(self, widget):
+        self._botoes.append(widget)
+        self.after_idle(self._arrumar)
+        return widget
+
+    def _linhas(self, largura: int) -> list:
+        linhas: list = [[]]
+        usada = 0
+        for botao in self._botoes:
+            w = botao.winfo_reqwidth()
+            if linhas[-1] and usada + self._espaco + w > largura:
+                linhas.append([])
+                usada = 0
+            usada += (self._espaco if linhas[-1] else 0) + w
+            linhas[-1].append(botao)
+        return linhas
+
+    def _arrumar(self, _evento=None):
+        try:
+            largura = self.winfo_width()
+            if largura <= 1 or not self._botoes:
+                return
+            y = 0
+            for linha in self._linhas(largura):
+                ocupada = (sum(b.winfo_reqwidth() for b in linha)
+                           + self._espaco * (len(linha) - 1))
+                altura = max(b.winfo_reqheight() for b in linha)
+                x = max(0, largura - ocupada) if self._alinhar == "right" else 0
+                for botao in linha:
+                    botao.place(x=x, y=y + (altura - botao.winfo_reqheight()) // 2)
+                    x += botao.winfo_reqwidth() + self._espaco
+                y += altura + self._espaco
+            altura_total = max(1, y - self._espaco)
+            if int(self.cget("height") or 0) != altura_total:
+                self.configure(height=altura_total)
+        except tk.TclError:
+            pass  # janela sendo fechada
+
+
+def rolar_ate_o_foco(canvas, interior) -> None:
+    """Faz um formulário com rolagem acompanhar o Tab.
+
+    Nos formulários longos (cadastro de livro, Configurações), o Tab
+    levava o foco para um campo abaixo da área visível e a tela ficava
+    parada: a pessoa digitava sem ver onde.
+    """
+    prefixo = str(interior) + "."
+
+    def ao_focar(evento):
+        widget = evento.widget
+        if isinstance(widget, str) or not str(widget).startswith(prefixo):
+            return
+        try:
+            total = interior.winfo_height()
+            visivel = canvas.winfo_height()
+            if total <= visivel:
+                return
+            topo_campo = widget.winfo_rooty() - interior.winfo_rooty()
+            base_campo = topo_campo + widget.winfo_height()
+            topo_vista = canvas.canvasy(0)
+            margem = 16
+            if topo_campo < topo_vista:
+                canvas.yview_moveto(max(0, topo_campo - margem) / total)
+            elif base_campo > topo_vista + visivel:
+                canvas.yview_moveto((base_campo + margem - visivel) / total)
+        except tk.TclError:
+            pass
+
+    canvas.winfo_toplevel().bind("<FocusIn>", ao_focar, add="+")
 
 
 def gravar_arquivo(parent, destino: str, escrever, titulo_ok: str = "Pronto",

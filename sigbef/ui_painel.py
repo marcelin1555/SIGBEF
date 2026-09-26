@@ -70,7 +70,7 @@ class PainelPrincipal(tk.Tk):
     # ------------------------------------------------------------------
     def _construir(self):
         # Cabeçalho
-        cabecalho = tk.Frame(self, bg=tema.COR_PRIMARIA, height=60)
+        cabecalho = tk.Frame(self, bg=tema.COR_PRIMARIA, height=tema.escalar(60))
         cabecalho.pack(fill="x")
         cabecalho.pack_propagate(False)
         tk.Label(cabecalho, bg=tema.COR_PRIMARIA,
@@ -109,7 +109,7 @@ class PainelPrincipal(tk.Tk):
         # mais largo da sidebar) em telas com escala do Windows acima de
         # 100%, porque o Tk não redimensiona frames de largura fixa
         # junto com a fonte.
-        sidebar = tk.Frame(corpo, bg=tema.COR_PRIMARIA, width=264)
+        sidebar = tk.Frame(corpo, bg=tema.COR_PRIMARIA, width=tema.escalar(264))
         sidebar.pack(side="left", fill="y")
         sidebar.pack_propagate(False)
 
@@ -146,6 +146,29 @@ class PainelPrincipal(tk.Tk):
                               command=lambda k=chave: self._mostrar_secao(k))
             btn.pack(fill="x")
             self._botoes_lateral[chave] = btn
+
+        # Ctrl+1, Ctrl+2... levam à seção na ordem do menu, sem mouse
+        for numero, (chave, _rotulo, _icone) in enumerate(itens[:9], start=1):
+            self.bind(f"<Control-Key-{numero}>",
+                      lambda e, k=chave: self._ir_para_secao(k))
+        dica = tk.Label(sidebar, bg=tema.COR_PRIMARIA,
+                        fg=tema.COR_PRIMARIA_SUAVE,
+                        text=("Teclado: Ctrl+1 a Ctrl+%d trocam de seção, "
+                              "Ctrl+F busca, Enter abre a linha, "
+                              "Esc fecha a janela." % min(len(itens), 9)),
+                        font=("Segoe UI", 9), justify="left",
+                        wraplength=tema.escalar(224))
+
+        # A dica só aparece se couber abaixo do menu: numa tela baixa com
+        # texto grande, ela ficaria por baixo do último item.
+        def encaixar_dica(_evento=None):
+            menu = sum(b.winfo_reqheight() for b in self._botoes_lateral.values())
+            cabe = sidebar.winfo_height() >= menu + dica.winfo_reqheight() + 32
+            if cabe and not dica.winfo_manager():
+                dica.pack(side="bottom", anchor="w", padx=20, pady=16)
+            elif not cabe and dica.winfo_manager():
+                dica.pack_forget()
+        sidebar.bind("<Configure>", encaixar_dica, add="+")
 
         # Construir frames das seções
         self._principal = principal
@@ -192,6 +215,18 @@ class PainelPrincipal(tk.Tk):
             btn.state(["selected"] if k == chave else ["!selected"])
         self._secoes[chave].pack(fill="both", expand=True)
         self._secoes[chave].atualizar()
+
+    def _ir_para_secao(self, chave: str):
+        """Atalho de teclado: mostra a seção e leva o foco para dentro dela.
+
+        Só trocar a seção deixaria o foco no campo da seção anterior, que
+        some da tela — o próximo Tab cairia num lugar invisível.
+        """
+        self._mostrar_secao(chave)
+        secao = self._secoes.get(chave)
+        if secao is not None:
+            secao.focus_set()
+        return "break"
 
     def _atualizar_secao_atual(self):
         if self._secao_atual in self._secoes:
@@ -332,29 +367,23 @@ class SecaoLivros(SecaoBase):
         # largura útil, e o último empacotado — "Importar CSV" — era
         # espremido até desaparecer, sobrando só uma lasca azul colada no
         # título. A função existia e não tinha como ser alcançada.
-        topo = ttk.Frame(self)
+        #
+        # Com o texto em tamanho Grande, nem a faixa própria bastava: por
+        # isso ela quebra linha em vez de espremer o primeiro botão.
+        topo = tema.FaixaDeBotoes(self)
         topo.pack(fill="x", pady=(10, 0))
-        ttk.Button(topo, text=" Cadastrar livro",
-                    image=icones.icone("mais", "branco", 14),
-                    compound="left",
-                    style="Primario.TButton",
-                    command=self._novo_livro
-                    ).pack(side="right")
-        ttk.Button(topo, text="Ver detalhes / código de barras",
-                    command=self._detalhes
-                    ).pack(side="right", padx=(0, 8))
-        ttk.Button(topo, text="Editar",
-                    command=self._editar
-                    ).pack(side="right", padx=(0, 8))
-        ttk.Button(topo, text="Excluir do acervo",
-                    command=self._excluir
-                    ).pack(side="right", padx=(0, 8))
-        ttk.Button(topo, text="Etiquetas em massa",
-                    command=self._etiquetas_massa
-                    ).pack(side="right", padx=(0, 8))
-        ttk.Button(topo, text="Importar CSV",
-                    command=self._importar_csv
-                    ).pack(side="right", padx=(0, 8))
+        for texto, comando in (
+                ("Importar CSV", self._importar_csv),
+                ("Etiquetas em massa", self._etiquetas_massa),
+                ("Excluir do acervo", self._excluir),
+                ("Editar", self._editar),
+                ("Ver detalhes / código de barras", self._detalhes)):
+            topo.adicionar(ttk.Button(topo, text=texto, command=comando))
+        topo.adicionar(ttk.Button(topo, text=" Cadastrar livro",
+                                  image=icones.icone("mais", "branco", 14),
+                                  compound="left",
+                                  style="Primario.TButton",
+                                  command=self._novo_livro))
 
         # Filtros
         filtros = ttk.Frame(self, padding=(0, 12))
@@ -409,7 +438,7 @@ class SecaoLivros(SecaoBase):
 
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(8, 0))
-        self.tree.bind("<Double-1>", lambda e: self._detalhes())
+        tema.ao_ativar_linha(self.tree, self._detalhes)
         self.lbl_contagem = ttk.Label(rodape, text="")
         self.lbl_contagem.pack(side="left")
         self.btn_mais = ttk.Button(rodape, text="Carregar mais",
@@ -688,7 +717,7 @@ class SecaoUsuarios(SecaoBase):
             self.tree.column(c, width=w, anchor="w")
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(8, 0))
-        self.tree.bind("<Double-1>", lambda e: self._editar())
+        tema.ao_ativar_linha(self.tree, self._editar)
 
     def _novo_usuario(self):
         DialogoUsuario(self.painel, self.sessao, ao_salvar=self.atualizar)
@@ -922,39 +951,33 @@ class SecaoEmprestimos(SecaoBase):
         # de `pack` de sempre — dar à dica o lugar dela, em vez de
         # deixá-la disputar a sobra com quem cresce.
         ttk.Label(self,
-                  text=("Dica: duplo clique numa linha devolve o livro — "
-                        "ou a coleção inteira, se a linha for de coleção."),
+                  text=("Dica: duplo clique ou Enter numa linha devolve o "
+                        "livro — ou a coleção inteira, se a linha for de "
+                        "coleção."),
                   style="Hint.TLabel").pack(side="bottom", anchor="w",
                                              pady=(6, 0))
 
-        op = ttk.Frame(self)
+        # Quebra linha quando falta largura (texto Grande, tela de 1366 px)
+        op = tema.FaixaDeBotoes(self, alinhar="left")
         op.pack(side="bottom", fill="x", pady=(8, 0))
 
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
         # Devolução com um clique: duplo clique na linha devolve o livro
-        self.tree.bind("<Double-1>", lambda e: self._devolver_selecionado())
+        tema.ao_ativar_linha(self.tree, self._devolver_selecionado)
 
-        ttk.Button(op, text=" Devolver selecionado",
-                    image=icones.icone("confirmar", "branco", 14),
-                    compound="left",
-                    style="Sucesso.TButton",
-                    command=self._devolver_selecionado
-                    ).pack(side="left", padx=(0, 8))
-        ttk.Button(op, text="Renovar selecionado",
-                    command=self._renovar).pack(side="left", padx=(0, 8))
-        ttk.Button(op, text="Quitar multa",
-                    command=self._quitar).pack(side="left")
-        ttk.Button(op, text="Isentar multa",
-                    command=self._isentar).pack(side="left", padx=(8, 0))
-        ttk.Button(op, text="Devolver em lote",
-                    command=self._devolver_em_lote).pack(side="left",
-                                                          padx=(8, 0))
-        ttk.Button(op, text="Emprestar coleção...",
-                    command=self._emprestar_colecao).pack(side="left",
-                                                           padx=(16, 0))
-        ttk.Button(op, text="Devolver coleção",
-                    command=self._devolver_colecao).pack(side="left",
-                                                          padx=(8, 0))
+        op.adicionar(ttk.Button(op, text=" Devolver selecionado",
+                                image=icones.icone("confirmar", "branco", 14),
+                                compound="left",
+                                style="Sucesso.TButton",
+                                command=self._devolver_selecionado))
+        for texto, comando in (
+                ("Renovar selecionado", self._renovar),
+                ("Quitar multa", self._quitar),
+                ("Isentar multa", self._isentar),
+                ("Devolver em lote", self._devolver_em_lote),
+                ("Emprestar coleção...", self._emprestar_colecao),
+                ("Devolver coleção", self._devolver_colecao)):
+            op.adicionar(ttk.Button(op, text=texto, command=comando))
 
     def _devolver_em_lote(self):
         DialogoDevolucaoEmLote(self.painel, self.sessao,
@@ -2295,6 +2318,7 @@ class SecaoConfig(SecaoBase):
                                               _on_mousewheel))
         canvas.bind("<Leave>",
                     lambda e: canvas.unbind_all("<MouseWheel>"))
+        tema.rolar_ate_o_foco(canvas, body)
 
         ttk.Label(body, text="Configurações do sistema",
                   style="Titulo.TLabel").pack(anchor="w")
@@ -2638,6 +2662,33 @@ class SecaoConfig(SecaoBase):
                    command=self._remover_brasao
                    ).pack(side="left", padx=(8, 0))
         self._refrescar_status_brasao()
+
+        # Tamanho do texto
+        tk.Frame(aparencia, height=1, bg=tema.COR_BORDA
+                 ).grid(row=9, column=0, columnspan=4, sticky="ew",
+                        pady=12)
+        ttk.Label(aparencia, text="Tamanho do texto",
+                  style="Card.TLabel",
+                  font=("Segoe UI Semibold", 10)
+                  ).grid(row=10, column=0, sticky="w")
+        self._tamanho_texto = tk.StringVar(
+            value=get_config("tema.tamanho_texto", "normal") or "normal")
+        tamanhos = ttk.Frame(aparencia, style="CardInner.TFrame")
+        tamanhos.grid(row=10, column=1, columnspan=3, sticky="w", padx=12)
+        for chave_t, (rotulo_t, _fator) in tema.TAMANHOS_TEXTO.items():
+            ttk.Radiobutton(tamanhos, text=rotulo_t, value=chave_t,
+                            variable=self._tamanho_texto,
+                            style="Card.TRadiobutton"
+                            ).pack(side="left", padx=(0, 16))
+        ttk.Label(aparencia,
+                  text=("Aumenta as letras de todas as telas, neste "
+                        "computador e nos outros que usam o mesmo banco. "
+                        "Vale depois de reabrir o SIGBEF. \"Muito grande\" "
+                        "pede monitor maior: numa tela de 1366×768, algumas "
+                        "telas ficam apertadas."),
+                  style="CardHint.TLabel"
+                  ).grid(row=11, column=0, columnspan=4, sticky="w",
+                         pady=(6, 0))
 
         # Botoes de acao
         botoes_aparencia = ttk.Frame(body)
@@ -3120,10 +3171,12 @@ class SecaoConfig(SecaoBase):
         tema.salvar_cores(valores["primaria"], valores["secundaria"],
                           valores["destaque"], valores["fundo"],
                           executor_id=self.sessao.id)
+        tema.salvar_tamanho_texto(self._tamanho_texto.get(),
+                                  executor_id=self.sessao.id)
         messagebox.showinfo(
             "Aparência salva",
-            "As novas cores foram salvas.\n\n"
-            "Reinicie o SIGBEF para ver as mudancas.",
+            "As cores e o tamanho do texto foram salvos.\n\n"
+            "Reinicie o SIGBEF para ver as mudanças.",
             parent=self.painel)
 
     def _restaurar_aparencia_padrao(self):
@@ -3189,7 +3242,7 @@ class SecaoPesquisaAluno(SecaoBase):
         self.tree.column("disp", width=110, anchor="center")
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(12, 0))
-        self.tree.bind("<Double-1>", lambda e: self._pegar_emprestado())
+        tema.ao_ativar_linha(self.tree, self._pegar_emprestado)
 
         rodape = ttk.Frame(self)
         rodape.pack(fill="x", pady=(10, 0))
@@ -3361,7 +3414,7 @@ class SecaoMeusEmprestimos(SecaoBase):
             self.tree.column(c, width=w, anchor="w")
         self.tree.tag_configure("atrasado", background="#FDECEA",
                                   foreground=tema.COR_ERRO)
-        self.tree.tag_configure("devolvido", foreground="#888888")
+        self.tree.tag_configure("devolvido", foreground="#6B7280")
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True)
 
         # ------ Minhas reservas ------

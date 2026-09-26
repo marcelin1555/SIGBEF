@@ -253,7 +253,7 @@ class DialogoBuscaSelecao(tk.Toplevel):
             self.tree.column(key, width=largura_c, anchor=ancora)
         tema.empacotar_com_rolagem(self.tree, fill="both", expand=True,
                                    pady=(12, 0))
-        self.tree.bind("<Double-1>", lambda e: self._confirmar())
+        tema.ao_ativar_linha(self.tree, self._confirmar)
         self._idx_retorno = keys.index(self.COLUNA_RETORNO)
 
         botoes = ttk.Frame(wrap)
@@ -736,6 +736,7 @@ class DialogoLivro(tk.Toplevel):
         canvas.bind("<Enter>",
                     lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
         canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
+        tema.rolar_ate_o_foco(canvas, form)
 
         form.columnconfigure(1, weight=1)
         form.columnconfigure(3, weight=1)

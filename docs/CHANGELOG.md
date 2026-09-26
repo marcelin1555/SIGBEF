@@ -85,6 +85,58 @@ palavra é o que qualquer buscador faz.
   vem antes em ordem alfabética, então só a relevância explica o
   resultado
 
+### Acessibilidade no desktop
+
+**Dá para usar o SIGBEF sem mouse.** Antes, várias coisas só
+funcionavam com clique:
+
+| O quê | Antes | Agora |
+|---|---|---|
+| Abrir livro, editar usuário, devolver, pegar emprestado | só duplo clique | **Enter** na linha também |
+| Fechar uma janela | só o X | **Esc** (faz o mesmo que o X; nunca fecha a janela principal) |
+| Botão com foco | só barra de espaço | **Enter** também |
+| Trocar de seção | só clicando no menu | **Ctrl+1** a **Ctrl+9**, na ordem do menu |
+| Chegar numa tabela pelo Tab | nenhuma linha marcada, setas não faziam nada | a primeira linha fica marcada |
+| Tab num formulário longo | o foco ia para um campo fora da vista | a tela rola até o campo |
+| Cartões do autoatendimento | só toque/clique | Tab + Enter, com moldura de foco |
+
+**Dá para ver onde o teclado está.** O menu lateral escondia o anel de
+foco de propósito; agora o item focado fica mais claro e com anel
+branco. Botões coloridos ganharam anel branco (o escuro de antes sumia
+no azul), e o campo em foco ganha fundo levemente colorido além da
+borda.
+
+**Contraste.** Medido pela fórmula da WCAG (mínimo 4,5:1 para texto):
+
+| Cor | Antes | Agora |
+|---|---|---|
+| Laranja de aviso, como texto | 2,9:1 | 4,9:1 |
+| Texto branco no botão laranja | 3,1:1 | 5,9:1 |
+| Verde de sucesso no fundo Roxo | 4,2:1 | 5,4:1 |
+| Botões na predefinição Verde Floresta | 3,3:1 | 4,5:1 ou mais |
+| Linhas de empréstimo devolvido | 3,5:1 | 4,8:1 |
+
+Cor personalizada clara demais para texto branco não é recusada: o
+sistema usa um tom mais escuro dela só onde há texto por cima.
+
+**Tamanho do texto** em Configurações → Aparência: Normal, Grande
+(+15%) e Muito grande (+30%). Aumenta todas as letras de uma vez e as
+janelas crescem junto, sem passar do tamanho da tela. As faixas de
+botões de Livros e Empréstimos agora **quebram linha** quando falta
+largura — antes o botão da ponta era espremido até sumir.
+
+Conferido tela por tela numa janela de 1366×720: em Grande, tudo
+cabe. Em Muito grande, Empréstimos fica apertado na altura, e a própria
+tela de configuração avisa isso.
+
+**O que não dá:** leitor de tela (NVDA, Narrador). O Tkinter no Windows
+não expõe os controles para eles — é limite da biblioteca, não algo que
+se conserte tela a tela.
+
+- 722 testes no desktop (26 novos em `test_acessibilidade.py`: contraste
+  de toda cor fixa em toda predefinição, tamanho do texto, Esc, Enter,
+  foco na tabela, faixa que quebra linha)
+
 ## [1.13.0] — 2026-09-10
 
 Pedido da bibliotecária, e o mesmo padrão dos últimos três: a função já
