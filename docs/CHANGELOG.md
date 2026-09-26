@@ -2,6 +2,89 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado]
+
+### Busca que acha o que o aluno digita
+
+A busca era um `LIKE`, e o `LIKE` do SQLite só ignora maiúscula em
+ASCII: `Á` e `á` eram letras diferentes, e `ã` não era `a`. Medido no
+acervo real do CEFE:
+
+| O aluno digita | Achava | Com o acento certo |
+|---|---|---|
+| `joao` | 0 | `João` → 61 |
+| `memorias` | 0 | `Memórias` → 27 |
+| `coracao` | 0 | `Coração` → 14 |
+| `matematica` | 0 | `Matemática` → 6 |
+| `machado casmurro` | 0 | — |
+
+Quem digita no celular quase nunca põe acento. E a planilha importada
+veio metade sem acento, então o contrário também acontecia: `portugues`
+achava 23 livros e `Português` só 2. Quem escrevia certo era punido.
+
+- A busca agora usa o **FTS5** do próprio SQLite, com o tokenizador que
+  tira acento. Sem dependência nova: vem junto com o Python
+- **Acento e maiúscula não importam mais**, nos dois sentidos
+- **Palavras em qualquer ordem e em qualquer campo**: `machado casmurro`
+  acha o livro pelo autor e pelo título ao mesmo tempo
+- **Prefixo enquanto digita**: `casm` acha *Dom Casmurro*
+- **Busca por tombo**, que o README prometia e não existia. E ISBN com
+  ou sem hífen acham o mesmo livro
+- **O mais relevante primeiro**: quem digita `1984` recebe o livro
+  *1984* no topo, e não o que vier antes em ordem alfabética
+
+Vale para todas as buscas: acervo da bibliotecária, pesquisa do aluno,
+seletor do empréstimo de coleção e a API — então o **aplicativo Android
+melhora sem mudar uma linha de Kotlin**.
+
+### E ficou mais rápida — muito, no caso que mais importava
+
+Medido com 250 mil livros:
+
+| Busca | Antes | Depois |
+|---|---|---|
+| `historia` | **0 livros em 5,2 s** | 25.370 em 125 ms |
+| `joao` | **0 livros em 6,6 s** | 31.250 em 166 ms |
+| `História` | 25.370 em 306 ms | 25.370 em 143 ms |
+
+A busca antiga era **mais lenta justamente quando não achava nada**:
+sem casar no título, o `OR` descia na subconsulta de autores linha por
+linha, 250 mil vezes. O aluno sem acento esperava seis segundos para
+ouvir "nada encontrado".
+
+### Mudança de comportamento, deliberada
+
+**Pedaço do meio de uma palavra não acha mais.** O `LIKE` achava
+`ética` dentro de *Poética* e *Aritmética* — no acervo do CEFE, 8 dos 9
+resultados eram ruído; o único livro de fato sobre ética era *PCN
+Transversais e Ética*, que continua aparecendo. Busca por prefixo de
+palavra é o que qualquer buscador faz.
+
+### Como o índice fica certo
+
+- **Mantido por gatilhos no banco**, e não por chamadas espalhadas no
+  código. Cadastro, edição, importação, tombo, exclusão e reset mexem
+  no acervo por caminhos diferentes; um índice que depende de cada um
+  lembrar de avisá-lo fica desatualizado no primeiro que esquecer
+- **Empréstimo não custa nada à busca**: os gatilhos de exemplar só
+  olham tombo, então mudar o status numa devolução não reindexa
+- **O banco da escola se atualiza sozinho** na primeira subida: 54 ms
+  para o acervo do CEFE, 3,2 s para 250 mil livros, uma vez só. Se o
+  índice estiver incompleto — subida interrompida, backup antigo
+  restaurado —, ele se refaz
+- **Entrada hostil não derruba**: aspas, parênteses, dois-pontos,
+  asterisco e `AND`/`OR`/`NOT` são operadores do FTS5, e digitados crus
+  dariam erro de sintaxe. Só letras e números chegam à consulta
+- **SQLite sem FTS5 não derruba o sistema**: volta a busca antiga
+
+### Testes
+
+- 696 no desktop (40 novos). Com a busca antiga forçada, **20 dos 40
+  falham** — o que prova que pegam o defeito. O de relevância foi
+  refeito depois de passar por coincidência: o livro concorrente agora
+  vem antes em ordem alfabética, então só a relevância explica o
+  resultado
+
 ## [1.13.0] — 2026-09-10
 
 Pedido da bibliotecária, e o mesmo padrão dos últimos três: a função já

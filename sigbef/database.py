@@ -325,6 +325,132 @@ CONFIG_PADRAO = {
 }
 
 
+def _fts5_disponivel() -> bool:
+    """O SQLite deste Python tem busca textual (FTS5)?
+
+    Tem nas builds oficiais do Windows, do macOS e nas distribuições
+    Linux comuns -- mas não é garantido. Sem esta checagem, criar a
+    tabela virtual num SQLite sem FTS5 derrubaria o sistema na subida,
+    e a escola ficaria sem biblioteca por causa de uma melhoria na busca.
+    """
+    try:
+        con = sqlite3.connect(":memory:")
+        try:
+            con.execute("CREATE VIRTUAL TABLE t USING fts5("
+                        "x, tokenize='unicode61 remove_diacritics 2')")
+        finally:
+            con.close()
+        return True
+    except sqlite3.Error:
+        return False
+
+
+BUSCA_FTS = _fts5_disponivel()
+
+
+def _sql_indexar(onde: str) -> str:
+    """Monta a linha de busca de cada livro que satisfaz `onde`.
+
+    `codigos` guarda o ISBN duas vezes -- sem hífen, como um número só, e
+    como foi digitado -- mais os tombos de todos os exemplares. Assim
+    tanto "9788535910663" quanto "978-85-359-1066-3" acham o mesmo livro.
+    """
+    return f"""
+        INSERT INTO livro_busca(rowid, titulo, autores, categoria, codigos)
+        SELECT l.id,
+               l.titulo,
+               IFNULL((SELECT group_concat(a.nome, ' ')
+                         FROM livro_autor la JOIN autor a ON a.id = la.autor_id
+                        WHERE la.livro_id = l.id), ''),
+               IFNULL((SELECT c.nome FROM categoria c
+                        WHERE c.id = l.categoria_id), ''),
+               REPLACE(IFNULL(l.isbn, ''), '-', '') || ' ' ||
+               IFNULL(l.isbn, '') || ' ' ||
+               IFNULL((SELECT group_concat(ex.numero_tombo, ' ')
+                         FROM exemplar ex
+                        WHERE ex.livro_id = l.id
+                          AND ex.numero_tombo IS NOT NULL), '')
+          FROM livro l
+         WHERE {onde};"""
+
+
+def _gatilho(nome: str, evento: str, livros: str) -> str:
+    """Gatilho que refaz a linha de busca dos livros em `livros`."""
+    return f"""
+        CREATE TRIGGER IF NOT EXISTS {nome} {evento}
+        BEGIN
+            DELETE FROM livro_busca WHERE rowid IN ({livros});
+            {_sql_indexar(f"l.id IN ({livros})")}
+        END;"""
+
+
+def _criar_indice_de_busca(cur) -> None:
+    """Índice de busca textual do acervo, mantido por gatilhos.
+
+    A busca antiga era um LIKE, e o LIKE do SQLite só ignora maiúscula em
+    ASCII: "joao" não achava "João", e "coracao" não achava "Coração".
+    Medido no acervo do CEFE, "joao" devolvia 0 livros contra 61 de
+    "João" -- e quem digita no celular quase nunca põe acento.
+
+    Mantido por gatilhos, e não por chamadas espalhadas no código:
+    cadastro, edição, importação, tombo, exclusão e reset mexem no
+    acervo por caminhos diferentes, e um índice que depende de cada um
+    lembrar de avisá-lo fica desatualizado no primeiro que esquecer.
+
+    Empréstimo e devolução NÃO disparam reindexação: os gatilhos de
+    `exemplar` só olham `numero_tombo` e `livro_id`, então mudar o
+    status de um exemplar não custa nada à busca.
+    """
+    if not BUSCA_FTS:
+        return
+    cur.execute("""
+        CREATE VIRTUAL TABLE IF NOT EXISTS livro_busca USING fts5(
+            titulo, autores, categoria, codigos,
+            tokenize = 'unicode61 remove_diacritics 2'
+        )""")
+    gatilhos = [
+        _gatilho("busca_livro_ai", "AFTER INSERT ON livro", "NEW.id"),
+        _gatilho("busca_livro_au",
+                 "AFTER UPDATE OF titulo, isbn, categoria_id ON livro",
+                 "NEW.id"),
+        _gatilho("busca_livro_autor_ai", "AFTER INSERT ON livro_autor",
+                 "NEW.livro_id"),
+        _gatilho("busca_livro_autor_ad", "AFTER DELETE ON livro_autor",
+                 "OLD.livro_id"),
+        _gatilho("busca_exemplar_ai", "AFTER INSERT ON exemplar",
+                 "NEW.livro_id"),
+        _gatilho("busca_exemplar_au",
+                 "AFTER UPDATE OF numero_tombo, livro_id ON exemplar",
+                 "OLD.livro_id, NEW.livro_id"),
+        _gatilho("busca_exemplar_ad", "AFTER DELETE ON exemplar",
+                 "OLD.livro_id"),
+        _gatilho("busca_autor_au", "AFTER UPDATE OF nome ON autor",
+                 "SELECT livro_id FROM livro_autor WHERE autor_id = NEW.id"),
+        _gatilho("busca_categoria_au", "AFTER UPDATE OF nome ON categoria",
+                 "SELECT id FROM livro WHERE categoria_id = NEW.id"),
+    ]
+    for sql in gatilhos:
+        cur.execute(sql)
+    cur.execute("""
+        CREATE TRIGGER IF NOT EXISTS busca_livro_ad AFTER DELETE ON livro
+        BEGIN
+            DELETE FROM livro_busca WHERE rowid = OLD.id;
+        END;""")
+
+    # Cada livro tem exatamente uma linha de busca. Se as contas não
+    # batem -- banco de uma versão anterior, backup antigo restaurado,
+    # subida interrompida no meio da primeira indexação -- refaz tudo.
+    # No acervo do CEFE isso leva uma fração de segundo, e acontece uma
+    # vez só.
+    cur.execute("SELECT COUNT(*) FROM livro")
+    n_livros = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM livro_busca")
+    n_indexados = cur.fetchone()[0]
+    if n_livros != n_indexados:
+        cur.execute("DELETE FROM livro_busca")
+        cur.execute(_sql_indexar("1 = 1"))
+
+
 def init_database() -> None:
     """Cria o schema e popula as configurações padrão se ainda não existirem.
 
@@ -334,6 +460,7 @@ def init_database() -> None:
     with db_cursor() as cur:
         cur.executescript(SCHEMA_SQL)
         _migrar_schema(cur)
+        _criar_indice_de_busca(cur)
         for chave, valor in CONFIG_PADRAO.items():
             cur.execute(
                 "INSERT OR IGNORE INTO configuracao (chave, valor) VALUES (?, ?)",

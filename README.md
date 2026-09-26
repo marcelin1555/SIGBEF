@@ -90,7 +90,8 @@ escolar, substituindo controles manuais e planilhas por uma plataforma
 única que integra:
 
 - **Cadastro do acervo** com geração automática de código de barras por exemplar
-- **Pesquisa** flexível por título, autor, categoria, ISBN ou tombo
+- **Pesquisa** por título, autor, categoria, ISBN ou tombo — sem se
+  preocupar com acento, maiúscula ou ordem das palavras
 - **Empréstimos e devoluções** no balcão e em terminal de autoatendimento
 - **Reservas com fila de espera**, com separação automática do exemplar
   na devolução e aviso por e-mail (opt-in)
