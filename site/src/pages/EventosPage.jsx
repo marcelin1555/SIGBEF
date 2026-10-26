@@ -1,25 +1,49 @@
 import { useEffect, useRef, useState } from 'react'
+import { LINKS } from '../config'
+import { CabecalhoPagina } from '../components/ui'
 
 // Eventos que ainda vão acontecer. Não têm galeria: quando o evento
 // passar, é só mover a entrada pro array `eventos` de baixo e soltar as
 // fotos em public/eventos/<id>/.
 const proximos = [
   {
-    id: 'ficts-fecets-2026',
-    titulo: 'III FICTS e I FECETS — Etapa Caicó',
-    data: '16 de setembro de 2026',
-    local: 'Caicó/RN',
+    id: 'fcsp-2026',
+    titulo: 'XVI Feira de Ciências do Semiárido Potiguar',
+    data: '3 e 4 de dezembro de 2026',
+    dataISO: '2026-12-03',
+    local: 'Mossoró/RN',
     descricao:
-      'A equipe apresenta o SIGBEF na III Feira de Iniciação Científica e Tecnológica do ' +
-      'Seridó, na categoria Juvenil, área de Base Tecnológica. Realização da 10ª DIREC, ' +
-      'da FAPERN e da UERN. Vai ter demonstração do sistema rodando com o acervo real da ' +
-      'biblioteca do CEFE.',
+      'Indicado pela III FICTS, o SIGBEF participa da Feira Juvenil, realizada pela UFERSA no ' +
+      'Parque de Exposições Expocenter. A equipe leva o sistema funcionando para o público ' +
+      'e para os avaliadores.',
   },
 ]
 
 // Cada evento tem uma pasta em public/eventos/<id>/ com as fotos.
 // Pra adicionar fotos: solta os arquivos na pasta e lista aqui embaixo.
 const eventos = [
+  {
+    id: 'liga-jovem-2026',
+    titulo: 'Desafio Liga Jovem: 2º lugar na etapa estadual',
+    data: 'outubro de 2026',
+    local: 'On-line',
+    descricao:
+      'Na banca estadual do Rio Grande do Norte da 4ª edição do Desafio Liga Jovem, do Sebrae, ' +
+      'categoria Educação Profissional e Técnico, a equipe apresentou o SIGBEF ao vivo para ' +
+      'os jurados e ficou em 2º lugar.',
+    fotos: [],
+  },
+  {
+    id: 'ficts-fecets-2026',
+    titulo: 'III FICTS e I FECETS: Etapa Caicó',
+    data: '16 de setembro de 2026',
+    local: 'Caicó/RN',
+    descricao:
+      'A equipe apresentou o SIGBEF na III Feira de Iniciação Científica e Tecnológica do ' +
+      'Seridó, na categoria Juvenil, com o sistema rodando com o acervo real da biblioteca ' +
+      'do CEFE. O projeto foi indicado para a XVI Feira de Ciências do Semiárido Potiguar.',
+    fotos: [],
+  },
   {
     id: 'coloquio-ept-2026',
     titulo: 'V Seminário e II Colóquio de EPT da Rede Estadual do RN',
@@ -31,31 +55,26 @@ const eventos = [
       'já saíram os primeiros convites de escolas de outras regiões interessadas em ' +
       'implantar o sistema.',
     fotos: [
-      { src: '/eventos/coloquio-ept-2026/coloquio-05.jpg', alt: 'Apresentação do SIGBEF no telão principal do evento' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-03.jpg', alt: 'Equipe no palco do V Seminário e II Colóquio de EPT' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-04.jpg', alt: 'Equipe no palco durante a cerimônia do evento' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-06.jpg', alt: 'Vista do palco e do telão do colóquio' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-01.jpg', alt: 'Equipe do SIGBEF reunida no colóquio, em Natal' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-02.jpg', alt: 'Integrantes da equipe no espaço do evento' },
-      { src: '/eventos/coloquio-ept-2026/coloquio-07.jpg', alt: 'Foto com os participantes do colóquio' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-05.webp', alt: 'Apresentação do SIGBEF no telão principal do evento' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-03.webp', alt: 'Equipe no palco do V Seminário e II Colóquio de EPT' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-04.webp', alt: 'Equipe no palco durante a cerimônia do evento' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-06.webp', alt: 'Vista do palco e do telão do colóquio' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-01.webp', alt: 'Equipe do SIGBEF reunida no colóquio, em Natal' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-02.webp', alt: 'Integrantes da equipe no espaço do evento' },
+      { src: '/eventos/coloquio-ept-2026/coloquio-07.webp', alt: 'Foto com os participantes do colóquio' },
     ],
   },
 ]
 
 function Galeria({ fotos, onAbrir }) {
-  if (fotos.length === 0) {
-    return (
-      <div className="border-2 border-dashed border-gray-200 rounded-xl py-10 text-center text-gray-400 text-sm">
-        Fotos do evento em breve.
-      </div>
-    )
-  }
+  // Evento sem fotos (por exemplo, banca on-line) não mostra galeria vazia.
+  if (fotos.length === 0) return null
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
       {fotos.map(foto => (
         <button key={foto.src} type="button" onClick={() => onAbrir(foto)}
-          className="group relative rounded-xl overflow-hidden aspect-[4/3] bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#2E75B6]">
-          <img src={foto.src} alt={foto.alt} loading="lazy"
+          className="group relative rounded-xl overflow-hidden aspect-[4/3] bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
+          <img src={foto.src.replace('.webp', '-mini.webp')} alt={foto.alt} loading="lazy"
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         </button>
       ))}
@@ -83,34 +102,28 @@ export default function EventosPage() {
   return (
     <>
       {/* page header */}
-      <div className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">Comunidade</p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Eventos</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-            O SIGBEF fora da biblioteca: apresentações, feiras e encontros onde o projeto esteve.
-          </p>
-        </div>
-      </div>
+      <CabecalhoPagina rotulo="Comunidade" titulo="Eventos">
+        O SIGBEF fora da biblioteca: apresentações, feiras e encontros onde o projeto esteve.
+      </CabecalhoPagina>
 
       {/* próximos eventos */}
       {proximos.length > 0 && (
         <section className="py-14 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-[#2E75B6] mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-widest text-primary mb-6">
               Próximos eventos
             </h2>
             <div className="space-y-6">
               {proximos.map(ev => (
                 <article key={ev.id}
-                  className="border-l-4 border-[#2E75B6] bg-blue-50/60 rounded-r-2xl p-6 sm:p-8">
+                  className="border-l-4 border-primary bg-blue-50/60 rounded-r-2xl p-6 sm:p-8">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">
-                    <span className="bg-[#2E75B6] text-white px-2.5 py-1 rounded-full">Em breve</span>
-                    <time className="text-[#1F4E79]" dateTime="2026-09-16">{ev.data}</time>
+                    <span className="bg-primary text-white px-2.5 py-1 rounded-full">Em breve</span>
+                    <time className="text-dark" dateTime={ev.dataISO}>{ev.data}</time>
                     <span className="text-gray-300" aria-hidden="true">•</span>
                     <span className="text-gray-500">{ev.local}</span>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#1F4E79] mb-3">{ev.titulo}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold text-dark mb-3">{ev.titulo}</h3>
                   <p className="text-gray-600 leading-relaxed">{ev.descricao}</p>
                 </article>
               ))}
@@ -128,11 +141,11 @@ export default function EventosPage() {
           {eventos.map(ev => (
             <article key={ev.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">
-                <span className="text-[#2E75B6]">{ev.data}</span>
+                <span className="text-primary">{ev.data}</span>
                 <span className="text-gray-300">•</span>
                 <span className="text-gray-500">{ev.local}</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#1F4E79] mb-3">{ev.titulo}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-dark mb-3">{ev.titulo}</h2>
               <p className="text-gray-600 leading-relaxed mb-6">{ev.descricao}</p>
               <Galeria fotos={ev.fotos} onAbrir={setFotoAberta} />
             </article>
@@ -143,12 +156,12 @@ export default function EventosPage() {
       {/* convite */}
       <section className="py-14 px-4 bg-white text-center">
         <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-3">Quer o SIGBEF no seu evento ou na sua escola?</h2>
+          <h2 className="text-2xl font-bold text-dark mb-3">Quer o SIGBEF no seu evento ou na sua escola?</h2>
           <p className="text-gray-500 mb-6">
             Fazemos demonstrações para escolas e redes de ensino, presenciais ou por chamada de vídeo.
           </p>
-          <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
-            className="inline-block bg-[#2E75B6] text-white font-bold px-6 py-3 rounded-xl hover:bg-[#1F4E79] transition-colors">
+          <a href={LINKS.whatsapp} target="_blank" rel="noopener noreferrer"
+            className="inline-block bg-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-dark transition-colors">
             Falar com a equipe
           </a>
         </div>

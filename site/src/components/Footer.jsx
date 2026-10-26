@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { VERSAO } from '../versao'
+import { LINKS } from '../config'
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
           {/* brand */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-3">
-              <img src="/logo.png" alt="SIGBEF" className="h-8 w-8 rounded" />
+              <img src="/logo-64.png" alt="SIGBEF" width="32" height="32" className="h-8 w-8 rounded" />
               <div>
                 <div className="text-white font-bold text-lg leading-none">SIGBEF</div>
                 <div className="text-xs text-gray-400">{`v${VERSAO} · Licença MIT`}</div>
@@ -30,7 +31,7 @@ export default function Footer() {
               <li><Link to="/planos" className="hover:text-white transition-colors">Planos e preços</Link></li>
               <li><Link to="/novidades" className="hover:text-white transition-colors">Novidades</Link></li>
               <li>
-                <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
+                <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Releases</a>
               </li>
             </ul>
@@ -43,15 +44,15 @@ export default function Footer() {
               <li><Link to="/equipe" className="hover:text-white transition-colors">Equipe</Link></li>
               <li><Link to="/eventos" className="hover:text-white transition-colors">Eventos</Link></li>
               <li>
-                <a href="https://github.com/marcelin1555/SIGBEF" target="_blank" rel="noopener noreferrer"
+                <a href={LINKS.repositorio} target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">GitHub</a>
               </li>
               <li>
-                <a href="https://github.com/marcelin1555/SIGBEF/issues" target="_blank" rel="noopener noreferrer"
+                <a href={LINKS.problemas} target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Reportar problema</a>
               </li>
               <li>
-                <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
+                <a href={LINKS.whatsapp} target="_blank" rel="noopener noreferrer"
                   className="hover:text-white transition-colors">Fale conosco (WhatsApp)</a>
               </li>
             </ul>
@@ -61,8 +62,8 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold text-sm mb-3">Começar agora</h4>
             <p className="text-xs text-gray-400 mb-3">Gratuito, sem cadastro, sem limite de usuários.</p>
-            <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
-              className="inline-block bg-[#2E75B6] text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-[#1F4E79] transition-colors">
+            <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
+              className="inline-block bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-dark transition-colors">
               Baixar SIGBEF
             </a>
           </div>

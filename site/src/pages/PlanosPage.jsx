@@ -1,4 +1,6 @@
 import Planos from '../components/Planos'
+import { LINKS } from '../config'
+import { CabecalhoPagina } from '../components/ui'
 
 const faq = [
   {
@@ -27,22 +29,16 @@ export default function PlanosPage() {
   return (
     <>
       {/* page header */}
-      <div className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">Preços</p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Planos</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-            O sistema é gratuito para sempre. Os serviços são opcionais.
-          </p>
-        </div>
-      </div>
+      <CabecalhoPagina rotulo="Preços" titulo="Planos">
+        O sistema é gratuito para sempre. Os serviços são opcionais.
+      </CabecalhoPagina>
 
       <Planos />
 
       {/* faq */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-8 text-center">Dúvidas sobre os planos</h2>
+          <h2 className="text-2xl font-bold text-dark mb-8 text-center">Dúvidas sobre os planos</h2>
           <div className="space-y-4">
             {faq.map(item => (
               <div key={item.q} className="bg-white rounded-xl border border-gray-200 px-6 py-5">
@@ -56,9 +52,9 @@ export default function PlanosPage() {
 
       {/* contact cta */}
       <section className="py-14 px-4 bg-white text-center">
-        <h2 className="text-2xl font-bold text-[#1F4E79] mb-2">Ficou alguma dúvida?</h2>
+        <h2 className="text-2xl font-bold text-dark mb-2">Ficou alguma dúvida?</h2>
         <p className="text-gray-500 mb-6">Chame a equipe no WhatsApp — respondemos rápido.</p>
-        <a href="https://wa.me/5584991424110" target="_blank" rel="noopener noreferrer"
+        <a href={LINKS.whatsapp} target="_blank" rel="noopener noreferrer"
           className="inline-block bg-[#25D366] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#1EBE5D] transition-colors shadow-lg">
           Falar com a equipe no WhatsApp
         </a>

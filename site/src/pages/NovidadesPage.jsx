@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { LINKS } from '../config'
+import { CabecalhoPagina } from '../components/ui'
 
 const CATEGORIA_COR = {
   Acervo: 'bg-blue-50 text-blue-700',
@@ -332,26 +334,20 @@ export default function NovidadesPage() {
   return (
     <>
       {/* page header */}
-      <div className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">Changelog</p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Novidades</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-            O SIGBEF está em desenvolvimento ativo. Veja tudo que já mudou, versão por versão.
-          </p>
-        </div>
-      </div>
+      <CabecalhoPagina rotulo="Changelog" titulo="Novidades">
+        O SIGBEF está em desenvolvimento ativo. Veja tudo que já mudou, versão por versão.
+      </CabecalhoPagina>
 
       <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto space-y-12">
           {versoes.map((v, i) => (
             <div key={v.numero} className="relative">
               <div className="flex flex-wrap items-baseline gap-3 mb-1">
-                <h2 className="text-2xl font-bold text-[#1F4E79]">
+                <h2 className="text-2xl font-bold text-dark">
                   v{v.numero}
                 </h2>
                 {i === 0 && (
-                  <span className="bg-yellow-400 text-[#1F4E79] text-xs font-bold px-2.5 py-1 rounded-full">
+                  <span className="bg-ambar text-dark text-xs font-bold px-2.5 py-1 rounded-full">
                     Versão atual
                   </span>
                 )}
@@ -365,7 +361,7 @@ export default function NovidadesPage() {
               <ul className="space-y-2.5 border-l-2 border-gray-100 pl-5">
                 {v.itens.map((item, idx) => (
                   <li key={idx} className="text-gray-600 text-[15px] leading-relaxed relative">
-                    <span className="absolute -left-[1.45rem] top-2 w-2 h-2 rounded-full bg-[#2E75B6]" />
+                    <span className="absolute -left-[1.45rem] top-2 w-2 h-2 rounded-full bg-primary" />
                     {item.texto}
                   </li>
                 ))}
@@ -379,15 +375,15 @@ export default function NovidadesPage() {
 
       {/* cta */}
       <section className="py-16 px-4 bg-gray-50 text-center">
-        <h2 className="text-2xl font-bold text-[#1F4E79] mb-3">Quer testar a versão mais recente?</h2>
+        <h2 className="text-2xl font-bold text-dark mb-3">Quer testar a versão mais recente?</h2>
         <p className="text-gray-500 mb-6">Gratuito, offline, sem cadastro.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
-            className="bg-[#2E75B6] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#1F4E79] transition-colors shadow-md">
+          <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
+            className="bg-primary text-white font-bold px-8 py-3.5 rounded-xl hover:bg-dark transition-colors shadow-md">
             Baixar SIGBEF
           </a>
           <Link to="/funcionalidades"
-            className="border-2 border-gray-300 text-gray-700 font-semibold px-8 py-3.5 rounded-xl hover:border-[#2E75B6] hover:text-[#2E75B6] transition-colors">
+            className="border-2 border-gray-300 text-gray-700 font-semibold px-8 py-3.5 rounded-xl hover:border-primary hover:text-primary transition-colors">
             Ver funcionalidades
           </Link>
         </div>

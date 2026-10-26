@@ -1,10 +1,11 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { LINKS } from '../config'
 
 export default function BotaoWhatsApp() {
   return (
     <a
-      href="https://wa.me/5584991424110"
+      href={LINKS.whatsapp}
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Fale conosco no WhatsApp"

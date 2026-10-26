@@ -14,8 +14,8 @@ const plataformas = [
     titulo: 'Aplicativo desktop',
     subtitulo: 'Para a bibliotecária, no computador da biblioteca',
     icon: faDesktop,
-    cor: 'text-[#2E75B6]',
-    corAtiva: 'bg-[#2E75B6] text-white',
+    cor: 'text-primary',
+    corAtiva: 'bg-primary text-white',
     itens: [
       { icon: faGauge, texto: 'Painel com indicadores em tempo real' },
       { icon: faBarcode, texto: 'Cadastro por ISBN, com código de barras gerado na hora' },
@@ -60,7 +60,7 @@ export default function Plataformas() {
     <section className="py-20 px-4 bg-white">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1F4E79] mb-3">
+          <h2 className="text-3xl sm:text-4xl font-bold text-dark mb-3">
             Duas telas, uma biblioteca só
           </h2>
           <p className="text-gray-500 text-lg">

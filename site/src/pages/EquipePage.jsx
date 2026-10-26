@@ -1,4 +1,5 @@
 import Equipe from '../components/Equipe'
+import { CabecalhoPagina } from '../components/ui'
 
 const linha_do_tempo = [
   { ano: 'jan/26', evento: 'Marcello identifica o problema, a biblioteca do CEFE controlava tudo em planilha, e começa o SIGBEF durante as aulas de Banco de Dados.' },
@@ -18,33 +19,32 @@ const linha_do_tempo = [
   { ano: 'ago/26', evento: 'A equipe prepara a inscrição na III FICTS e I FECETS, feira de iniciação científica do Seridó, com apresentação presencial em Caicó no dia 16 de setembro.' },
   { ano: 'set/26', evento: 'v1.12.0: restaurar backup pela tela, empréstimo de coleção para a turma e isenção de multa — as últimas mudanças antes do sistema congelar para a feira.' },
   { ano: 'set/26', evento: 'v1.12.1 e v1.12.2, correções de emergência num caso real da biblioteca: reverter uma baixa dada por engano e liberar o número de tombo para reuso.' },
+  { ano: 'set/26', evento: 'Apresentação na III FICTS, em Caicó, com o sistema rodando sobre o acervo real do CEFE. O projeto é indicado para a XVI Feira de Ciências do Semiárido Potiguar.' },
+  { ano: 'set/26', evento: 'v1.14: a busca passa a ignorar acento e maiúscula, aceita as palavras em qualquer ordem e acha pelo tombo e pelo ISBN.' },
+  { ano: 'out/26', evento: '2º lugar na etapa estadual do Desafio Liga Jovem, do Sebrae, na categoria Educação Profissional e Técnico.' },
+  { ano: 'out/26', evento: 'Teste de carga com 250 mil livros: listar 50 registros levou 2,4 ms, na mediana de 20 medições.' },
+  { ano: 'dez/26', evento: 'Próxima parada: XVI Feira de Ciências do Semiárido Potiguar, em Mossoró, nos dias 3 e 4 de dezembro.' },
 ]
 
 export default function EquipePage() {
   return (
     <>
       {/* page header */}
-      <div className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">Sobre</p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Equipe</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-            Estudantes do CEFE, escola pública do Rio Grande do Norte, que decidiram resolver um problema real da própria escola.
-          </p>
-        </div>
-      </div>
+      <CabecalhoPagina rotulo="Sobre" titulo="Equipe">
+        Estudantes do CEFE, escola pública do Rio Grande do Norte, que decidiram resolver um problema real da própria escola.
+      </CabecalhoPagina>
 
       <Equipe />
 
       {/* linha do tempo */}
       <section className="py-20 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-10 text-center">História do projeto</h2>
+          <h2 className="text-2xl font-bold text-dark mb-10 text-center">História do projeto</h2>
           <div className="relative pl-8 border-l-2 border-gray-200 space-y-8">
             {linha_do_tempo.map(item => (
               <div key={item.evento} className="relative">
-                <span className="absolute -left-[2.25rem] top-0.5 w-5 h-5 rounded-full bg-[#2E75B6] border-2 border-white shadow" />
-                <div className="text-xs font-bold text-[#2E75B6] uppercase tracking-wide mb-1">{item.ano}</div>
+                <span className="absolute -left-[2.25rem] top-0.5 w-5 h-5 rounded-full bg-primary border-2 border-white shadow" />
+                <div className="text-xs font-bold text-primary uppercase tracking-wide mb-1">{item.ano}</div>
                 <p className="text-gray-600 text-sm leading-relaxed">{item.evento}</p>
               </div>
             ))}
@@ -53,10 +53,10 @@ export default function EquipePage() {
       </section>
 
       {/* missão */}
-      <section className="py-16 px-4 bg-[#1F4E79] text-white text-center">
+      <section className="py-16 px-4 bg-dark text-white text-center">
         <div className="max-w-2xl mx-auto">
           <div aria-hidden="true" className="text-4xl mb-4">🏫</div>
-          <blockquote className="text-xl sm:text-2xl font-semibold italic text-yellow-300 mb-4">
+          <blockquote className="text-xl sm:text-2xl font-semibold italic text-ambar-claro mb-4">
             "Escola pública brasileira merece a mesma tecnologia que escola privada tem."
           </blockquote>
           <p className="text-blue-200 text-sm">

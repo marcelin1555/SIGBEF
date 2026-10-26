@@ -1,3 +1,5 @@
+import { LINKS } from '../config'
+import { CabecalhoPagina } from '../components/ui'
 const requisitos = [
   { label: 'Sistema operacional', valor: 'Windows 7 a 11, Linux (x64) ou macOS' },
   { label: 'Espaço em disco', valor: 'Mínimo 100 MB livres' },
@@ -10,7 +12,7 @@ const passos = [
   {
     n: '1', titulo: 'Baixe o instalador',
     texto: 'Acesse a página de releases no GitHub e baixe o pacote do seu sistema: instalador SIGBEF_Setup.exe (Windows), .tar.gz (Linux) ou .zip (macOS). É gratuito, sem cadastro, sem condições.',
-    link: 'https://github.com/marcelin1555/SIGBEF/releases',
+    link: LINKS.download,
     linkLabel: 'Ir para releases',
   },
   {
@@ -58,24 +60,19 @@ export default function DownloadPage() {
   return (
     <>
       {/* page header */}
-      <div className="bg-gradient-to-br from-[#1F4E79] to-[#2E75B6] text-white py-14 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">Instalação</p>
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Como instalar</h1>
-          <p className="text-blue-100 text-lg max-w-2xl mx-auto mb-8">
-            Quatro passos, menos de 5 minutos, zero configuração de servidor.
-          </p>
-          <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
-            className="inline-block bg-yellow-400 text-[#1F4E79] font-bold px-8 py-3.5 rounded-xl text-lg hover:bg-yellow-300 transition-colors shadow-lg">
-            Baixar SIGBEF (última versão)
-          </a>
-        </div>
-      </div>
+      <CabecalhoPagina rotulo="Instalação" titulo="Como instalar" extra={
+        <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
+          className="inline-block bg-ambar text-dark font-bold px-8 py-3.5 rounded-xl text-lg hover:bg-ambar-claro transition-colors shadow-lg">
+          Baixar SIGBEF (última versão)
+        </a>
+      }>
+        Quatro passos, menos de 5 minutos, zero configuração de servidor.
+      </CabecalhoPagina>
 
       {/* requisitos */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-6">Requisitos do sistema</h2>
+          <h2 className="text-2xl font-bold text-dark mb-6">Requisitos do sistema</h2>
           <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             {requisitos.map((r, i) => (
               <div key={r.label} className={`flex gap-4 px-6 py-4 ${i < requisitos.length - 1 ? 'border-b border-gray-100' : ''}`}>
@@ -90,11 +87,11 @@ export default function DownloadPage() {
       {/* passos */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-10">Passo a passo</h2>
+          <h2 className="text-2xl font-bold text-dark mb-10">Passo a passo</h2>
           <div className="space-y-8">
             {passos.map(p => (
               <div key={p.n} className="flex gap-5">
-                <div className="w-10 h-10 rounded-full bg-[#2E75B6] text-white font-bold flex items-center justify-center shrink-0 text-sm">
+                <div className="w-10 h-10 rounded-full bg-primary text-white font-bold flex items-center justify-center shrink-0 text-sm">
                   {p.n}
                 </div>
                 <div className="pt-1">
@@ -102,7 +99,7 @@ export default function DownloadPage() {
                   <p className="text-gray-500 leading-relaxed text-sm">{p.texto}</p>
                   {p.link && (
                     <a href={p.link} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-3 text-sm text-[#2E75B6] font-semibold hover:text-[#1F4E79]">
+                      className="inline-flex items-center gap-1 mt-3 text-sm text-primary font-semibold hover:text-dark">
                       {p.linkLabel}
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -119,7 +116,7 @@ export default function DownloadPage() {
       {/* faq */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-2xl font-bold text-[#1F4E79] mb-8">Perguntas frequentes</h2>
+          <h2 className="text-2xl font-bold text-dark mb-8">Perguntas frequentes</h2>
           <div className="space-y-4">
             {faq.map(item => (
               <div key={item.q} className="bg-white rounded-xl border border-gray-200 px-6 py-5">
@@ -132,11 +129,11 @@ export default function DownloadPage() {
       </section>
 
       {/* cta */}
-      <section className="py-14 px-4 bg-[#1F4E79] text-white text-center">
+      <section className="py-14 px-4 bg-dark text-white text-center">
         <h2 className="text-2xl font-bold mb-2">Tudo pronto?</h2>
         <p className="text-blue-200 mb-6">O download é direto, sem cadastro.</p>
-        <a href="https://github.com/marcelin1555/SIGBEF/releases" target="_blank" rel="noopener noreferrer"
-          className="inline-block bg-yellow-400 text-[#1F4E79] font-bold px-10 py-4 rounded-xl text-lg hover:bg-yellow-300 transition-colors shadow-lg">
+        <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
+          className="inline-block bg-ambar text-dark font-bold px-10 py-4 rounded-xl text-lg hover:bg-ambar-claro transition-colors shadow-lg">
           Baixar SIGBEF grátis
         </a>
       </section>

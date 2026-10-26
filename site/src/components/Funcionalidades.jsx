@@ -6,14 +6,15 @@ import {
   faHandPointer, faClockRotateLeft, faCircleExclamation,
   faUserCheck, faIdCard,
 } from '@fortawesome/free-solid-svg-icons'
+import { TituloSecao } from './ui'
 
 const grupos = [
   {
     titulo: 'Bibliotecário',
     icon: faBook,
     cor: 'bg-blue-50 border-blue-200',
-    corIcon: 'bg-[#2E75B6] text-white',
-    corTitulo: 'text-[#1F4E79]',
+    corIcon: 'bg-primary text-white',
+    corTitulo: 'text-dark',
     itens: [
       { icon: faGauge, texto: 'Painel com indicadores em tempo real' },
       { icon: faBarcode, texto: 'Cadastro de livros por ISBN' },
@@ -59,10 +60,7 @@ export default function Funcionalidades() {
   return (
     <section id="funcionalidades" className="py-20 px-4 bg-gray-50">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1F4E79] mb-3">Funcionalidades</h2>
-          <p className="text-gray-500 text-lg">Um sistema completo para cada perfil de usuário.</p>
-        </div>
+        <TituloSecao titulo="Funcionalidades">Um sistema completo para cada perfil de usuário.</TituloSecao>
 
         <div className="grid md:grid-cols-3 gap-6">
           {grupos.map((g) => (

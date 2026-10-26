@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCode, faBullhorn, faChartLine, faChalkboardUser } from '@fortawesome/free-solid-svg-icons'
+import { TituloSecao } from './ui'
 
 const membros = [
   {
@@ -36,10 +37,7 @@ export default function Equipe() {
   return (
     <section id="equipe" className="py-20 px-4 bg-gray-50">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1F4E79] mb-3">Equipe</h2>
-          <p className="text-gray-500 text-lg">Feito por estudantes do CEFE, escola pública do Rio Grande do Norte.</p>
-        </div>
+        <TituloSecao titulo="Equipe">Feito por estudantes do CEFE, escola pública do Rio Grande do Norte.</TituloSecao>
 
         <div className="grid sm:grid-cols-2 gap-6">
           {membros.map((m) => (
@@ -49,7 +47,7 @@ export default function Equipe() {
               </div>
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">{m.nome}</h3>
-                <span className="text-xs text-[#2E75B6] font-semibold uppercase tracking-wide">{m.papel}</span>
+                <span className="text-xs text-primary font-semibold uppercase tracking-wide">{m.papel}</span>
                 <p className="text-gray-500 text-sm mt-2 leading-relaxed">{m.descricao}</p>
               </div>
             </div>
