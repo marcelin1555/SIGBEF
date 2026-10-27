@@ -7,6 +7,17 @@ import { CabecalhoPagina } from '../components/ui'
 // fotos em public/eventos/<id>/.
 const proximos = [
   {
+    id: 'expoiern-2026',
+    titulo: 'EXPOIERN 2026: Tec Mulheres',
+    data: '5 de novembro de 2026',
+    dataISO: '2026-11-05',
+    local: 'Jardim de Piranhas/RN',
+    descricao:
+      'Projeto aprovado para a mostra de tecnologia, educação, ciência e protagonismo feminino ' +
+      'do IERN, Campus Maria do Carmo Ferreira. A equipe apresenta o SIGBEF funcionando ' +
+      'com o acervo real da biblioteca do CEFE.',
+  },
+  {
     id: 'fcsp-2026',
     titulo: 'XVI Feira de Ciências do Semiárido Potiguar',
     data: '3 e 4 de dezembro de 2026',
@@ -25,7 +36,7 @@ const eventos = [
   {
     id: 'liga-jovem-2026',
     titulo: 'Desafio Liga Jovem: 2º lugar na etapa estadual',
-    data: 'outubro de 2026',
+    data: '6 de outubro de 2026',
     local: 'On-line',
     descricao:
       'Na banca estadual do Rio Grande do Norte da 4ª edição do Desafio Liga Jovem, do Sebrae, ' +
