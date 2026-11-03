@@ -70,7 +70,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between gap-2 text-xs text-gray-400">
-          <p>Feito no CEFE, escola pública do Rio Grande do Norte.</p>
+          <p>Feito no CEFE, escola pública do Rio Grande do Norte. Desenvolvido pela Morrow Studio.</p>
           <p>© 2026 SIGBEF. Código aberto sob licença MIT.</p>
         </div>
       </div>

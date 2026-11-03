@@ -69,6 +69,7 @@ class DialogoSobre(tk.Toplevel):
         info.pack()
         linhas = [
             ("Autor", "Marcello Melo de Medeiros Costa"),
+            ("Desenvolvimento", "Morrow Studio"),
             ("Licença", "MIT"),
             ("Tecnologia", "Python 3.10+ • Tkinter • SQLite"),
             ("Repositório", "https://github.com/marcelin1555/SIGBEF"),

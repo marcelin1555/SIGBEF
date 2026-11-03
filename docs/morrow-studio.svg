@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="1024" height="1024">
+  <title>Morrow Studio</title>
+  <rect width="180" height="180" rx="39.6" fill="#1A1A1A"/>
+  <g transform="translate(34.2 46.7442) scale(0.865116)">
+  <mask id="cut-i-dark" maskUnits="userSpaceOnUse" x="-20" y="-20" width="160" height="140">
+    <rect x="-20" y="-20" width="160" height="140" fill="#fff"/>
+    <polygon points="-10,79.2 110,64.8 110,71.8 -10,86.2" fill="#000"/>
+  </mask>
+  <polygon points="0,100 0,0 30,0 50,40 70,0 100,0 100,100 74,100 74,45 56,76 44,76 26,45 26,100" fill="#EDE8DC" mask="url(#cut-i-dark)"/>
+  <circle cx="118" cy="89" r="11" fill="#F5A623"/>
+  </g>
+</svg>
