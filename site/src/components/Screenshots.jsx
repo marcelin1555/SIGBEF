@@ -16,7 +16,6 @@ export default function Screenshots() {
     <section id="veja-funcionando" className="py-20 px-4 bg-gray-50 scroll-mt-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <p className="text-primary text-sm font-semibold uppercase tracking-widest mb-3">Veja funcionando</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-dark mb-3">Telas reais do sistema</h2>
           <p className="text-gray-500 text-lg">Capturadas no computador da biblioteca do CEFE, sem montagem.</p>
         </div>

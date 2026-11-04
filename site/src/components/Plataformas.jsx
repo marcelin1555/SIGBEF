@@ -36,8 +36,8 @@ const plataformas = [
     titulo: 'App Android',
     subtitulo: 'Para o aluno, no celular dele',
     icon: faMobileScreenButton,
-    cor: 'text-green-700',
-    corAtiva: 'bg-green-600 text-white',
+    cor: 'text-dark',
+    corAtiva: 'bg-dark text-white',
     itens: [
       { icon: faIdCard, texto: 'Carteirinha digital com código de barras' },
       { icon: faMagnifyingGlass, texto: 'Busca no acervo — funciona offline após a 1ª sincronização' },
@@ -120,7 +120,7 @@ export default function Plataformas() {
             ))}
           </ul>
 
-          <p className="text-gray-400 text-xs mt-6 pt-6 border-t border-gray-100">
+          <p className="text-gray-500 text-xs mt-6 pt-6 border-t border-gray-100">
             {plataforma.rodape}
           </p>
         </div>

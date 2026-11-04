@@ -334,7 +334,7 @@ export default function NovidadesPage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Changelog" titulo="Novidades">
+      <CabecalhoPagina titulo="Novidades">
         O SIGBEF está em desenvolvimento ativo. Veja tudo que já mudou, versão por versão.
       </CabecalhoPagina>
 
@@ -351,7 +351,7 @@ export default function NovidadesPage() {
                     Versão atual
                   </span>
                 )}
-                <span className="text-gray-400 text-sm">{v.data}</span>
+                <span className="text-gray-500 text-sm">{v.data}</span>
               </div>
 
               <div className="mb-4">

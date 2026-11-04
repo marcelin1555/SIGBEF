@@ -60,7 +60,7 @@ export default function DownloadPage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Instalação" titulo="Como instalar" extra={
+      <CabecalhoPagina titulo="Como instalar" extra={
         <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
           className="inline-block bg-ambar text-dark font-bold px-8 py-3.5 rounded-xl text-lg hover:bg-ambar-claro transition-colors shadow-lg">
           Baixar SIGBEF (última versão)

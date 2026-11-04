@@ -66,6 +66,10 @@ família do dourado da marca.
 | Interface nativa | **Segoe UI** (system-ui) | — | App desktop e site (corpo) — zero dependência |
 
 Ambas gratuitas (licença OFL): fonts.google.com/specimen/Montserrat e /Inter.
+
+No site, a Montserrat vem do pacote `@fontsource-variable/montserrat`,
+servida pelo próprio site (sem Google Fonts), e vale para h1–h3 e para a
+classe `font-titulo`.
 Arquivos `.woff2` no kit de marca.
 
 Detalhes que usamos: `text-wrap: balance` em h1–h3; rótulos em caixa alta
@@ -103,7 +107,9 @@ com `tracking-widest`; números tabulares onde há colunas de dígitos.
 ## 5. Padrões de componentes (site)
 
 1. **Cabeçalho de página interna**: faixa gradiente `from-#1F4E79 to-#2E75B6`
-   + eyebrow em caixa alta azul-claro + `h1` branco + subtítulo `blue-100`.
+   + `h1` branco + subtítulo `blue-100`. Sem rótulo em caixa alta acima
+   do título ("eyebrow"): ele só repetia o título com outra palavra.
+   Vale para as seções também.
 2. **Alternância de fundo** entre seções: branco → `gray-50` → branco.
 3. **Cards**: `rounded-2xl`, borda `gray-100`/`gray-200`, sombra leve.
    Card com hover só se for clicável (senão parece botão quebrado).

@@ -1,3 +1,5 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { LINKS } from '../config'
 import { TituloSecao } from './ui'
 const planos = [
@@ -36,13 +38,13 @@ export default function Planos() {
               <h3 className={`font-bold text-xl mb-1 ${p.destaque ? 'text-white' : 'text-gray-800'}`}>{p.nome}</h3>
               <div className="mb-3">
                 <span className={`text-3xl font-bold ${p.destaque ? 'text-ambar-claro' : 'text-primary'}`}>{p.preco}</span>
-                <span className={`text-sm ml-1 ${p.destaque ? 'text-blue-200' : 'text-gray-400'}`}>{p.periodo}</span>
+                <span className={`text-sm ml-1 ${p.destaque ? 'text-blue-200' : 'text-gray-500'}`}>{p.periodo}</span>
               </div>
               <p className={`text-sm mb-5 ${p.destaque ? 'text-blue-100' : 'text-gray-500'}`}>{p.descricao}</p>
               <ul className="space-y-2 mb-6 flex-1">
                 {p.itens.map((item) => (
                   <li key={item} className={`flex items-start gap-2 text-sm ${p.destaque ? 'text-blue-100' : 'text-gray-600'}`}>
-                    <span aria-hidden="true" className="text-green-400 font-bold mt-0.5">✓</span>{item}
+                    <FontAwesomeIcon icon={faCheck} className={`mt-1 text-xs shrink-0 ${p.destaque ? 'text-ambar-claro' : 'text-primary'}`} />{item}
                   </li>
                 ))}
               </ul>

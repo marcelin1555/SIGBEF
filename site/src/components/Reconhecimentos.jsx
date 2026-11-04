@@ -36,8 +36,8 @@ export default function Reconhecimentos() {
               <div className="w-11 h-11 rounded-xl bg-ambar/15 text-dark flex items-center justify-center mb-4">
                 <FontAwesomeIcon icon={i.icon} className="text-lg" />
               </div>
-              <p className="text-xs font-bold uppercase tracking-wide text-primary mb-1">{i.quando}</p>
-              <h3 className="font-bold text-gray-800 text-lg leading-snug mb-2">{i.titulo}</h3>
+              <h3 className="font-bold text-gray-800 text-lg leading-snug mb-1">{i.titulo}</h3>
+              <p className="text-sm font-semibold text-primary mb-2">{i.quando}</p>
               <p className="text-gray-500 text-sm leading-relaxed">{i.texto}</p>
             </article>
           ))}

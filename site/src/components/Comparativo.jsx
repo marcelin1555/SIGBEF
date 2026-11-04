@@ -47,7 +47,7 @@ export default function Comparativo() {
             </tbody>
           </table>
         </div>
-        <p className="text-gray-400 text-xs mt-3">
+        <p className="text-gray-500 text-xs mt-3">
           "—" quando não encontramos informação pública. Preço do Pergamum: contrato da UFSB, 2017 (R$ 27.200).
         </p>
       </div>

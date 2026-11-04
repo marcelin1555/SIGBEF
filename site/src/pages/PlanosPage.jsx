@@ -29,7 +29,7 @@ export default function PlanosPage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Preços" titulo="Planos">
+      <CabecalhoPagina titulo="Planos">
         O sistema é gratuito para sempre. Os serviços são opcionais.
       </CabecalhoPagina>
 

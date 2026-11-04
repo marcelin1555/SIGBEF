@@ -5,14 +5,36 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Barra de rolagem, caixas de seleção e cursor nas cores da marca */
+    scrollbar-color: #1F4E79 #E8ECF1;
+    accent-color: #2E75B6;
+    caret-color: #2E75B6;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
   }
   body {
     font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
     @apply text-gray-800 bg-white;
   }
+  /* Títulos em Montserrat, como no guia de design (docs/DESIGN.md) */
+  h1, h2, h3, .font-titulo {
+    font-family: 'Montserrat Variable', system-ui, 'Segoe UI', sans-serif;
+  }
+  h1, h2 {
+    letter-spacing: -0.02em;
+  }
+  /* Texto selecionado com o dourado da marca, em vez do azul do navegador */
+  ::selection {
+    background: #FFC233;
+    color: #1F4E79;
+  }
   /* Foco visível para navegação por teclado */
   :focus-visible {
     @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  a {
+    text-underline-offset: 0.2em;
   }
   /* Evita palavra órfã sozinha na última linha dos títulos */
   h1, h2, h3 {

@@ -29,9 +29,9 @@ const grupos = [
   {
     titulo: 'Aluno / Professor',
     icon: faGraduationCap,
-    cor: 'bg-green-50 border-green-200',
-    corIcon: 'bg-green-600 text-white',
-    corTitulo: 'text-green-800',
+    cor: 'bg-white border-gray-200',
+    corIcon: 'bg-dark text-white',
+    corTitulo: 'text-dark',
     itens: [
       { icon: faMagnifyingGlass, texto: 'Pesquisa por título, autor ou ISBN' },
       { icon: faHandPointer, texto: 'Empréstimo em 1 clique' },
@@ -43,9 +43,9 @@ const grupos = [
   {
     titulo: 'Kiosk (autoatendimento)',
     icon: faDesktop,
-    cor: 'bg-yellow-50 border-yellow-200',
-    corIcon: 'bg-yellow-500 text-white',
-    corTitulo: 'text-yellow-800',
+    cor: 'bg-amber-50 border-amber-200',
+    corIcon: 'bg-ambar text-dark',
+    corTitulo: 'text-dark',
     itens: [
       { icon: faDesktop, texto: 'Terminal independente para alunos' },
       { icon: faIdCard, texto: 'Login por matrícula ou nome' },
@@ -72,7 +72,7 @@ export default function Funcionalidades() {
               <ul className="space-y-2.5">
                 {g.itens.map((item) => (
                   <li key={item.texto} className="flex items-start gap-3 text-gray-700 text-sm">
-                    <FontAwesomeIcon icon={item.icon} className="text-gray-400 mt-0.5 w-4 shrink-0" />
+                    <FontAwesomeIcon icon={item.icon} className="text-primary/70 mt-0.5 w-4 shrink-0" />
                     {item.texto}
                   </li>
                 ))}

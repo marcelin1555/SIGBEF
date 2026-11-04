@@ -35,7 +35,7 @@ export default function ODS() {
         </div>
 
         <blockquote className="text-xl sm:text-2xl font-semibold italic text-ambar-claro max-w-2xl mx-auto mb-10">
-          "Escola pública brasileira merece a mesma tecnologia que escola privada tem."
+          “Escola pública brasileira merece a mesma tecnologia que escola privada tem.”
         </blockquote>
 
         <a href={LINKS.download} target="_blank" rel="noopener noreferrer"

@@ -24,7 +24,7 @@ export default function Footer() {
 
           {/* produto */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Produto</h4>
+            <h2 className="text-white font-semibold text-sm mb-3">Produto</h2>
             <ul className="space-y-2 text-sm">
               <li><Link to="/funcionalidades" className="hover:text-white transition-colors">Funcionalidades</Link></li>
               <li><Link to="/download" className="hover:text-white transition-colors">Como instalar</Link></li>
@@ -39,7 +39,7 @@ export default function Footer() {
 
           {/* projeto */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Projeto</h4>
+            <h2 className="text-white font-semibold text-sm mb-3">Projeto</h2>
             <ul className="space-y-2 text-sm">
               <li><Link to="/equipe" className="hover:text-white transition-colors">Equipe</Link></li>
               <li><Link to="/eventos" className="hover:text-white transition-colors">Eventos</Link></li>
@@ -60,7 +60,7 @@ export default function Footer() {
 
           {/* download cta */}
           <div>
-            <h4 className="text-white font-semibold text-sm mb-3">Começar agora</h4>
+            <h2 className="text-white font-semibold text-sm mb-3">Começar agora</h2>
             <p className="text-xs text-gray-400 mb-3">Gratuito, sem cadastro, sem limite de usuários.</p>
             <a href={LINKS.download} target="_blank" rel="noopener noreferrer"
               className="inline-block bg-primary text-white text-sm font-bold px-4 py-2 rounded-lg hover:bg-dark transition-colors">

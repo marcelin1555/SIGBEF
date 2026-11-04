@@ -13,14 +13,6 @@ import Reconhecimentos from '../components/Reconhecimentos'
 import { LINKS } from '../config'
 import { TituloSecao } from '../components/ui'
 
-// Números com fonte: acervo do CEFE (painel do sistema) e ensaio de carga de 19/10/2026.
-const stats = [
-  { valor: '2.867', label: 'títulos no acervo do CEFE' },
-  { valor: '250 mil', label: 'livros no teste de carga' },
-  { valor: '100%', label: 'sem internet' },
-  { valor: '2º lugar', label: 'Desafio Liga Jovem RN' },
-]
-
 const features = [
   { icon: faBookOpen,   cor: 'bg-blue-100 text-primary',   titulo: 'Acervo completo',   texto: 'Cadastro por ISBN com busca por título ou autor' },
   { icon: faBarcode,    cor: 'bg-amber-100 text-amber-700',  titulo: 'Código de barras', texto: 'Geração automática no cadastro de cada livro' },
@@ -40,18 +32,6 @@ export default function Home() {
   return (
     <>
       <Hero />
-
-      {/* stats strip */}
-      <div className="bg-primary py-4 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-white">
-          {stats.map(s => (
-            <div key={s.label}>
-              <div className="font-bold text-xl">{s.valor}</div>
-              <div className="text-blue-100 text-xs">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       <Problema />
 
@@ -127,7 +107,6 @@ export default function Home() {
       {/* pricing teaser */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-3xl mx-auto text-center">
-          <span className="inline-block bg-blue-100 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4">Modelo Open Core</span>
           <h2 className="text-3xl font-bold text-dark mb-4">O sistema é gratuito para sempre.</h2>
           <p className="text-gray-500 text-lg mb-8 max-w-xl mx-auto">
             Serviços como implantação, treinamento e suporte são opcionais e pagos.

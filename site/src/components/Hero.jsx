@@ -1,3 +1,5 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import { VERSAO } from '../versao'
 import { LINKS } from '../config'
 
@@ -8,13 +10,7 @@ export default function Hero() {
         <div className="grid md:grid-cols-[1fr_1.2fr] gap-12 items-center">
 
           <div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              {['Gratuito', 'Funciona sem internet', 'Código aberto', `v${VERSAO}`].map(b => (
-                <span key={b} className="bg-white/15 text-white text-xs font-semibold px-3 py-1 rounded-full">{b}</span>
-              ))}
-            </div>
-
-            <h1 className="text-4xl sm:text-5xl font-bold leading-tight mb-5">
+            <h1 className="text-4xl sm:text-5xl font-extrabold leading-[1.1] mb-5">
               Sistema de biblioteca para a escola que{' '}
               <span className="text-ambar-claro">não pode pagar por um.</span>
             </h1>
@@ -35,8 +31,18 @@ export default function Hero() {
               </a>
             </div>
 
-            <p className="mt-5 text-blue-100 text-sm">
-              Feito por estudantes do CEFE, escola pública de Jardim do Seridó/RN.
+            {/* Garantias logo abaixo da ação: é ali que a dúvida aparece */}
+            <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm text-white">
+              {['Gratuito', 'Funciona sem internet', 'Código aberto'].map(b => (
+                <li key={b} className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCheck} className="text-ambar-claro text-xs" />
+                  {b}
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-4 text-blue-100 text-sm">
+              {`Versão ${VERSAO}. Feito por estudantes do CEFE, escola pública de Jardim do Seridó/RN.`}
             </p>
           </div>
 
@@ -46,7 +52,7 @@ export default function Hero() {
               <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
               <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
-              <span className="ml-2 text-gray-400 text-[11px]">{`SIGBEF v${VERSAO} · Livros e exemplares`}</span>
+              <span className="ml-2 text-gray-500 text-[11px]">{`SIGBEF v${VERSAO} · Livros e exemplares`}</span>
             </div>
             <img src="/telas/acervo.webp" width="1540" height="845" fetchPriority="high"
               alt="Tela de livros e exemplares do SIGBEF com o acervo real da biblioteca do CEFE"

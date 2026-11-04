@@ -9,7 +9,7 @@ export default function FuncionalidadesPage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Produto" titulo="Funcionalidades">
+      <CabecalhoPagina titulo="Funcionalidades">
         Tudo que um sistema de biblioteca escolar precisa, sem custo e sem complicação.
       </CabecalhoPagina>
 

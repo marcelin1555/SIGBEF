@@ -1,12 +1,13 @@
 // Peças visuais que se repetem em várias páginas.
 
 // Faixa azul do topo das páginas internas (Funcionalidades, Planos, Equipe...).
-export function CabecalhoPagina({ rotulo, titulo, children, extra }) {
+// Sem rótulo em caixa alta acima do título: o próprio título já diz onde
+// a pessoa está, e o rótulo só repetia isso com outra palavra.
+export function CabecalhoPagina({ titulo, children, extra }) {
   return (
     <div className="bg-gradient-to-br from-dark to-primary text-white py-14 px-4">
       <div className="max-w-4xl mx-auto text-center">
-        <p className="text-blue-200 text-sm font-semibold uppercase tracking-widest mb-3">{rotulo}</p>
-        <h1 className="text-4xl sm:text-5xl font-bold mb-4">{titulo}</h1>
+        <h1 className="text-4xl sm:text-5xl font-extrabold mb-4">{titulo}</h1>
         <p className={`text-blue-100 text-lg max-w-2xl mx-auto${extra ? ' mb-8' : ''}`}>{children}</p>
         {extra}
       </div>

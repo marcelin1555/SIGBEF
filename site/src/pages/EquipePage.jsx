@@ -30,7 +30,7 @@ export default function EquipePage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Sobre" titulo="Equipe">
+      <CabecalhoPagina titulo="Equipe">
         Estudantes do CEFE, escola pública do Rio Grande do Norte, que decidiram resolver um problema real da própria escola.
       </CabecalhoPagina>
 

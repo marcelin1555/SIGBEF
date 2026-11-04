@@ -113,7 +113,7 @@ export default function EventosPage() {
   return (
     <>
       {/* page header */}
-      <CabecalhoPagina rotulo="Comunidade" titulo="Eventos">
+      <CabecalhoPagina titulo="Eventos">
         O SIGBEF fora da biblioteca: apresentações, feiras e encontros onde o projeto esteve.
       </CabecalhoPagina>
 
@@ -121,13 +121,13 @@ export default function EventosPage() {
       {proximos.length > 0 && (
         <section className="py-14 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-primary mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-dark mb-6">
               Próximos eventos
             </h2>
             <div className="space-y-6">
               {proximos.map(ev => (
                 <article key={ev.id}
-                  className="border-l-4 border-primary bg-blue-50/60 rounded-r-2xl p-6 sm:p-8">
+                  className="border border-primary/25 bg-blue-50/60 rounded-2xl p-6 sm:p-8">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">
                     <span className="bg-primary text-white px-2.5 py-1 rounded-full">Em breve</span>
                     <time className="text-dark" dateTime={ev.dataISO}>{ev.data}</time>
@@ -146,17 +146,17 @@ export default function EventosPage() {
       {/* lista de eventos */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="max-w-4xl mx-auto space-y-10">
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-400">
+          <h2 className="text-2xl sm:text-3xl font-bold text-dark">
             Já aconteceram
           </h2>
           {eventos.map(ev => (
             <article key={ev.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold uppercase tracking-wide mb-3">
                 <span className="text-primary">{ev.data}</span>
-                <span className="text-gray-300">•</span>
+                <span className="text-gray-300" aria-hidden="true">•</span>
                 <span className="text-gray-500">{ev.local}</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-dark mb-3">{ev.titulo}</h2>
+              <h3 className="text-xl sm:text-2xl font-bold text-dark mb-3">{ev.titulo}</h3>
               <p className="text-gray-600 leading-relaxed mb-6">{ev.descricao}</p>
               <Galeria fotos={ev.fotos} onAbrir={setFotoAberta} />
             </article>

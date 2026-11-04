@@ -19,7 +19,7 @@ export default function Nav() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
           <img src="/logo-64.png" alt="SIGBEF" width="32" height="32" className="h-8 w-8 rounded" />
-          <span className="font-bold text-xl text-dark">SIGBEF</span>
+          <span className="font-titulo font-extrabold text-xl text-dark">SIGBEF</span>
         </Link>
 
         <div className="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -39,7 +39,7 @@ export default function Nav() {
           </a>
         </div>
 
-        <button type="button" className="md:hidden p-2 rounded text-gray-600"
+        <button type="button" className="md:hidden p-2.5 -mr-2.5 rounded-lg text-gray-600 hover:bg-gray-50"
           onClick={() => setOpen(o => !o)} aria-label="Menu" aria-expanded={open}>
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {open
