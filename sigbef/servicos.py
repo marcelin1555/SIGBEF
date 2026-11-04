@@ -1780,7 +1780,7 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
     data_prevista = (date.today() + timedelta(days=prazo)).isoformat()
 
     from . import reservas
-    with db_cursor() as cur:
+    with db_cursor(imediato=True) as cur:
         reservas._expirar_vencidas_cur(cur)
         # Exemplar separado por reserva só sai com o dono da vez
         cur.execute(
@@ -1802,7 +1802,9 @@ def realizar_emprestimo(*, codigo_exemplar: str, matricula_usuario: str,
         # atendendo ao mesmo tempo, ou o balcão e a API do aplicativo.
         # As duas passavam pela verificação com o mesmo número e as duas
         # gravavam — o aluno terminava com um livro a mais que o limite,
-        # sem nada no sistema indicando como.
+        # sem nada no sistema indicando como. A conferência só vale
+        # porque a transação é `imediato`: sem isso este SELECT rodaria
+        # fora dela e a corrida continuaria aberta.
         limite = _limite_para_perfil(u["perfil"])
         cur.execute(
             "SELECT COUNT(*) AS qt FROM emprestimo "
@@ -1929,7 +1931,7 @@ def emprestar_colecao(*, livro_id: int, matricula_professor: str,
     data_prevista = (date.today() + timedelta(days=prazo)).isoformat()
     colecao_id = uuid.uuid4().hex
 
-    with db_cursor() as cur:
+    with db_cursor(imediato=True) as cur:
         cur.execute("SELECT titulo FROM livro WHERE id = ? AND ativo = 1",
                     (livro_id,))
         liv = cur.fetchone()
@@ -2185,7 +2187,7 @@ def renovar_emprestimo(emprestimo_id: int,
     with db_cursor() as cur:
         cur.execute(
             """SELECT e.id, e.usuario_id, e.exemplar_id, e.data_prevista,
-                       e.renovacoes, u.perfil
+                       e.renovacoes, e.colecao_id, u.perfil
                FROM emprestimo e JOIN usuario u ON u.id = e.usuario_id
                WHERE e.id = ? AND e.data_devolucao IS NULL""",
             (emprestimo_id,),
@@ -2199,8 +2201,15 @@ def renovar_emprestimo(emprestimo_id: int,
             if motivo:
                 raise RegraNegocioError(motivo)
 
-        prazo = _prazo_para_perfil(emp["perfil"])
-        nova_data = (date.today() + timedelta(days=prazo)).isoformat()
+        # Conta a partir do prazo atual, ou de hoje se já venceu. Contar
+        # sempre de hoje encurtava o prazo: o aluno que renovava no
+        # segundo dia gastava uma renovação sem ganhar nada, e um
+        # exemplar de coleção (60 dias) renovado voltava para 14.
+        prazo = (_prazo_colecao() if emp["colecao_id"]
+                 else _prazo_para_perfil(emp["perfil"]))
+        base = max(date.today(),
+                   datetime.strptime(emp["data_prevista"], "%Y-%m-%d").date())
+        nova_data = (base + timedelta(days=prazo)).isoformat()
         cur.execute(
             "UPDATE emprestimo SET data_prevista = ?, "
             "renovacoes = renovacoes + 1 WHERE id = ?",

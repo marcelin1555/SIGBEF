@@ -1,15 +1,17 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Marcello
 """
-SIGBEF — API REST somente leitura (opcional, opt-in).
+SIGBEF — API REST (opcional, opt-in).
 
-Permite que outros sistemas da escola consultem acervo, disponibilidade
-e situação de empréstimos sem tocar no banco diretamente. Desligada por
-padrão (API_ATIVA=0): nenhuma porta é aberta pra quem não usar.
+Permite que outros sistemas da escola e o aplicativo do aluno consultem
+acervo, disponibilidade e situação de empréstimos sem tocar no banco
+diretamente. Desligada por padrão (API_ATIVA=0): nenhuma porta é aberta
+pra quem não usar.
 
 Implementada 100% com a biblioteca padrão (http.server + json). Todas
-as rotas exigem `Authorization: Bearer <API_TOKEN>` exceto o healthcheck
-`/api/v1/ping`. Nesta versão não existe NENHUMA rota de escrita.
+as rotas exigem `Authorization: Bearer <token>` exceto o healthcheck
+`/api/v1/ping` e o login. As únicas gravações são do próprio aluno
+logado: reservar, cancelar a reserva e renovar (ver `do_POST`).
 
 Uso dentro do app: o painel sobe o servidor numa thread quando a API
 está ativa. Uso headless: `python sigbef.py --api`.
@@ -403,7 +405,10 @@ class _Handler(BaseHTTPRequestHandler):
 
         # Reaproveita o login do desktop: já traz bloqueio por tentativas,
         # tempo constante para matrícula inexistente e registro de auditoria.
-        sessao = autenticar(matricula, senha)
+        # Só leitores: o app é deles, e aceitar a equipe aqui deixava
+        # qualquer um na rede travar a conta da bibliotecária por 15
+        # minutos errando a senha cinco vezes.
+        sessao = autenticar(matricula, senha, perfis=("ALUNO", "PROFESSOR"))
         if sessao is None:
             self._erro(401, "Matrícula ou senha incorretos.")
             return

@@ -179,7 +179,9 @@ caixa de confirmação.
 
 1. Em **Empréstimos abertos**, selecione a linha desejada.
 2. Clique em **Renovar selecionado**.
-3. A data prevista é estendida pelo prazo padrão do perfil.
+3. A data prevista é estendida pelo prazo padrão do perfil, contado a
+   partir da data prevista atual (ou de hoje, se o prazo já venceu).
+   Exemplar de coleção usa o prazo de coleção.
 
 ### Acompanhar a fila de espera
 

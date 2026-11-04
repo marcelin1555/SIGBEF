@@ -1039,6 +1039,33 @@ class TestRegrasDeRenovacao(ServicosTestCase):
         self.assertFalse(pode)
         self.assertIn("renovou", motivo.lower())
 
+    def test_renovar_em_dia_nao_encurta_o_prazo(self):
+        """Renovar antes de vencer soma ao prazo atual, não a hoje."""
+        _, _, emp = self._emprestimo()
+        prevista = date.today() + timedelta(days=5)
+        with db_cursor() as cur:
+            cur.execute("UPDATE emprestimo SET data_prevista = ? WHERE id = ?",
+                        (prevista.isoformat(), emp["id"]))
+        res = servicos.renovar_emprestimo(emp["id"], validar_regras=True)
+        self.assertEqual(res["data_prevista"],
+                         (prevista + timedelta(days=7)).isoformat())
+
+    def test_renovar_exemplar_de_colecao_usa_prazo_de_colecao(self):
+        prof = self.criar_usuario(matricula="prof9", perfil="PROFESSOR")
+        livro = self.criar_livro(exemplares=2)
+        col = servicos.emprestar_colecao(
+            livro_id=livro["livro_id"], matricula_professor=prof["matricula"],
+            quantidade=2, turma="2A")
+        with db_cursor() as cur:
+            cur.execute("SELECT id FROM emprestimo WHERE colecao_id = ? "
+                        "LIMIT 1", (col["colecao_id"],))
+            emp_id = cur.fetchone()["id"]
+        res = servicos.renovar_emprestimo(emp_id)
+        # 60 dias da coleção + 60, e não hoje + 14 do professor
+        esperado = (date.fromisoformat(col["data_prevista"])
+                    + timedelta(days=60)).isoformat()
+        self.assertEqual(res["data_prevista"], esperado)
+
     def test_renovacoes_sao_contadas(self):
         _, _, emp = self._emprestimo()
         servicos.renovar_emprestimo(emp["id"])

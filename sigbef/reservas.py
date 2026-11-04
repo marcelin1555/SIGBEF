@@ -186,7 +186,9 @@ def criar_reserva(livro_id: int, usuario_id: int) -> dict:
 
     Retorna {"id", "titulo", "posicao"} (posição 1 = próximo da fila).
     """
-    with db_cursor() as cur:
+    # `imediato`: um toque duplo no app manda dois pedidos juntos, e sem
+    # a trava os dois passavam por "já tem reserva" e gravavam.
+    with db_cursor(imediato=True) as cur:
         _expirar_vencidas_cur(cur)
 
         cur.execute("SELECT titulo FROM livro WHERE id = ? AND ativo = 1",

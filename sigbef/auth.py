@@ -146,8 +146,15 @@ class Sessao:
 # ---------------------------------------------------------------------------
 # Login
 # ---------------------------------------------------------------------------
-def autenticar(matricula: str, senha: str) -> Optional[Sessao]:
-    """Retorna uma Sessao se as credenciais forem válidas; caso contrário None."""
+def autenticar(matricula: str, senha: str,
+               perfis: Optional[tuple[str, ...]] = None) -> Optional[Sessao]:
+    """Retorna uma Sessao se as credenciais forem válidas; caso contrário None.
+
+    `perfis` restringe quem pode entrar por aquele caminho. Conta de outro
+    perfil é tratada como inexistente: resposta igual, mesmo tempo, e a
+    falha não conta para o bloqueio dela. É o que impede alguém na rede
+    de travar a conta da bibliotecária errando a senha pelo aplicativo.
+    """
     matricula = (matricula or "").strip()
     if not matricula or not senha:
         return None
@@ -159,6 +166,8 @@ def autenticar(matricula: str, senha: str) -> Optional[Sessao]:
             (matricula,),
         )
         row = cur.fetchone()
+        if row and perfis is not None and row["perfil"] not in perfis:
+            row = None
         if not row or not row["ativo"]:
             # Gasta o mesmo tempo de um login válido antes de negar
             verificar_senha(senha, _hash_fantasma())

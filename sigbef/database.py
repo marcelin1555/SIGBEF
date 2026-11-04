@@ -71,11 +71,21 @@ def get_connection() -> sqlite3.Connection:
 
 
 @contextmanager
-def db_cursor():
-    """Context manager: abre conexão, comita ou faz rollback automaticamente."""
+def db_cursor(imediato: bool = False):
+    """Context manager: abre conexão, comita ou faz rollback automaticamente.
+
+    `imediato=True` é para quem confere e depois grava (limite de
+    empréstimos, reserva repetida). O módulo sqlite3 só abre a transação
+    no primeiro INSERT/UPDATE, então os SELECTs de conferência rodavam
+    fora dela: dois pedidos ao mesmo tempo liam o mesmo número e os dois
+    gravavam. BEGIN IMMEDIATE pega a trava de escrita já no início, e o
+    segundo pedido espera o primeiro terminar para conferir.
+    """
     conn = get_connection()
     try:
         cur = conn.cursor()
+        if imediato:
+            cur.execute("BEGIN IMMEDIATE")
         yield cur
         conn.commit()
     except Exception:

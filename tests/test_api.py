@@ -357,6 +357,25 @@ class TestLoginDoApp(ApiTestCase):
                               {"matricula": "naoexiste", "senha": "x"})
         self.assertEqual(status, 401)
 
+    def test_equipe_nao_entra_pelo_app(self):
+        servicos.cadastrar_usuario(nome="Bibliotecaria", matricula="bib1",
+                                   perfil="BIBLIOTECARIO", senha="senha123",
+                                   gerar_cartao=False)
+        status, _ = self.post("/api/v1/login",
+                              {"matricula": "bib1", "senha": "senha123"})
+        self.assertEqual(status, 401)
+
+    def test_erros_pelo_app_nao_travam_a_conta_da_equipe(self):
+        """Alguém na rede errando a senha da bibliotecária pelo app não
+        pode deixá-la fora do balcão."""
+        from sigbef.auth import autenticar
+        servicos.cadastrar_usuario(nome="Bibliotecaria", matricula="bib2",
+                                   perfil="BIBLIOTECARIO", senha="senha123",
+                                   gerar_cartao=False)
+        for _ in range(6):
+            self.post("/api/v1/login", {"matricula": "bib2", "senha": "x"})
+        self.assertIsNotNone(autenticar("bib2", "senha123"))
+
     def test_corpo_invalido_400(self):
         status, _ = self.post("/api/v1/login", {"matricula": "so-isso"})
         self.assertEqual(status, 400)

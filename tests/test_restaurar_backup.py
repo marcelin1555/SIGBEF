@@ -72,6 +72,8 @@ class TestConferirAntesDeRestaurar(BaseRestauracao):
     def test_banco_de_outro_sistema(self):
         """Abre, é SQLite, e mesmo assim não pode passar."""
         outro = Path(DB_PATH).parent / "outro_sistema.db"
+        # Sobra de uma rodada anterior na mesma pasta quebrava o CREATE
+        outro.unlink(missing_ok=True)
         conn = sqlite3.connect(outro)
         conn.execute("CREATE TABLE clientes (id INTEGER, nome TEXT)")
         conn.commit()
