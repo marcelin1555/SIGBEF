@@ -239,7 +239,7 @@ Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 
 | Forma | Quando usar | Tempo |
 |---|---|---|
-| **Releases do GitHub** | Mais simples — baixar `SIGBEF_Setup.exe` da [aba Releases](../../releases) | 2 min |
+| **Releases do GitHub** | Mais simples — baixar `SIGBEF_Setup.exe` da [aba Releases](https://github.com/marcelin1555/SIGBEF/releases) | 2 min |
 | **Pasta autônoma** | Quando você não tem privilégios de administrador no PC | 1 min |
 | **Build local** | Quando quer customizar antes de distribuir | 10 min |
 
@@ -261,7 +261,7 @@ pyinstaller sigbef.spec
 
 Cada release também é compilada automaticamente para **Windows, Linux e
 macOS** pelo GitHub Actions (`.github/workflows/build.yml`), com os
-pacotes anexados na [aba Releases](../../releases).
+pacotes anexados na [aba Releases](https://github.com/marcelin1555/SIGBEF/releases).
 
 Para um instalador profissional `.exe` com atalhos no menu Iniciar e
 desinstalador, use o [Inno Setup](https://jrsoftware.org/isinfo.php) com
@@ -299,6 +299,7 @@ cd SIGBEF
 python sigbef.py
 
 # Opcional: pular o wizard e popular com dados de demo
+#    (com o banco já populado, só mostra o cartão de credenciais no login)
 python sigbef.py --demo
 ```
 
@@ -346,6 +347,25 @@ Credenciais dos usuários de demo (somente quando carregados):
 
 > **Importante:** essas senhas são públicas. Trocar (ou desativar essas
 > contas) antes de usar em produção.
+
+### Demonstração em feira, sem mexer no banco real
+
+Numa banca vale mostrar o acervo de verdade, mas o que os visitantes
+fizerem (empréstimos, devoluções, cadastros) não pode ir para o banco da
+biblioteca. Faça uma cópia consistente e abra o sistema apontando para ela:
+
+```bash
+# 1. Copia o banco pela API do SQLite (copiar o arquivo direto pode
+#    perder o que ainda está no -wal)
+python -c "import sqlite3; o=sqlite3.connect('data/sigbef.db'); d=sqlite3.connect('demo.db'); o.backup(d)"
+
+# 2. Abre o SIGBEF na cópia, com o cartão de credenciais no login
+SIGBEF_DB_PATH=demo.db python sigbef.py --demo
+#    Windows (PowerShell): $env:SIGBEF_DB_PATH="demo.db"; python sigbef.py --demo
+```
+
+Acrescente `--autoatendimento` para abrir direto no terminal do aluno.
+Depois da feira, basta apagar `demo.db`.
 
 📖 **Veja também:** [Manual do Usuário completo](docs/MANUAL_DO_USUARIO.md) —
 fluxos passo a passo por perfil de usuário.
@@ -504,9 +524,21 @@ Tabelas auxiliares: `editora`, `categoria`, `autor`, `livro_autor` (M:N), `confi
 | Multa por dia de atraso | R$ 1,50 | Sim |
 | Teto máximo de multa | R$ 60,00 | Sim |
 | Bloqueio por inadimplência | imediato | — |
+| Renovação | soma o prazo à data prevista atual (ou a hoje, se já venceu) | — |
+| Renovações seguidas pelo aplicativo | 2 (no balcão a bibliotecária decide) | — |
+| Livro com fila de espera | não renova pelo aplicativo | — |
+| Coleção para a turma | 60 dias, até 40 exemplares, não conta no limite | Sim |
+| Reservas ativas por leitor | 3 | — |
+| Prazo para retirar o livro reservado | 2 dias | — |
+| Bloqueio de login | 5 senhas erradas → 15 minutos | — |
+| Login pelo aplicativo | só Aluno e Professor | — |
 | Exclusão de livros | sempre lógica (`ativo=0`) | — |
 
-Todas as regras passíveis de ajuste estão na tela **Configurações** (acesso restrito ao perfil Administrador).
+As regras marcadas como configuráveis ficam na tela **Configurações** (acesso restrito ao perfil Administrador). As outras têm o valor padrão do sistema.
+
+Empréstimo, coleção e reserva conferem o limite e gravam na mesma
+transação: dois pedidos ao mesmo tempo (balcão e aplicativo, ou um toque
+duplo no celular) não passam do limite nem duplicam reserva.
 
 ---
 
@@ -514,8 +546,11 @@ Todas as regras passíveis de ajuste estão na tela **Configurações** (acesso 
 
 ### Caminho do banco de dados
 
-Por padrão o banco é criado em `./data/sigbef.db`. Para usar outro local
-(útil em testes), defina a variável de ambiente:
+Rodando pelo código-fonte, o banco fica em `./data/sigbef.db`. No
+executável instalado, fica em `%APPDATA%\SIGBEF\sigbef.db` (Windows),
+`~/Library/Application Support/SIGBEF/` (macOS) ou
+`~/.local/share/SIGBEF/` (Linux). Para usar outro local (testes,
+demonstração), defina a variável de ambiente:
 
 ```bash
 # Linux/macOS
@@ -530,6 +565,8 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 | Argumento | Efeito |
 |---|---|
 | `--autoatendimento` ou `--kiosk` | Abre direto o terminal de autoatendimento, ignorando o login administrativo |
+| `--demo` | Banco vazio: pula o assistente e carrega os dados de demonstração. Banco populado: só mostra o cartão de credenciais no login |
+| `--api` | Roda só a API REST, sem interface (a API precisa estar ligada em Configurações → Integrações) |
 
 ---
 
@@ -602,6 +639,25 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 
 ## Desenvolvimento
 
+### Onde está a documentação
+
+| Necessidade | Referência |
+|---|---|
+| Usar o balcão e o autoatendimento | [Manual do usuário](docs/MANUAL_DO_USUARIO.md) |
+| Capacitar a biblioteca | [Treinamento](docs/TREINAMENTO.md) |
+| Saber o que foi entregue | [Changelog](docs/CHANGELOG.md) |
+| Integrar outro sistema | [API e autenticação](docs/API.md) |
+| Implantar o aplicativo e conferir a rede | [Guia mobile](sigbef-mobile/README.md) e [especificação do MVP](docs/SIGBEF_MOBILE.md) |
+| Gerar os pacotes | [Desktop](docs/COMO_GERAR_EXECUTAVEL.md) e [Android](docs/COMO_GERAR_APK.md) |
+| Alterar o site | [Guia do site](site/README.md) |
+| Manter identidade visual | [Design](docs/DESIGN.md) |
+| Revisar a evolução técnica | [Auditoria histórica do app](docs/AUDITORIA_MOBILE.md) e [spec inicial da API](docs/superpowers/specs/2026-07-10-api-rest-design.md) |
+
+Especificações datadas e auditorias históricas descrevem a versão em que
+foram escritas. Para comportamento atual, conferir código, testes e
+changelog; não tratar problemas antigos como defeitos ainda presentes.
+
+
 ### Como o código está organizado
 
 - **Cada arquivo de UI implementa apenas uma tela ou diálogo.** Para criar uma nova seção, herde de `SecaoBase` em `ui_painel.py` e implemente o método `atualizar()`.
@@ -665,17 +721,16 @@ Para gerar o APK assinado que vai para os alunos, veja
 
 Funcionalidades planejadas para versões futuras:
 
-> O sistema está congelado até a III FICTS, em 16 de setembro de 2026.
-> Mexer no que vai ser demonstrado ao vivo, às vésperas da feira, é risco
-> sem retorno. A tela de auditoria já saiu, por ser leitura pura; o resto
-> desta lista fica para depois da feira.
+A pausa de desenvolvimento para a III FICTS foi encerrada. As entregas
+publicadas estão em [CHANGELOG](docs/CHANGELOG.md); os itens abaixo são
+possibilidades de evolução, não compromissos de uma release.
 
 ### Próxima versão
 
-Nada em aberto no momento — o sistema está congelado até a III FICTS
-(ver aviso acima). Os itens que estavam aqui (restaurar backup pela
-tela, isentar multa, empréstimo de coleção, reverter baixa e liberar
-tombo) já foram lançados; ver "Concluído recentemente" abaixo.
+Ainda sem escopo fechado. Priorizar correções verificadas, adoção em outras
+escolas e os obstáculos abaixo. Restauração de backup, isenção de multa,
+empréstimo de coleção, reversão de baixa e liberação de tombo já foram
+entregues; ver "Concluído recentemente".
 
 ### Para outra escola conseguir adotar sozinha
 
@@ -739,7 +794,7 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 ### Descartado, e por quê
 
 - **Reescrita em Java.** Esteve no roadmap como ideia em aberto.
-  Reescrever um sistema em produção, com mais de 600 testes e uma biblioteca
+  Reescrever um sistema em produção, com mais de 700 testes e uma biblioteca
   dependendo dele, para exercitar POO mais rígida custaria um semestre e
   não entregaria nada para quem usa. O objetivo de aprendizado já está
   atendido pelo aplicativo Android em Kotlin, que também é orientado a
@@ -750,6 +805,14 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 
 ### Concluído recentemente
 
+- [x] **Correções de 03/11/2026** (entram na próxima versão): renovar
+      não encurta mais o prazo, inclusive de coleção; dois pedidos
+      simultâneos não furam o limite de empréstimos nem duplicam reserva;
+      o login do aplicativo aceita só leitores, e errar a senha da
+      bibliotecária pela rede não trava mais a conta dela no balcão
+- [x] **Site com a identidade do guia de design** — títulos em
+      Montserrat servida pelo próprio site, ícones só nas cores da marca,
+      contraste corrigido e menos rótulos repetidos
 - [x] **Busca sem acento e por tombo** — "joao" acha "João", as palavras
       vêm em qualquer ordem, e tombo e ISBN também são achados; num
       acervo de 250 mil livros, de 6,6 s para 0,17 s (v1.14.0)
@@ -903,3 +966,10 @@ O planejamento original de abril está preservado em
 Se este projeto te ajudou, considere dar uma ⭐ no GitHub.
 
 </div>
+
+---
+
+<p align="center">
+  <img src="docs/morrow-studio.svg" alt="Morrow Studio" width="56"><br>
+  Desenvolvido pela <strong>Morrow Studio</strong> para o Centro Educacional Felinto Elísio.
+</p>
