@@ -247,7 +247,7 @@ fun BookDetailScreen(
 
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(8.dp),
                         color = SigbefCores.atual.superficie,
                         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                     ) {
@@ -267,7 +267,7 @@ fun BookDetailScreen(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = SigbefCores.atual.superficie,
-                shadowElevation = 8.dp,
+                shadowElevation = 0.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column(
@@ -313,8 +313,8 @@ fun BookDetailScreen(
                                 enabled = !isOffline && !acaoEmCurso,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = SigbefCores.atual.marca,
-                                    contentColor = SigbefCores.atual.sobreMarca,
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
                                 )
                             ) {
                                 Text(
@@ -365,7 +365,7 @@ private fun DetailCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {

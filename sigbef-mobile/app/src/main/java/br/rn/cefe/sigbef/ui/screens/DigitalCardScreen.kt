@@ -92,9 +92,9 @@ fun DigitalCardScreen(
             // Digital Card Container
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 color = SigbefCores.atual.superficie,
-                shadowElevation = 4.dp,
+                shadowElevation = 0.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
             ) {
                 Column {
@@ -157,7 +157,7 @@ fun DigitalCardScreen(
                         // Barcode Section
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(8.dp),
                             color = SigbefCores.atual.superficie,
                             border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                         ) {
@@ -258,7 +258,7 @@ private fun AvisoDevolucaoOpcao() {
     }
 
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
         border = BorderStroke(1.dp, SigbefCores.atual.linha),
         modifier = Modifier.fillMaxWidth()

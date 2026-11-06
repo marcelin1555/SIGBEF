@@ -55,11 +55,12 @@ class MainActivity : ComponentActivity() {
         // situações (limpeza do sistema, troca de aparelho). Recriar na
         // abertura é barato e garante que quem ligou continue avisado.
         AvisoDevolucao.restaurarSeLigado(this)
-        // Ícones da barra de status em branco: ela fica sobre o cabeçalho
-        // em gradiente navy, e no padrão claro o relógio e a bateria
-        // sumiriam no azul escuro.
+        // Ícones da barra de status seguem o tema: escuros sobre o
+        // cabeçalho branco, claros no modo escuro.
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT
+            )
         )
         setContent {
             MyApplicationTheme {

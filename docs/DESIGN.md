@@ -120,15 +120,19 @@ com `tracking-widest`; números tabulares onde há colunas de dígitos.
 
 ## 5.1. Padrões do app Android (Compose)
 
-O app usa a **mesma assinatura visual do site**, adaptada ao celular.
+Desde o refinamento de outubro de 2026, o app segue o guia próprio em
+[`sigbef-mobile/DESIGN.md`](../sigbef-mobile/DESIGN.md): superfícies
+neutras, ação em azul `#0071E3` e botões em pílula. Navy e dourado ficam
+nos elementos de identificação (cartão, logo, pílulas de status).
 
 - Tokens em `ui/theme/Color.kt`; `ui/components/Marca.kt` guarda o que é
-  identidade (gradiente, pílula, rótulo de seção). **Nenhuma tela escreve
+  identidade (pílula, rótulo de seção). **Nenhuma tela escreve
   `Color(0xFF…)` na mão** — se faltar um tom, ele nasce no tema, com nome.
-- **Barra do topo** (`SigbefTopAppBar`): gradiente
-  `SigbefNavy → SigbefBlue` fechado por faixa dourada de 4dp, com o título
-  da tela e um subtítulo opcional. É o equivalente do cabeçalho de página
-  interna do site (item 1 acima).
+- **Barra do topo** (`SigbefTopAppBar`): superfície neutra com divisória
+  de 1dp, título da tela e subtítulo opcional.
+- **Barra de baixo**: `NavigationBar` do Material 3, quatro destinos.
+- **Formas**: cartões com 8dp; diálogos com 28dp (`shapes.extraLarge`);
+  botões na pílula padrão do Material, sem `shape` forçado.
 - A barra também carrega o botão de **atualizar** e o estado da conexão.
   Antes isso era um chip flutuando sobre o conteúdo.
 - **Pílula de status** (`PilulaStatus`): totalmente arredondada, fundo
@@ -137,8 +141,8 @@ O app usa a **mesma assinatura visual do site**, adaptada ao celular.
 - Fundos de pílula são cores **chapadas** (`SigbefSuccessFundo` etc.), não
   alpha: as mesmas pílulas aparecem sobre cartão branco e sobre o fundo
   cinza, e com alpha mudariam de tom conforme o lugar.
-- Barra de status do sistema em ícones claros
-  (`SystemBarStyle.dark`), porque o gradiente navy passa por baixo dela.
+- Barra de status com `SystemBarStyle.auto`: ícones escuros sobre o
+  cabeçalho claro e claros no modo escuro.
 
 > **Cuidado ao gerar tema Material 3 automaticamente.** Os `*Container`
 > do gerador (`D1E4FF`, `7CBAFF`, `001D35`, `004A7D`) são azuis parecidos

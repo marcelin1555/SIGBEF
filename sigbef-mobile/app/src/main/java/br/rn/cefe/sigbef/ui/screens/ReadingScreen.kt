@@ -126,7 +126,7 @@ fun ReadingScreen(
 private fun ConviteParaComecar() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
@@ -172,9 +172,9 @@ private fun ConviteParaComecar() {
 private fun ResumoDaLeitura(e: EstatisticaLeitura) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
-        shadowElevation = 2.dp,
+        shadowElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -284,7 +284,7 @@ private fun CartaoRecomendacao(r: Recomendacao, onAbrir: (Int) -> Unit) {
 
     Surface(
         modifier = Modifier.fillMaxWidth().clickable { onAbrir(r.livroId) },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
@@ -328,7 +328,7 @@ private fun CartaoRecomendacao(r: Recomendacao, onAbrir: (Int) -> Unit) {
 private fun AvisoSemRede() {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.azulFundo
     ) {
         Text(

@@ -24,12 +24,12 @@ val SigbefBlue = Color(0xFF2E75B6)
 val SigbefGold = Color(0xFFF2A900)
 
 // ------------------------------------------------------------- base
-val SigbefBackground = Color(0xFFF5F7FA)
+val SigbefBackground = Color(0xFFF5F5F7)
 val SigbefSurface = Color(0xFFFFFFFF)
-val SigbefSurfaceContainerLow = Color(0xFFE8ECF1)
-val SigbefLine = Color(0xFFD5DAE0)
+val SigbefSurfaceContainerLow = Color(0xFFF4F8FB)
+val SigbefLine = Color(0xFFD2D2D7)
 
-val SigbefInk = Color(0xFF1A1A1A)
+val SigbefInk = Color(0xFF1D1D1F)
 
 /**
  * Texto secundário. Não é o `gray-400` do Tailwind de propósito: a
@@ -101,3 +101,7 @@ val SigbefBlueFundoEscuro = Color(0xFF1A2C3E)
 
 /** Texto sobre `SigbefWarningFundoEscuro`. */
 val SigbefWarningInkClaro = Color(0xFFFFC48C)
+
+// Ações e links do aplicativo; a assinatura da marca continua navy e dourada.
+val SigbefAction = Color(0xFF0071E3)
+val SigbefLink = Color(0xFF0066CC)

@@ -63,7 +63,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(20.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(8.dp),
                 color = SigbefCores.atual.superficie,
                 shadowElevation = 6.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
@@ -194,15 +194,14 @@ fun LoginScreen(
                             .fillMaxWidth()
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SigbefCores.atual.marca,
-                            contentColor = SigbefCores.atual.sobreMarca,
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        )
                     ) {
                         Text(
                             text = if (carregando) "Entrando…" else "Entrar",
                             style = MaterialTheme.typography.titleMedium,
-                            color = SigbefCores.atual.sobreMarca
+                            color = MaterialTheme.colorScheme.onPrimary
                         )
                     }
 

@@ -93,9 +93,9 @@ fun HomeScreen(
                 // Main Status Card
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = SigbefCores.atual.superficie,
-                    shadowElevation = 2.dp,
+                    shadowElevation = 0.dp,
                     border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
                 ) {
                     Column(
@@ -334,9 +334,9 @@ private fun BentoShortcutCard(
     // um vão vazio enorme em tela de celular.
     Surface(
         modifier = modifier.clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Column(

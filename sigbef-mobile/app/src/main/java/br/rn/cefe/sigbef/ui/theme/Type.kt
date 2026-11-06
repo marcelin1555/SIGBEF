@@ -134,9 +134,9 @@ val Typography =
       TextStyle(
         fontFamily = Familia,
         fontWeight = Regular,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp,
+        fontSize = 17.sp,
+        lineHeight = 25.sp,
+        letterSpacing = (-0.27).sp,
       ),
     bodyMedium =
       TextStyle(

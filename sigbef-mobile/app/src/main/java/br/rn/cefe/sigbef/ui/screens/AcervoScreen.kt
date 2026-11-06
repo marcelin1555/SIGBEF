@@ -279,10 +279,9 @@ fun AcervoScreen(
                             onCategoryChange?.invoke("Todos")
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SigbefCores.atual.marca,
-                            contentColor = SigbefCores.atual.sobreMarca,
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        )
                     ) {
                         Text("LIMPAR BUSCA")
                     }
@@ -326,9 +325,9 @@ private fun BookCard(
             .fillMaxWidth()
             .height(132.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
-        shadowElevation = 2.dp,
+        shadowElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {
         Row(

@@ -153,10 +153,9 @@ fun RenewInfoScreen(
             Button(
                 onClick = { onNavigate(Screen.LOANS) },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SigbefCores.atual.marca,
-                    contentColor = SigbefCores.atual.sobreMarca,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                shape = RoundedCornerShape(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)

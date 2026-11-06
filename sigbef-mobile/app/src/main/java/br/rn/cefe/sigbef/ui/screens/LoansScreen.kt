@@ -158,7 +158,6 @@ fun LoansScreen(
                     Button(
                         onClick = { onNavigate(Screen.ACERVO) },
                         colors = ButtonDefaults.buttonColors(containerColor = SigbefCores.atual.dourado),
-                        shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp)
@@ -259,9 +258,9 @@ private fun ActiveLoanCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
-        shadowElevation = 2.dp,
+        shadowElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = if (emp.atrasado) 1.5.dp else 1.dp,
             color = if (emp.atrasado) SigbefCores.atual.erro else SigbefCores.atual.linha
@@ -336,10 +335,9 @@ private fun ActiveLoanCard(
                         onClick = { onRenovar(emp) },
                         enabled = !acaoEmCurso,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = SigbefCores.atual.marca,
-                            contentColor = SigbefCores.atual.sobreMarca,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
                         )
                     ) {
                         Text("Renovar empréstimo", style = MaterialTheme.typography.labelLarge)
@@ -386,9 +384,9 @@ private fun ReservaCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
-        shadowElevation = 2.dp,
+        shadowElevation = 0.dp,
         border = androidx.compose.foundation.BorderStroke(
             width = if (reserva.separado) 1.5.dp else 1.dp,
             color = if (reserva.separado) SigbefCores.atual.dourado else SigbefCores.atual.linha
@@ -454,7 +452,7 @@ private fun ReservaCard(
 private fun HistoryLoanCard(emp: Emprestimo) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         color = SigbefCores.atual.superficie,
         border = androidx.compose.foundation.BorderStroke(1.dp, SigbefCores.atual.linha)
     ) {

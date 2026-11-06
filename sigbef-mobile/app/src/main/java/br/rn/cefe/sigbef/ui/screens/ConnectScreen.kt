@@ -93,7 +93,7 @@ fun ConnectScreen(
             // Header Top
             Surface(
                 color = SigbefCores.atual.superficie,
-                shadowElevation = 1.dp,
+                shadowElevation = 0.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -172,10 +172,9 @@ fun ConnectScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SigbefCores.atual.marca,
-                        contentColor = SigbefCores.atual.sobreMarca,
-                    ),
-                    shape = RoundedCornerShape(8.dp)
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.Default.QrCodeScanner,
@@ -195,8 +194,7 @@ fun ConnectScreen(
                 // ou QR ilegível não podem deixar o aluno sem saída.
                 OutlinedButton(
                     onClick = { showManualDialog = true },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
                     Text(
                         text = "Digitar o endereço",
@@ -271,8 +269,8 @@ fun ConnectScreen(
                     onClick = { onConnected(ipInput) },
                     enabled = ipInput.isNotBlank() && !carregando,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = SigbefCores.atual.marca,
-                        contentColor = SigbefCores.atual.sobreMarca,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                     )
                 ) {
                     Text(if (carregando) "Conectando…" else "Conectar")
