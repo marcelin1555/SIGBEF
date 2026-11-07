@@ -130,8 +130,8 @@ class JanelaLogin(tk.Tk):
         info = ttk.Frame(pai, style="Card.TFrame", padding=(16, 14))
         info.pack(fill="x", pady=(28, 0))
         try:
-            from .database import get_config
-            nome_inst = get_config("NOME_INSTITUICAO", "CEFE")
+            from .servicos import obter_config
+            nome_inst = obter_config("NOME_INSTITUICAO", "CEFE")
         except Exception:
             nome_inst = "CEFE"
         ttk.Label(info, text=nome_inst, style="Card.TLabel",

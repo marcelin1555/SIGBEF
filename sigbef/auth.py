@@ -11,16 +11,9 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from .database import db_cursor, get_config, registrar_auditoria
+from .database import db_cursor, get_config_int, registrar_auditoria
 
 ITERACOES = 200_000
-
-
-def _config_int(chave: str, padrao: int) -> int:
-    try:
-        return int(get_config(chave) or padrao)
-    except (TypeError, ValueError):
-        return padrao
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +23,7 @@ def _falhas_recentes(cur, usuario_id: int) -> int:
     """Conta LOGIN_FALHA do usuário dentro da janela de bloqueio, contando
     só as falhas ocorridas DEPOIS do último login bem-sucedido dele (um
     acerto zera o contador)."""
-    minutos = _config_int("LOGIN_BLOQUEIO_MIN", 15)
+    minutos = get_config_int("LOGIN_BLOQUEIO_MIN", 15)
     cur.execute(
         f"""SELECT COUNT(*) AS n FROM auditoria
             WHERE usuario_id = ? AND acao = 'LOGIN_FALHA'
@@ -45,7 +38,7 @@ def _falhas_recentes(cur, usuario_id: int) -> int:
 
 
 def _conta_bloqueada(cur, usuario_id: int) -> bool:
-    return _falhas_recentes(cur, usuario_id) >= _config_int(
+    return _falhas_recentes(cur, usuario_id) >= get_config_int(
         "LOGIN_MAX_TENTATIVAS", 5)
 
 
@@ -55,7 +48,7 @@ def minutos_bloqueio_restantes(matricula: str) -> int:
     matricula = (matricula or "").strip()
     if not matricula:
         return 0
-    minutos = _config_int("LOGIN_BLOQUEIO_MIN", 15)
+    minutos = get_config_int("LOGIN_BLOQUEIO_MIN", 15)
     with db_cursor() as cur:
         cur.execute("SELECT id FROM usuario WHERE matricula = ?", (matricula,))
         row = cur.fetchone()
@@ -245,7 +238,7 @@ def criar_sessao_app(usuario_id: int, dias: Optional[int] = None) -> str:
     import secrets
 
     if dias is None:
-        dias = _config_int("API_SESSAO_DIAS", SESSAO_APP_DIAS_PADRAO)
+        dias = get_config_int("API_SESSAO_DIAS", SESSAO_APP_DIAS_PADRAO)
     token = secrets.token_urlsafe(32)
     with db_cursor() as cur:
         cur.execute(

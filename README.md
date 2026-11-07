@@ -395,7 +395,8 @@ flowchart TB
     end
 
     subgraph SVC["Camada de Serviços"]
-        servicos[servicos.py<br/>regras de negócio]
+        servicos[servicos/<br/>regras de negócio, um módulo por assunto]
+        reservas[reservas.py<br/>fila de espera]
         auth[auth.py<br/>autenticação]
         barcode[barcode_util.py<br/>códigos de barras]
         formato[formato.py<br/>formatação BR]
@@ -577,7 +578,16 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 │   ├── app.py                         # bootstrap da aplicação
 │   ├── database.py                    # schema, conexão, configurações
 │   ├── auth.py                        # autenticação, hash e sessão do app
-│   ├── servicos.py                    # regras de negócio
+│   ├── servicos/                      # regras de negócio, um módulo por assunto
+│   │   ├── __init__.py                # reexporta tudo: `servicos.x` funciona igual
+│   │   ├── regras.py                  # prazos, limites e multa
+│   │   ├── acervo.py, exemplares.py   # livros, busca, baixa, tombo
+│   │   ├── importacao.py              # importação por CSV
+│   │   ├── usuarios.py                # leitores e equipe
+│   │   ├── emprestimos.py, colecao.py # circulação e coleção da turma
+│   │   ├── relatorios.py, leitor.py   # painel, relatórios e app do aluno
+│   │   └── auditoria.py, configuracao.py
+│   ├── erros.py                       # RegraNegocioError
 │   ├── reservas.py                    # fila de espera e promoção automática
 │   ├── api.py                         # API REST (opt-in)
 │   ├── notificacoes.py                # avisos por e-mail (opt-in)
@@ -661,7 +671,8 @@ changelog; não tratar problemas antigos como defeitos ainda presentes.
 ### Como o código está organizado
 
 - **Cada arquivo de UI implementa apenas uma tela ou diálogo.** Para criar uma nova seção, herde de `SecaoBase` em `ui_painel.py` e implemente o método `atualizar()`.
-- **Toda lógica de negócio está em `servicos.py`.** A UI nunca executa SQL diretamente — sempre passa por uma função de serviço.
+- **Toda lógica de negócio está no pacote `servicos/`**, um arquivo por assunto. As telas e a API importam só `servicos` (nunca `database`) e chamam `servicos.funcao(...)`; o `__init__.py` reexporta tudo, então ninguém precisa saber em qual arquivo a função mora. Configuração também passa por lá: `servicos.obter_config(...)`.
+- **Dependências só descem:** telas e API → `servicos` → `reservas` → `database`. `regras.py` e `comum.py` ficam na base do pacote; um módulo de serviço nunca importa outro que dependa dele.
 - **Erros de regra de negócio** são lançados como `RegraNegocioError` e devem ser apresentados ao usuário com `messagebox.showwarning(...)`.
 - **Auditoria automática:** chame `registrar_auditoria(usuario_id, acao, detalhes)` ao final de operações relevantes.
 

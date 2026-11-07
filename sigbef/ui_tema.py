@@ -70,15 +70,15 @@ PRESETS = {
 def carregar_personalizacao():
     global COR_PRIMARIA, COR_SECUNDARIA, COR_DESTAQUE, COR_FUNDO, ESCALA
     try:
-        from .database import get_config
+        from .servicos import obter_config
     except Exception:
         return
     try:
-        COR_PRIMARIA = get_config("tema.cor_primaria", COR_PRIMARIA) or COR_PRIMARIA
-        COR_SECUNDARIA = get_config("tema.cor_secundaria", COR_SECUNDARIA) or COR_SECUNDARIA
-        COR_DESTAQUE = get_config("tema.cor_destaque", COR_DESTAQUE) or COR_DESTAQUE
-        COR_FUNDO = get_config("tema.cor_fundo", COR_FUNDO) or COR_FUNDO
-        tamanho = get_config("tema.tamanho_texto", "normal") or "normal"
+        COR_PRIMARIA = obter_config("tema.cor_primaria", COR_PRIMARIA) or COR_PRIMARIA
+        COR_SECUNDARIA = obter_config("tema.cor_secundaria", COR_SECUNDARIA) or COR_SECUNDARIA
+        COR_DESTAQUE = obter_config("tema.cor_destaque", COR_DESTAQUE) or COR_DESTAQUE
+        COR_FUNDO = obter_config("tema.cor_fundo", COR_FUNDO) or COR_FUNDO
+        tamanho = obter_config("tema.tamanho_texto", "normal") or "normal"
         ESCALA = TAMANHOS_TEXTO.get(tamanho, TAMANHOS_TEXTO["normal"])[1]
     except Exception:
         pass

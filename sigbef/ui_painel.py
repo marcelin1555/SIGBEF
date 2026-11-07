@@ -2348,8 +2348,6 @@ class SecaoConfig(SecaoBase):
                                "entram em vigor imediatamente."),
                   style="Hint.TLabel").pack(anchor="w", pady=(0, 12))
 
-        from .database import get_config
-
         form = ttk.Frame(body, style="Card.TFrame", padding=20)
         form.pack(fill="x")
         self._entries: dict[str, ttk.Entry] = {}
@@ -2367,7 +2365,7 @@ class SecaoConfig(SecaoBase):
                                                  sticky="w", pady=6)
             ent = ttk.Entry(form, width=40)
             ent.grid(row=i, column=1, sticky="ew", padx=12, pady=6)
-            ent.insert(0, get_config(chave) or "")
+            ent.insert(0, servicos.obter_config(chave) or "")
             form.columnconfigure(1, weight=1)
             self._entries[chave] = ent
 
@@ -2473,7 +2471,6 @@ class SecaoConfig(SecaoBase):
 
         # ---- Avisos de vencimento por e-mail ----
         from . import notificacoes
-        from .database import get_config as _gc
         tk.Frame(integ, height=1, bg=tema.COR_BORDA).pack(fill="x", pady=12)
         self.var_email = tk.BooleanVar(value=notificacoes.avisos_ativos())
         ttk.Checkbutton(
@@ -2508,7 +2505,7 @@ class SecaoConfig(SecaoBase):
             ent = ttk.Entry(smtp_form, width=largura)
             if chave == "SMTP_SENHA":
                 ent.configure(show="•")
-            ent.insert(0, _gc(chave) or "")
+            ent.insert(0, servicos.obter_config(chave) or "")
             ent.grid(row=i, column=1, sticky="w", padx=12, pady=3)
             self._smtp_entries[chave] = ent
 
@@ -2640,7 +2637,6 @@ class SecaoConfig(SecaoBase):
         # 4 cores editaveis
         self._cor_entries = {}
         self._cor_swatches = {}
-        from .database import get_config
         cores_edicao = [
             ("primaria", "Cor primária", "tema.cor_primaria", tema.COR_PRIMARIA),
             ("secundaria", "Cor secundária", "tema.cor_secundaria", tema.COR_SECUNDARIA),
@@ -2650,7 +2646,7 @@ class SecaoConfig(SecaoBase):
         for i, (chave_c, rotulo, db_chave, padrao) in enumerate(cores_edicao):
             ttk.Label(aparencia, text=rotulo, style="Card.TLabel"
                       ).grid(row=i + 1, column=0, sticky="w", pady=6)
-            valor = get_config(db_chave, padrao) or padrao
+            valor = servicos.obter_config(db_chave, padrao) or padrao
             # A própria amostra é o botão: um "Escolher" ao lado de cada
             # cor eram quatro botões iguais repetidos.
             swatch = tk.Frame(aparencia, bg=valor, width=40, height=26,
@@ -2708,7 +2704,8 @@ class SecaoConfig(SecaoBase):
                   font=("Segoe UI Semibold", 10)
                   ).grid(row=10, column=0, sticky="w")
         self._tamanho_texto = tk.StringVar(
-            value=get_config("tema.tamanho_texto", "normal") or "normal")
+            value=servicos.obter_config("tema.tamanho_texto", "normal")
+            or "normal")
         tamanhos = ttk.Frame(aparencia, style="CardInner.TFrame")
         tamanhos.grid(row=10, column=1, columnspan=3, sticky="w", padx=12)
         for chave_t, (rotulo_t, _fator) in tema.TAMANHOS_TEXTO.items():
@@ -2773,7 +2770,6 @@ class SecaoConfig(SecaoBase):
         "0,50" na multa era recusado silenciosamente lá no fundo e o
         sistema continuava cobrando o valor antigo.
         """
-        from .database import get_config
         valores = {chave: ent.get() for chave, ent in self._entries.items()}
         try:
             alterados = servicos.salvar_configuracoes(
@@ -2786,7 +2782,7 @@ class SecaoConfig(SecaoBase):
         # que é o que o sistema realmente vai usar.
         for chave, ent in self._entries.items():
             ent.delete(0, "end")
-            ent.insert(0, get_config(chave) or "")
+            ent.insert(0, servicos.obter_config(chave) or "")
         if alterados:
             messagebox.showinfo(
                 "Configurações",

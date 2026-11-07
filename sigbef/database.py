@@ -598,6 +598,20 @@ def set_config(chave: str, valor: str) -> None:
         )
 
 
+def get_config_int(chave: str, padrao: int) -> int:
+    try:
+        return int(get_config(chave) or padrao)
+    except (TypeError, ValueError):
+        return padrao
+
+
+def get_config_float(chave: str, padrao: float) -> float:
+    try:
+        return float(get_config(chave) or padrao)
+    except (TypeError, ValueError):
+        return padrao
+
+
 def registrar_auditoria(usuario_id: int | None, acao: str, detalhes: str = "") -> None:
     with db_cursor() as cur:
         cur.execute(

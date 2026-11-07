@@ -16,7 +16,6 @@ from typing import Optional
 from . import icones
 from . import ui_tema as tema
 from . import servicos
-from .database import set_config
 from .servicos import RegraNegocioError
 
 
@@ -246,7 +245,8 @@ class JanelaPrimeiraExecucao(tk.Tk):
 
         # Persistir tudo agora
         try:
-            set_config("NOME_INSTITUICAO", self._dados["instituicao"])
+            servicos.definir_config_auditada("NOME_INSTITUICAO",
+                                             self._dados["instituicao"])
             servicos.cadastrar_usuario(
                 nome=nome,
                 matricula=matricula,

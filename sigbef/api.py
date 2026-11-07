@@ -28,7 +28,7 @@ from typing import Optional
 from urllib.parse import parse_qs, urlparse
 
 from . import reservas, servicos
-from .database import db_cursor, get_config, set_config, registrar_auditoria
+from .database import get_config, set_config, registrar_auditoria
 from .servicos import RegraNegocioError
 
 
@@ -369,17 +369,11 @@ class _Handler(BaseHTTPRequestHandler):
         self._json(200, {"ok": True})
 
     def _renovar(self, emprestimo_id: int) -> None:
-        with db_cursor() as cur:
-            cur.execute(
-                "SELECT usuario_id FROM emprestimo "
-                "WHERE id = ? AND data_devolucao IS NULL",
-                (emprestimo_id,),
-            )
-            emp = cur.fetchone()
-        if not emp:
+        dono = servicos.dono_do_emprestimo_aberto(emprestimo_id)
+        if dono is None:
             self._erro(404, "Empréstimo não encontrado.")
             return
-        if emp["usuario_id"] != self.sessao_app.id:
+        if dono != self.sessao_app.id:
             self._erro(403, "Este empréstimo é de outro leitor.")
             return
 
@@ -412,8 +406,6 @@ class _Handler(BaseHTTPRequestHandler):
         if sessao is None:
             self._erro(401, "Matrícula ou senha incorretos.")
             return
-
-        from .database import get_config
 
         token = criar_sessao_app(sessao.id)
         self._json(200, {

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from tests.base import SigbefTestCase
 
-from sigbef import servicos
+from sigbef import database, servicos
 from sigbef.database import get_config, set_config
 from sigbef.servicos import RegraNegocioError
 
@@ -46,7 +46,7 @@ class TestNormalizarConfig(SigbefTestCase):
         set_config("MULTA_POR_DIA",
                    servicos.normalizar_config("MULTA_POR_DIA", "0,50"))
         self.assertAlmostEqual(
-            servicos._config_float("MULTA_POR_DIA", 1.5), 0.50)
+            database.get_config_float("MULTA_POR_DIA", 1.5), 0.50)
 
     def test_texto_sem_numero_e_recusado(self):
         with self.assertRaises(RegraNegocioError) as ctx:
@@ -162,7 +162,7 @@ class TestReparoDeBancoAntigo(SigbefTestCase):
             database._reparar_numeros_de_config(cur)
         self.assertEqual(get_config("MULTA_POR_DIA"), "0.50")
         self.assertAlmostEqual(
-            servicos._config_float("MULTA_POR_DIA", 1.5), 0.50)
+            database.get_config_float("MULTA_POR_DIA", 1.5), 0.50)
 
     def test_reparo_fica_registrado_na_auditoria(self):
         from sigbef import database

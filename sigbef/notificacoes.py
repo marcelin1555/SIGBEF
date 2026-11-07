@@ -20,7 +20,8 @@ from typing import Callable, Optional
 
 from .database import db_cursor, get_config, set_config, registrar_auditoria
 from .formato import data_br
-from .servicos import RegraNegocioError, _config_int
+from .database import get_config_int
+from .erros import RegraNegocioError
 
 
 # ---------------------------------------------------------------------------
@@ -40,7 +41,7 @@ def definir_avisos(ativo: bool) -> None:
 def emails_pendentes() -> list[dict]:
     """Empréstimos abertos vencendo em até EMAIL_DIAS_ANTES dias, de
     usuários com e-mail, que ainda não receberam aviso."""
-    dias = _config_int("EMAIL_DIAS_ANTES", 2)
+    dias = get_config_int("EMAIL_DIAS_ANTES", 2)
     with db_cursor() as cur:
         cur.execute(
             """SELECT e.id AS emprestimo_id, u.nome, u.email,
@@ -146,7 +147,7 @@ class _ConexaoSMTP:
                 "enviar (host, porta e credenciais do e-mail da "
                 "biblioteca).")
         self._host = host
-        self._porta = _config_int("SMTP_PORTA", 587)
+        self._porta = get_config_int("SMTP_PORTA", 587)
         self._usuario = (get_config("SMTP_USUARIO") or "").strip()
         self._senha = get_config("SMTP_SENHA") or ""
         self._smtp: Optional[smtplib.SMTP] = None

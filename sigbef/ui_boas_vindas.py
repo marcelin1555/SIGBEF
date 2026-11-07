@@ -13,7 +13,7 @@ from tkinter import ttk
 
 from . import icones
 from . import ui_tema as tema
-from .database import get_config, set_config
+from . import servicos
 
 
 def _chave(usuario_id: int) -> str:
@@ -21,11 +21,11 @@ def _chave(usuario_id: int) -> str:
 
 
 def ja_viu(usuario_id: int) -> bool:
-    return (get_config(_chave(usuario_id), "") or "") == "1"
+    return (servicos.obter_config(_chave(usuario_id), "") or "") == "1"
 
 
 def marcar_como_vista(usuario_id: int) -> None:
-    set_config(_chave(usuario_id), "1")
+    servicos.definir_preferencia(_chave(usuario_id), "1")
 
 
 # Cada passo: (nome curto no índice, título, [(destaque, texto), ...])

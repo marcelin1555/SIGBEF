@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from tests.base import SigbefTestCase
 
-from sigbef import reservas, servicos
+from sigbef import database, reservas, servicos
 from sigbef.database import db_cursor
 from sigbef.servicos import RegraNegocioError
 
@@ -77,7 +77,7 @@ class TestEmprestarColecao(BaseColecao):
     def test_prazo_e_o_do_bimestre_nao_o_de_duas_semanas(self):
         col = self.emprestar(quantidade=5)
         self.assertEqual(col["prazo_dias"],
-                         servicos._config_int("PRAZO_COLECAO_DIAS", 60))
+                         database.get_config_int("PRAZO_COLECAO_DIAS", 60))
         self.assertGreater(col["prazo_dias"],
                            servicos._prazo_para_perfil("PROFESSOR"))
 

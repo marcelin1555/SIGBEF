@@ -19,7 +19,8 @@ from datetime import date, timedelta
 from typing import Optional
 
 from .database import db_cursor, registrar_auditoria
-from .servicos import RegraNegocioError, _config_int
+from .database import get_config_int
+from .erros import RegraNegocioError
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +59,7 @@ def _promover_fila_cur(cur, livro_id: int, exemplar_id: int) -> Optional[dict]:
     if not prox:
         return None
     validade = (date.today()
-                + timedelta(days=_config_int("RESERVA_VALIDADE_DIAS", 2))
+                + timedelta(days=get_config_int("RESERVA_VALIDADE_DIAS", 2))
                 ).isoformat()
     cur.execute(
         "UPDATE reserva SET exemplar_id = ?, disponivel_ate = ? WHERE id = ?",
@@ -221,7 +222,7 @@ def criar_reserva(livro_id: int, usuario_id: int) -> dict:
             raise RegraNegocioError(
                 "Você já tem uma reserva ativa deste livro.")
 
-        limite = _config_int("LIMITE_RESERVAS", 3)
+        limite = get_config_int("LIMITE_RESERVAS", 3)
         cur.execute(
             "SELECT COUNT(*) AS n FROM reserva "
             "WHERE usuario_id = ? AND status = 'ATIVA'",
