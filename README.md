@@ -65,16 +65,13 @@
 - [Capturas de tela](#capturas-de-tela)
 - [Sobre o projeto](#sobre-o-projeto)
 - [Principais funcionalidades](#principais-funcionalidades)
-- [Stack tecnológica](#stack-tecnológica)
-- [Site oficial](#site-oficial)
 - [Download e instalação](#download-e-instalação)
-- [Início rápido (modo desenvolvedor)](#início-rápido-modo-desenvolvedor)
-- [Credenciais de demonstração](#credenciais-de-demonstração)
-- [Arquitetura](#arquitetura)
-- [Modelo de dados](#modelo-de-dados)
+- [Primeira execução](#primeira-execução)
 - [Regras de negócio](#regras-de-negócio)
 - [Configuração](#configuração)
-- [Estrutura do projeto](#estrutura-do-projeto)
+- [Documentação](#documentação)
+- [Arquitetura](#arquitetura)
+- [Modelo de dados](#modelo-de-dados)
 - [Desenvolvimento](#desenvolvimento)
 - [Roadmap](#roadmap)
 - [Contribuindo](#contribuindo)
@@ -102,9 +99,9 @@ escolar, substituindo controles manuais e planilhas por uma plataforma
 - **Auditoria** completa das operações realizadas
 
 O sistema foi projetado seguindo o padrão arquitetural em camadas, com
-separação clara entre interface (Tkinter), regras de negócio (módulo
-`servicos`) e persistência (SQLite + módulo `database`), facilitando
-manutenção e testes.
+separação clara entre interface (Tkinter e API), regras de negócio
+(pacote `servicos`) e persistência (SQLite + módulo `database`),
+facilitando manutenção e testes. Detalhes em [Arquitetura](#arquitetura).
 
 Além do desktop, o projeto tem:
 
@@ -116,7 +113,7 @@ Além do desktop, o projeto tem:
 - **API REST** opcional, para o aplicativo e para integração com outros
   sistemas escolares. Ver [`docs/API.md`](docs/API.md)
 - **Site de apresentação** em React + Vite, hospedado na Vercel:
-  https://sigbef.vercel.app/
+  https://sigbef.vercel.app/ (código em [`site/`](site/README.md))
 
 ---
 
@@ -182,57 +179,6 @@ Além do desktop, o projeto tem:
 
 ---
 
-## Stack tecnológica
-
-### Desktop
-
-| Camada | Tecnologia |
-|---|---|
-| Linguagem | Python 3.10+ |
-| Interface gráfica | Tkinter / ttk (biblioteca padrão) |
-| Banco de dados | SQLite 3 (embarcado, modo WAL) |
-| Hash de senha | PBKDF2-HMAC-SHA256 com sal aleatório (200 mil iterações) |
-| Código de barras | Code 128 implementado em Python puro (`barcode_util`) |
-| QR code | Implementado em Python puro (`qr_util`), para o pareamento |
-| Gráficos | Desenhados em Canvas do Tk (`ui_graficos`) |
-| API REST | `http.server` da stdlib, opt-in |
-| Relatórios | Exportação em CSV (`csv` da stdlib) |
-| Empacotamento | PyInstaller + Inno Setup |
-
-> O sistema **não exige nenhuma biblioteca externa** para funcionar —
-> usa apenas a biblioteca padrão do Python. É por isso que o Code 128, o
-> QR code e os gráficos foram escritos à mão: numa escola pública, cada
-> dependência é um problema a mais na hora de instalar. Para impressão
-> em massa de PNGs de código de barras, são opcionais `python-barcode` e
-> `Pillow` (ver `requirements.txt`).
-
-### Aplicativo Android
-
-| Camada | Tecnologia |
-|---|---|
-| Linguagem | Kotlin |
-| Interface | Jetpack Compose (Material 3) |
-| Arquitetura | MVVM com StateFlow |
-| Cache local | Room |
-| Rede | Retrofit + Moshi + OkHttp |
-| Leitura de QR | CameraX + ML Kit embarcado (sem depender do Play Services) |
-| minSdk | 24 (Android 7) |
-
----
-
-## Site oficial
-
-O site de apresentação do SIGBEF está disponível em:
-
-**https://sigbef.vercel.app/**
-
-Construído com React + Vite + Tailwind CSS + React Router, com 6 páginas:
-`/` (landing), `/funcionalidades`, `/download`, `/planos`, `/equipe`, `/novidades`.
-
-Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
-
----
-
 ## Download e instalação
 
 ### Para usar na biblioteca (sem precisar de Python)
@@ -241,31 +187,7 @@ Código-fonte do site em `site/` — ver [`site/README.md`](site/README.md).
 |---|---|---|
 | **Releases do GitHub** | Mais simples — baixar `SIGBEF_Setup.exe` da [aba Releases](https://github.com/marcelin1555/SIGBEF/releases) | 2 min |
 | **Pasta autônoma** | Quando você não tem privilégios de administrador no PC | 1 min |
-| **Build local** | Quando quer customizar antes de distribuir | 10 min |
-
-### Gerar o executável a partir do código
-
-Veja o guia completo: [`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md)
-Para o aplicativo Android: [`docs/COMO_GERAR_APK.md`](docs/COMO_GERAR_APK.md)
-
-**Resumo:**
-
-```bash
-# Windows: garanta o Python 3.10+ instalado e dê duplo-clique em build.bat
-# Linux/macOS: rode ./build.sh
-# Ou manualmente em qualquer plataforma:
-pip install pyinstaller
-pyinstaller sigbef.spec
-# Windows/Linux: dist/SIGBEF/  ·  macOS: dist/SIGBEF.app
-```
-
-Cada release também é compilada automaticamente para **Windows, Linux e
-macOS** pelo GitHub Actions (`.github/workflows/build.yml`), com os
-pacotes anexados na [aba Releases](https://github.com/marcelin1555/SIGBEF/releases).
-
-Para um instalador profissional `.exe` com atalhos no menu Iniciar e
-desinstalador, use o [Inno Setup](https://jrsoftware.org/isinfo.php) com
-o script `tools/sigbef_installer.iss` que já está no repositório.
+| **Build local** | Quando quer customizar antes de distribuir (ver [Gerar os pacotes](#gerar-os-pacotes)) | 10 min |
 
 ### O que o executável traz
 
@@ -273,44 +195,6 @@ o script `tools/sigbef_installer.iss` que já está no repositório.
 - Banco SQLite criado em `%APPDATA%\SIGBEF\sigbef.db` na primeira execução
 - Argumento `--autoatendimento` para abrir direto no modo kiosk
 - Não precisa de Python instalado no computador alvo
-
----
-
-## Início rápido (modo desenvolvedor)
-
-### Pré-requisitos
-
-- **Python 3.10 ou superior** — [download](https://www.python.org/downloads/)
-- Sistema operacional: **Windows 10/11** ou **Linux** (Ubuntu 22.04+)
-- No Linux, garanta que o pacote `python3-tk` esteja instalado:
-  ```bash
-  sudo apt-get install python3-tk
-  ```
-
-### Instalação e execução
-
-```bash
-# 1. Clone o repositório
-git clone https://github.com/marcelin1555/SIGBEF.git
-cd SIGBEF
-
-# 2. Execute o sistema
-#    Primeira vez: abre o assistente de configuração inicial
-python sigbef.py
-
-# Opcional: pular o wizard e popular com dados de demo
-#    (com o banco já populado, só mostra o cartão de credenciais no login)
-python sigbef.py --demo
-```
-
-### Modo Autoatendimento (kiosk)
-
-Para abrir diretamente o terminal de autoatendimento, sem passar pelo
-painel administrativo:
-
-```bash
-python sigbef.py --autoatendimento
-```
 
 ---
 
@@ -372,148 +256,6 @@ fluxos passo a passo por perfil de usuário.
 
 ---
 
-## Arquitetura
-
-### Em palavras simples (para quem não é de TI)
-
-O SIGBEF é organizado por dentro como a própria biblioteca é organizada por fora — em três "setores" que não se misturam:
-
-<img src="docs/diagramas/arquitetura-simples.svg" alt="Arquitetura do SIGBEF explicada com a analogia dos setores de uma biblioteca: telas são o balcão, regras são o bibliotecário e o arquivo é o fichário" width="100%"/>
-
-### Visão técnica
-
-O SIGBEF segue o padrão de **arquitetura em camadas**:
-
-```mermaid
-flowchart TB
-    subgraph UI["Camada de UI (Tkinter)"]
-        login[ui_login]
-        painel[ui_painel]
-        kiosk[ui_selfservice]
-        dialogos[ui_dialogos]
-        tema[ui_tema]
-    end
-
-    subgraph SVC["Camada de Serviços"]
-        servicos[servicos/<br/>regras de negócio, um módulo por assunto]
-        reservas[reservas.py<br/>fila de espera]
-        auth[auth.py<br/>autenticação]
-        barcode[barcode_util.py<br/>códigos de barras]
-        formato[formato.py<br/>formatação BR]
-    end
-
-    subgraph DATA["Camada de Dados"]
-        database[database.py<br/>conexão e schema]
-        seed[seed.py<br/>dados de demo]
-        sqlite[(SQLite<br/>data/sigbef.db)]
-    end
-
-    UI --> SVC
-    SVC --> DATA
-    database --> sqlite
-    seed --> database
-```
-
-**Vantagens da separação:**
-- A camada de serviços é independente da UI — pode ser reaproveitada por uma futura API REST ou aplicativo móvel
-- O banco SQLite pode ser substituído por PostgreSQL alterando apenas `database.py`
-- Testes unitários podem cobrir as regras sem precisar abrir telas
-
-### Fluxo de empréstimo (autoatendimento)
-
-```mermaid
-sequenceDiagram
-    participant U as Usuário
-    participant K as Terminal Kiosk
-    participant S as Serviço
-    participant D as Banco
-
-    U->>K: Login (matrícula+senha ou cartão)
-    K->>S: autenticar()
-    S->>D: SELECT usuario WHERE matricula=...
-    D-->>S: hash + perfil
-    S-->>K: Sessão válida
-    K-->>U: Tela inicial
-
-    U->>K: Aproxima livro do leitor
-    K->>S: realizar_emprestimo(codigo, matricula)
-    S->>D: localizar exemplar e verificar status
-    S->>D: verificar pendências do usuário
-    S->>D: INSERT empréstimo + UPDATE exemplar
-    S-->>K: {titulo, prazo}
-    K-->>U: Comprovante na tela
-```
-
----
-
-## Modelo de dados
-
-### Em palavras simples (para quem não é de TI)
-
-O banco de dados do SIGBEF funciona como aquele fichário de gavetas das bibliotecas antigas — só que preenchido e cruzado automaticamente:
-
-<img src="docs/diagramas/modelo-dados-simples.svg" alt="Modelo de dados do SIGBEF explicado com a analogia do fichário: a ficha do livro, as cópias físicas (exemplares), a ficha do leitor e o empréstimo que os conecta" width="100%"/>
-
-### Visão técnica
-
-```mermaid
-erDiagram
-    livro ||--o{ exemplar : "tem"
-    livro ||--o{ livro_autor : ""
-    autor ||--o{ livro_autor : ""
-    livro }o--|| editora : ""
-    livro }o--|| categoria : ""
-    usuario ||--o{ emprestimo : "realiza"
-    exemplar ||--o{ emprestimo : "objeto"
-
-    livro {
-        int id PK
-        text titulo
-        text isbn
-        int editora_id FK
-        int categoria_id FK
-        int ano_publicacao
-        text edicao
-        text sinopse
-        int ativo
-    }
-
-    exemplar {
-        int id PK
-        int livro_id FK
-        text codigo_barras UK
-        text numero_tombo
-        text localizacao
-        text status "DISPONIVEL|EMPRESTADO|RESERVADO|MANUTENCAO|BAIXADO"
-    }
-
-    usuario {
-        int id PK
-        text nome
-        text matricula UK
-        text email
-        text perfil "ALUNO|PROFESSOR|BIBLIOTECARIO|ADMINISTRADOR"
-        text senha_hash
-        text codigo_barras UK
-        int ativo
-    }
-
-    emprestimo {
-        int id PK
-        int exemplar_id FK
-        int usuario_id FK
-        text data_emprestimo
-        text data_prevista
-        text data_devolucao
-        real multa
-        text origem "BALCAO|AUTOATENDIMENTO"
-    }
-```
-
-Tabelas auxiliares: `editora`, `categoria`, `autor`, `livro_autor` (M:N), `configuracao` (chave/valor) e `auditoria` (log de operações).
-
----
-
 ## Regras de negócio
 
 | Regra | Valor padrão | Configurável |
@@ -571,7 +313,256 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
 
 ---
 
-## Estrutura do projeto
+## Documentação
+
+| Necessidade | Referência |
+|---|---|
+| Usar o balcão e o autoatendimento | [Manual do usuário](docs/MANUAL_DO_USUARIO.md) |
+| Capacitar a biblioteca | [Treinamento](docs/TREINAMENTO.md) |
+| Saber o que foi entregue | [Changelog](docs/CHANGELOG.md) |
+| Integrar outro sistema | [API e autenticação](docs/API.md) |
+| Implantar o aplicativo e conferir a rede | [Guia mobile](sigbef-mobile/README.md) e [especificação do MVP](docs/SIGBEF_MOBILE.md) |
+| Gerar os pacotes | [Desktop](docs/COMO_GERAR_EXECUTAVEL.md) e [Android](docs/COMO_GERAR_APK.md) |
+| Alterar o site | [Guia do site](site/README.md) |
+| Manter identidade visual | [Design](docs/DESIGN.md) |
+| Revisar a evolução técnica | [Auditoria histórica do app](docs/AUDITORIA_MOBILE.md) e [spec inicial da API](docs/superpowers/specs/2026-07-10-api-rest-design.md) |
+
+Especificações datadas e auditorias históricas descrevem a versão em que
+foram escritas. Para comportamento atual, conferir código, testes e
+changelog; não tratar problemas antigos como defeitos ainda presentes.
+
+---
+
+## Arquitetura
+
+### Em palavras simples (para quem não é de TI)
+
+O SIGBEF é organizado por dentro como a própria biblioteca é organizada por fora — em três "setores" que não se misturam:
+
+<img src="docs/diagramas/arquitetura-simples.svg" alt="Arquitetura do SIGBEF explicada com a analogia dos setores de uma biblioteca: telas são o balcão, regras são o bibliotecário e o arquivo é o fichário" width="100%"/>
+
+### Visão técnica
+
+O SIGBEF segue o padrão de **arquitetura em camadas**:
+
+```mermaid
+flowchart TB
+    subgraph UI["Apresentação"]
+        telas[ui_*.py<br/>telas Tkinter]
+        api[api.py<br/>API REST do aplicativo]
+    end
+
+    subgraph SVC["Serviços (regras de negócio)"]
+        servicos[servicos/<br/>um módulo por assunto]
+        reservas[reservas.py<br/>fila de espera]
+        auth[auth.py<br/>autenticação]
+        outros[inventario · notificacoes · backup]
+    end
+
+    subgraph DATA["Dados"]
+        database[database.py<br/>conexão, schema e migração]
+        sqlite[(SQLite)]
+    end
+
+    UI --> SVC
+    SVC --> DATA
+    database --> sqlite
+```
+
+**Vantagens da separação:**
+- A camada de serviços é independente da UI — é ela que a API REST e o aplicativo Android reaproveitam
+- As dependências só descem: nenhuma tela fala com o banco, e `tests/test_camadas.py` falha se alguma voltar a falar
+- O banco SQLite pode ser substituído por PostgreSQL alterando apenas `database.py`
+- Testes unitários podem cobrir as regras sem precisar abrir telas
+
+### Fluxo de empréstimo (autoatendimento)
+
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant K as Terminal Kiosk
+    participant S as Serviço
+    participant D as Banco
+
+    U->>K: Login (matrícula+senha ou cartão)
+    K->>S: autenticar()
+    S->>D: SELECT usuario WHERE matricula=...
+    D-->>S: hash + perfil
+    S-->>K: Sessão válida
+    K-->>U: Tela inicial
+
+    U->>K: Aproxima livro do leitor
+    K->>S: realizar_emprestimo(codigo, matricula)
+    S->>D: localizar exemplar e verificar status
+    S->>D: verificar pendências do usuário
+    S->>D: INSERT empréstimo + UPDATE exemplar
+    S-->>K: {titulo, prazo}
+    K-->>U: Comprovante na tela
+```
+
+---
+
+## Modelo de dados
+
+### Em palavras simples (para quem não é de TI)
+
+O banco de dados do SIGBEF funciona como aquele fichário de gavetas das bibliotecas antigas — só que preenchido e cruzado automaticamente:
+
+<img src="docs/diagramas/modelo-dados-simples.svg" alt="Modelo de dados do SIGBEF explicado com a analogia do fichário: a ficha do livro, as cópias físicas (exemplares), a ficha do leitor e o empréstimo que os conecta" width="100%"/>
+
+### Visão técnica
+
+```mermaid
+erDiagram
+    livro ||--o{ exemplar : "tem"
+    livro ||--o{ livro_autor : ""
+    autor ||--o{ livro_autor : ""
+    livro }o--|| editora : ""
+    livro }o--|| categoria : ""
+    usuario ||--o{ emprestimo : "realiza"
+    exemplar ||--o{ emprestimo : "objeto"
+    usuario ||--o{ reserva : "espera"
+    livro ||--o{ reserva : ""
+
+    livro {
+        int id PK
+        text titulo
+        text isbn
+        int editora_id FK
+        int categoria_id FK
+        int ano_publicacao
+        text edicao
+        text sinopse
+        int ativo
+    }
+
+    exemplar {
+        int id PK
+        int livro_id FK
+        text codigo_barras UK
+        text numero_tombo
+        text localizacao
+        text status "DISPONIVEL|EMPRESTADO|RESERVADO|MANUTENCAO|BAIXADO"
+    }
+
+    usuario {
+        int id PK
+        text nome
+        text matricula UK
+        text email
+        text perfil "ALUNO|PROFESSOR|BIBLIOTECARIO|ADMINISTRADOR"
+        text senha_hash
+        text codigo_barras UK
+        int ativo
+    }
+
+    emprestimo {
+        int id PK
+        int exemplar_id FK
+        int usuario_id FK
+        text data_emprestimo
+        text data_prevista
+        text data_devolucao
+        real multa
+        real multa_paga
+        real multa_isenta
+        int renovacoes
+        text colecao_id
+        text origem "BALCAO|AUTOATENDIMENTO"
+    }
+
+    reserva {
+        int id PK
+        int livro_id FK
+        int usuario_id FK
+        int exemplar_id FK
+        text status
+        text criado_em
+        text disponivel_ate
+    }
+```
+
+Tabelas auxiliares: `editora`, `categoria`, `autor`, `livro_autor` (M:N), `configuracao` (chave/valor), `auditoria` (log de operações), `sessao_app` (acesso do aplicativo, guardando só o hash do token), `notificacao` e `notificacao_reserva` (avisos por e-mail já enviados), `inventario` e `inventario_item` (conferência de estante).
+
+Colunas novas entram por migração automática ao abrir o sistema: escola em produção nunca precisa recriar o banco.
+
+---
+
+## Desenvolvimento
+
+### Rodar pelo código-fonte
+
+#### Pré-requisitos
+
+- **Python 3.10 ou superior** — [download](https://www.python.org/downloads/)
+- Sistema operacional: **Windows 10/11**, **Linux** (Ubuntu 22.04+) ou **macOS**
+- No Linux, garanta que o pacote `python3-tk` esteja instalado:
+  ```bash
+  sudo apt-get install python3-tk
+  ```
+
+#### Instalação e execução
+
+```bash
+# 1. Clone o repositório
+git clone https://github.com/marcelin1555/SIGBEF.git
+cd SIGBEF
+
+# 2. Execute o sistema
+#    Primeira vez: abre o assistente de configuração inicial
+python sigbef.py
+
+# Opcional: pular o wizard e popular com dados de demo
+#    (com o banco já populado, só mostra o cartão de credenciais no login)
+python sigbef.py --demo
+```
+
+#### Modo Autoatendimento (kiosk)
+
+Para abrir diretamente o terminal de autoatendimento, sem passar pelo
+painel administrativo:
+
+```bash
+python sigbef.py --autoatendimento
+```
+
+### Stack tecnológica
+
+#### Desktop
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Python 3.10+ |
+| Interface gráfica | Tkinter / ttk (biblioteca padrão) |
+| Banco de dados | SQLite 3 (embarcado, modo WAL) |
+| Hash de senha | PBKDF2-HMAC-SHA256 com sal aleatório (200 mil iterações) |
+| Código de barras | Code 128 implementado em Python puro (`barcode_util`) |
+| QR code | Implementado em Python puro (`qr_util`), para o pareamento |
+| Gráficos | Desenhados em Canvas do Tk (`ui_graficos`) |
+| API REST | `http.server` da stdlib, opt-in |
+| Relatórios | Exportação em CSV (`csv` da stdlib) |
+| Empacotamento | PyInstaller + Inno Setup |
+
+> O sistema **não exige nenhuma biblioteca externa** para funcionar —
+> usa apenas a biblioteca padrão do Python. É por isso que o Code 128, o
+> QR code e os gráficos foram escritos à mão: numa escola pública, cada
+> dependência é um problema a mais na hora de instalar. Para impressão
+> em massa de PNGs de código de barras, são opcionais `python-barcode` e
+> `Pillow` (ver `requirements.txt`).
+
+#### Aplicativo Android
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | Kotlin |
+| Interface | Jetpack Compose (Material 3) |
+| Arquitetura | MVVM com StateFlow |
+| Cache local | Room |
+| Rede | Retrofit + Moshi + OkHttp |
+| Leitura de QR | CameraX + ML Kit embarcado (sem depender do Play Services) |
+| minSdk | 24 (Android 7) |
+
+### Estrutura do projeto
 
 ```
 ├── sigbef/                            # código-fonte do desktop
@@ -645,29 +636,6 @@ $env:SIGBEF_DB_PATH = "C:\caminho\sigbef.db"
     └── sigbef.db
 ```
 
----
-
-## Desenvolvimento
-
-### Onde está a documentação
-
-| Necessidade | Referência |
-|---|---|
-| Usar o balcão e o autoatendimento | [Manual do usuário](docs/MANUAL_DO_USUARIO.md) |
-| Capacitar a biblioteca | [Treinamento](docs/TREINAMENTO.md) |
-| Saber o que foi entregue | [Changelog](docs/CHANGELOG.md) |
-| Integrar outro sistema | [API e autenticação](docs/API.md) |
-| Implantar o aplicativo e conferir a rede | [Guia mobile](sigbef-mobile/README.md) e [especificação do MVP](docs/SIGBEF_MOBILE.md) |
-| Gerar os pacotes | [Desktop](docs/COMO_GERAR_EXECUTAVEL.md) e [Android](docs/COMO_GERAR_APK.md) |
-| Alterar o site | [Guia do site](site/README.md) |
-| Manter identidade visual | [Design](docs/DESIGN.md) |
-| Revisar a evolução técnica | [Auditoria histórica do app](docs/AUDITORIA_MOBILE.md) e [spec inicial da API](docs/superpowers/specs/2026-07-10-api-rest-design.md) |
-
-Especificações datadas e auditorias históricas descrevem a versão em que
-foram escritas. Para comportamento atual, conferir código, testes e
-changelog; não tratar problemas antigos como defeitos ainda presentes.
-
-
 ### Como o código está organizado
 
 - **Cada arquivo de UI implementa apenas uma tela ou diálogo.** Para criar uma nova seção, herde de `SecaoBase` em `ui_painel.py` e implemente o método `atualizar()`.
@@ -676,33 +644,12 @@ changelog; não tratar problemas antigos como defeitos ainda presentes.
 - **Erros de regra de negócio** são lançados como `RegraNegocioError` e devem ser apresentados ao usuário com `messagebox.showwarning(...)`.
 - **Auditoria automática:** chame `registrar_auditoria(usuario_id, acao, detalhes)` ao final de operações relevantes.
 
-### Empacotamento como executável
-
-Use o `build.bat` na raiz do projeto (faz tudo automaticamente) **ou**
-manualmente:
-
-```bash
-pip install pyinstaller
-pyinstaller sigbef.spec
-```
-
-O executável e suas dependências ficam em `dist/SIGBEF/`. Veja o guia
-[`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md) para o instalador
-profissional com Inno Setup.
-
-### Adicionando uma nova tabela
-
-1. Acrescente o `CREATE TABLE IF NOT EXISTS ...` em `SCHEMA_SQL` (em `database.py`)
-2. Se a tabela já existe em bancos instalados, trate a coluna nova em
-   `_migrar_schema()` — escola em produção não recria o banco
-3. Adicione um helper na camada de serviços
-4. Construa a UI consumindo somente esse helper
-
 ### Testes
 
 ```bash
 python -m unittest discover -s tests        # suíte do desktop
 python tools/fumaca_telas.py                # abre as telas e aperta os botões
+cd sigbef-mobile && ./gradlew testDebugUnitTest   # testes do app (JVM)
 ```
 
 Os testes rodam contra um banco SQLite temporário, recriado a cada caso
@@ -715,33 +662,61 @@ de verdade, e `unittest discover` precisa rodar também onde não há tela.
 certa, se a lista recarrega sozinha depois de uma ação, se a confirmação
 digitada segura mesmo. Também monta o próprio banco temporário.
 
-### Aplicativo Android
+### Gerar os pacotes
+
+Veja o guia completo: [`docs/COMO_GERAR_EXECUTAVEL.md`](docs/COMO_GERAR_EXECUTAVEL.md)
+
+**Resumo:**
+
+```bash
+# Windows: garanta o Python 3.10+ instalado e dê duplo-clique em build.bat
+# Linux/macOS: rode ./build.sh
+# Ou manualmente em qualquer plataforma:
+pip install pyinstaller
+pyinstaller sigbef.spec
+# Windows/Linux: dist/SIGBEF/  ·  macOS: dist/SIGBEF.app
+```
+
+Cada release também é compilada automaticamente para **Windows, Linux e
+macOS** pelo GitHub Actions (`.github/workflows/build.yml`), com os
+pacotes anexados na [aba Releases](https://github.com/marcelin1555/SIGBEF/releases).
+
+Para um instalador profissional `.exe` com atalhos no menu Iniciar e
+desinstalador, use o [Inno Setup](https://jrsoftware.org/isinfo.php) com
+o script `tools/sigbef_installer.iss` que já está no repositório.
+
+Aplicativo Android:
 
 ```bash
 cd sigbef-mobile
-./gradlew testDebugUnitTest     # testes
 ./gradlew assembleDebug         # APK de depuração
 ```
 
 Para gerar o APK assinado que vai para os alunos, veja
 [`docs/COMO_GERAR_APK.md`](docs/COMO_GERAR_APK.md).
 
+### Adicionando uma nova tabela
+
+1. Acrescente o `CREATE TABLE IF NOT EXISTS ...` em `SCHEMA_SQL` (em `database.py`)
+2. Se a tabela já existe em bancos instalados, trate a coluna nova em
+   `_migrar_schema()` — escola em produção não recria o banco
+3. Adicione um helper na camada de serviços
+4. Construa a UI consumindo somente esse helper
+
 ---
 
 ## Roadmap
 
-Funcionalidades planejadas para versões futuras:
-
-A pausa de desenvolvimento para a III FICTS foi encerrada. As entregas
-publicadas estão em [CHANGELOG](docs/CHANGELOG.md); os itens abaixo são
-possibilidades de evolução, não compromissos de uma release.
+Possibilidades de evolução, não compromissos de uma release. O que já
+foi entregue está no [CHANGELOG](docs/CHANGELOG.md) e no resumo no fim
+desta seção.
 
 ### Próxima versão
 
 Ainda sem escopo fechado. Priorizar correções verificadas, adoção em outras
 escolas e os obstáculos abaixo. Restauração de backup, isenção de multa,
 empréstimo de coleção, reversão de baixa e liberação de tombo já foram
-entregues; ver "Concluído recentemente".
+entregues; ver "Concluído".
 
 ### Para outra escola conseguir adotar sozinha
 
@@ -814,8 +789,16 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
   decisão de escopo; os passos opt-in acima seguem valendo para quem
   quiser se aproximar desses padrões.
 
-### Concluído recentemente
+### Concluído
 
+<details>
+<summary>Entregas já feitas, da mais recente para a mais antiga</summary>
+
+- [x] **Camadas sem atalhos** (07/11/2026): as regras de negócio saíram
+      de um arquivo de 3.168 linhas para um módulo por assunto, nenhuma
+      tela fala mais direto com o banco e um teste trava essa regra
+- [x] **Novo visual do aplicativo** (06/11/2026): cabeçalho branco,
+      navegação do Material 3 e ação em azul, sem mudar regra nenhuma
 - [x] **Correções de 03/11/2026** (entram na próxima versão): renovar
       não encurta mais o prazo, inclusive de coleção; dois pedidos
       simultâneos não furam o limite de empréstimos nem duplicam reserva;
@@ -919,6 +902,8 @@ para quem quiser se aproximar desses padrões, sem obrigar ninguém:
 - [x] Terminal de autoatendimento (kiosk) com logout automático (v1.0.0)
 - [x] Personalização de cores por paleta (v1.1.0)
 - [x] Campo de série/turma no cadastro de aluno (v1.2.0)
+
+</details>
 
 ---
 
