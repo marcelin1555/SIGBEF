@@ -2,6 +2,59 @@
 
 Todas as mudanças relevantes deste projeto serão documentadas aqui.
 
+## [Não lançado]
+
+Mudanças que já estão no repositório, depois da 1.14.1, e ainda não
+saíram numa versão com instalador.
+
+### Corrigido (03/11)
+
+- **Renovar não encurta mais o prazo.** A renovação contava sempre a
+  partir de hoje: quem renovava cedo gastava uma renovação sem ganhar
+  nenhum dia, e um exemplar de coleção (60 dias) voltava para o prazo
+  de 14. Agora o prazo é somado à data prevista atual, ou a hoje se o
+  empréstimo já venceu, e exemplar de coleção usa o prazo de coleção
+- **Dois pedidos ao mesmo tempo não furam mais o limite.** Empréstimo,
+  coleção e reserva conferem e gravam numa única transação
+  (`BEGIN IMMEDIATE`). Antes, o `sqlite3` só abria a transação na hora
+  de gravar, depois da conferência, e dois pedidos simultâneos podiam
+  passar do limite de empréstimos ou duplicar uma reserva
+- **O login do aplicativo aceita só leitores** (aluno e professor).
+  Errar a senha da bibliotecária pela rede não trava mais a conta dela
+  no balcão. Para a equipe, `POST /api/v1/login` responde **401**
+- O teste de restauração de backup não quebra mais ao rodar duas vezes
+  na mesma pasta
+
+### Aplicativo Android (06/11)
+
+- Visual novo: cabeçalho branco com divisória fina, barra de navegação
+  do Material 3, cartões sem sombra, botões em pílula e ação em azul.
+  **Nenhuma regra mudou**: empréstimo, reserva e renovação seguem iguais
+- As janelas de diálogo voltaram ao canto de 28dp; com o canto em 50%
+  viravam uma cápsula e cortavam título e botões
+- O guia visual do aplicativo passou a ser `sigbef-mobile/DESIGN.md`
+
+### Por dentro (07/11)
+
+- As regras de negócio saíram de um arquivo de 3.168 linhas
+  (`servicos.py`) para o pacote `sigbef/servicos/`, com um módulo por
+  assunto. Quem usa `servicos.nome_da_funcao` não precisa mudar nada
+- As dependências só descem: telas e API → `servicos` → `reservas` →
+  `database`. Nenhuma tela fala mais direto com o banco, e
+  `tests/test_camadas.py` falha se alguma voltar a falar
+- `RegraNegocioError` mora em `sigbef/erros.py`; a leitura de
+  configuração numérica é `database.get_config_int` e `get_config_float`
+- 746 testes no desktop (3 novos, os das camadas)
+
+### Site e documentação
+
+- Site: números com a fonte citada, imagens mais leves, seção de
+  reconhecimentos, página de eventos, fonte e cores do guia da marca
+  (26/10 e 03/11)
+- Créditos da Morrow Studio no diálogo Sobre e no rodapé do site
+- README reorganizado por público, com a arquitetura e o modelo de
+  dados de hoje
+
 ## [1.14.1] — 2026-09-26
 
 Mesmo conteúdo da 1.14.0, agora **com o instalador do Windows**.
@@ -1487,7 +1540,7 @@ Biblioteca do CEFE**. Pronto para uso em produção.
 ## Versões futuras (roadmap)
 
 Itens previstos para versões posteriores — ver
-[README#roadmap](README.md#roadmap):
+[README#roadmap](../README.md#roadmap):
 
 - API REST para integração com outros sistemas
 - Aplicativo móvel (Android/iOS) para consulta do acervo

@@ -9,6 +9,7 @@ perfil de usuário — vá direto para a seção que interessa.
 
 ## Sumário
 
+- [Navegação e pesquisa](#navegação-e-pesquisa-na-versão-114)
 - [Primeira execução](#primeira-execução)
 - [Como entrar no sistema](#como-entrar-no-sistema)
 - [Para o Bibliotecário](#para-o-bibliotecário)
@@ -40,6 +41,26 @@ perfil de usuário — vá direto para a seção que interessa.
 - [Perguntas frequentes](#perguntas-frequentes)
 
 ---
+
+## Navegação e pesquisa na versão 1.14
+
+As seções têm uma ação principal e um menu **Mais**, que reúne ações
+menos frequentes. Para agir sobre uma linha, selecione-a e abra o menu
+de contexto com o botão direito ou com **Shift+F10**. As ações também
+podem aparecer em **Mais ações**, conforme a seção.
+
+- **Ctrl+F** leva o foco à busca; **F1** abre a ajuda de uso.
+- **Tab** e **Shift+Tab** percorrem os controles; **Enter** abre a linha
+  selecionada nas listas que oferecem esse comando.
+- Em **Configurações → Aparência → Tamanho do texto**, escolha Normal,
+  Grande ou Muito grande, salve e reabra o sistema. Muito grande pode
+  exigir um monitor maior.
+- As boas-vindas aparecem no primeiro acesso de cada usuário ao painel.
+
+Com FTS5 disponível, a pesquisa encontra `João` ao digitar `joao`, aceita
+palavras em qualquer ordem e busca título, autor, categoria, ISBN ou tombo.
+Use o começo da palavra (`casm` para *Casmurro*), não um trecho do meio.
+Sem FTS5, vale a pesquisa de compatibilidade descrita no [guia da API](API.md).
 
 ## Primeira execução
 
@@ -605,7 +626,9 @@ aluno sai dali.
    Um QR code aparece na tela, junto do endereço em texto.
 2. **No celular:** abrir o app, tocar em **Ler o QR da biblioteca** e
    apontar a câmera. Quem preferir pode digitar o endereço.
-3. Entrar com a **mesma matrícula e senha** do sistema.
+3. Entrar com a **mesma matrícula e senha** do sistema. O aplicativo é
+   só para leitores (aluno e professor): a conta da bibliotecária e a
+   do administrador não entram nele.
 
 O QR **não contém senha nem token**, de propósito: ele fica exposto na
 tela do computador, e quem o fotografasse ganharia acesso indevido.

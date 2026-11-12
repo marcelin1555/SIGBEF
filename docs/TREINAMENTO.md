@@ -239,7 +239,8 @@ tudo o mais.
    no computador, e um QR code aparece na tela.
 2. O aluno abre o app, toca em **Ler o QR da biblioteca** e aponta a
    câmera. Quem preferir pode digitar o endereço.
-3. Ele entra com a **mesma matrícula e senha** do sistema.
+3. Ele entra com a **mesma matrícula e senha** do sistema. O app é só
+   para leitores: a conta da bibliotecária não entra nele.
 
 **O que ele faz pelo celular:**
 - Consulta o acervo e vê a ficha do livro (com tombo e sinopse)

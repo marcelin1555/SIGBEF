@@ -1,7 +1,9 @@
 # SIGBEF Mobile — especificação do MVP
 
-Status: **entregue e verificado em aparelho real.** Última atualização:
-26/07/2026.
+Registro de entrega e validação do MVP em **26/07/2026**.
+Esse teste não certifica automaticamente as versões posteriores.
+A versão e os requisitos atuais estão em `sigbef-mobile/app/build.gradle.kts`;
+as mudanças posteriores estão no [changelog](CHANGELOG.md).
 
 O fluxo inteiro foi rodado num Xiaomi com Android 15, contra o acervo de
 verdade do CEFE: ler o QR com a câmera, parear, entrar, consultar os
@@ -65,7 +67,7 @@ Reserva e renovação **saíram desta lista**: foram entregues junto do R3
 | # | Tela | Estado | Observação |
 |---|---|---|---|
 | 1 | Conectar à biblioteca | ✅ | Lê o QR pela câmera; digitar continua disponível |
-| 2 | Login | ✅ | Matrícula + senha do próprio sistema |
+| 2 | Login | ✅ | Matrícula + senha do próprio sistema; só aluno e professor entram |
 | 3 | Início | ✅ | Saudação, resumo, atalhos 2×2, status da conexão |
 | 4 | Acervo (busca) | ✅ | **Padrão-ouro** das lombadas |
 | 5 | Detalhes do livro | ✅ | Lombada e tombo; reserva quando emprestado |
@@ -79,8 +81,13 @@ Reserva e renovação **saíram desta lista**: foram entregues junto do R3
 
 ### Navegação
 
-Tab bar fixa com 4 itens: **Início · Acervo · Empréstimos · Cartão**.
-Login e Conectar ficam fora da tab bar (fluxo de entrada).
+Barra de navegação fixa (`NavigationBar` do Material 3) com 4 itens:
+**Início · Acervo · Empréstimos · Cartão**. Login e Conectar ficam fora
+dela (fluxo de entrada).
+
+Desde 06/11/2026 o app usa o visual neutro com a ação em azul: cabeçalho
+branco com divisória fina, cartões sem sombra e botões em pílula. O guia
+dessas escolhas é `sigbef-mobile/DESIGN.md`.
 
 ### Regras visuais específicas do app
 
@@ -192,10 +199,15 @@ celular com depuração USB ligada:
 adb shell ip neigh show <IP-DO-COMPUTADOR>
 ```
 
-Se responder `FAILED`, o celular não consegue nem descobrir o endereço
-físico do computador — é isolamento, não é o app. Um teste mais simples:
-abrir `http://<IP>:8765/api/v1/ping` no navegador do celular. Se der
-`ERR_ADDRESS_UNREACHABLE`, o problema é a rede.
+Se responder `FAILED`, a descoberta do vizinho falhou. Isso indica um
+problema de conectividade, mas não prova isolamento por si só. Confira
+o IP atual do computador, a sub-rede, se a API está ativa e se o firewall
+permite a porta configurada no perfil de rede em uso.
+
+Abra `http://<IP>:8765/api/v1/ping` no computador e depois no navegador
+do celular. Se funcionar só no computador, investigue firewall, rota,
+VLAN e isolamento de clientes com o responsável pela rede. Uma falha
+no celular, sozinha, não identifica qual dessas causas é a responsável.
 
 Solução: desligar o isolamento de clientes na administração do roteador,
 ou colocar o computador da biblioteca e os celulares na mesma rede sem
@@ -205,13 +217,14 @@ isolamento. Vale conferir isso **antes** de implantar em cada escola.
 
 ## 8. Estado atual
 
-Entregue e verificado em aparelho real (Xiaomi, Android 15) contra o
-acervo de verdade do CEFE:
+Validado em 26/07/2026 em aparelho real (Xiaomi, Android 15), contra o
+acervo do CEFE, nos fluxos abaixo:
 
 - Pareamento por QR lido pela câmera, login do aluno, acervo com busca,
   ficha do livro, cartão com código de barras Code 128, empréstimos
 - Reserva, cancelamento e renovação pelo próprio app
-- Tudo funciona offline a partir do cache; o cartão nunca depende de rede
+- Consulta ao cache e cartão funcionam offline; reserva e renovação
+  precisam de comunicação com a biblioteca para serem confirmadas
 
 Fora do escopo, por decisão: emprestar e devolver (exigem o livro na
 mão, são de balcão) e perfil de bibliotecário (o app é para leitores).

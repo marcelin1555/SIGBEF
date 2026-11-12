@@ -3,10 +3,10 @@
 Guia para publicar o aplicativo do aluno. O equivalente deste documento
 para o desktop é `COMO_GERAR_EXECUTAVEL.md`.
 
-O app **não vai para a Play Store**: a escola distribui o APK
-diretamente (site, QR code, Bluetooth, cabo). Isso evita conta de
-desenvolvedor paga e revisão da loja — mas obriga a assinar o APK por
-conta própria, que é o assunto deste guia.
+Este guia cobre a distribuição direta do APK pela escola (site, QR code,
+Bluetooth ou cabo). A publicação em uma loja é um fluxo separado e não
+é concluída por estes passos. A assinatura é necessária para instalar e
+atualizar o aplicativo.
 
 ---
 
@@ -81,8 +81,9 @@ Se você usou um alias diferente de `upload`, defina também
 `KEY_ALIAS`.
 
 Sem a chave no caminho indicado, o build **não falha**: ele gera um APK
-sem assinatura, útil para testar. Se a chave existir mas as senhas
-faltarem, aí sim ele para e diz o que está faltando.
+sem assinatura, que não pode ser instalado diretamente. Para testar
+no aparelho, use `assembleDebug`, que utiliza a chave de depuração.
+Se a chave existir mas as senhas faltarem, o build para e informa isso.
 
 ---
 
@@ -100,7 +101,9 @@ um motor nativo de ~5 MB para cada uma. Os arquivos saem em
 | `app-x86*-release.apk` | Só emulador. Não distribuir |
 
 Na dúvida, entregue o **universal**: pesa mais, mas instala em qualquer
-aparelho e evita o aluno baixar o arquivo errado.
+aparelho compatível com o projeto e evita escolher a arquitetura errada.
+O mínimo atual é **Android 7 (API 24)**: um APK universal não amplia
+a compatibilidade para versões anteriores do Android.
 
 Para conferir se saiu assinado:
 

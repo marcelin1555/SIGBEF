@@ -14,7 +14,7 @@ Site de apresentação do SIGBEF, sistema gratuito de gestão de biblioteca esco
 | Vite | 8 | Bundler / dev server |
 | Tailwind CSS | 3 | Estilização |
 | React Router | 7 (BrowserRouter) | Navegação multi-página |
-| Font Awesome | 6 | Ícones SVG (inclusive brands, para o WhatsApp) |
+| Font Awesome | 7 | Ícones SVG (inclusive brands, para o WhatsApp) |
 
 ---
 
@@ -28,6 +28,7 @@ Site de apresentação do SIGBEF, sistema gratuito de gestão de biblioteca esco
 | `/planos` | Pricing Open Core + FAQ de preços |
 | `/equipe` | Equipe + linha do tempo do projeto |
 | `/novidades` | Changelog público, versão por versão (curado a partir de `docs/CHANGELOG.md`) |
+| `/eventos` | Participações do projeto em eventos |
 
 BrowserRouter é usado para URLs limpas (sem `#`). O rewrite de SPA que faz
 qualquer rota carregar `index.html` (necessário para refresh/link direto
@@ -91,7 +92,8 @@ site/
 │   │   ├── DownloadPage.jsx
 │   │   ├── PlanosPage.jsx
 │   │   ├── EquipePage.jsx
-│   │   └── NovidadesPage.jsx  # Changelog público
+│   │   ├── NovidadesPage.jsx  # Changelog público
+│   │   └── EventosPage.jsx    # Participações em eventos
 │   ├── App.jsx                # Rotas + ScrollToTop + BotaoWhatsApp
 │   ├── main.jsx                # Entrada (BrowserRouter)
 │   └── index.css              # Tailwind directives

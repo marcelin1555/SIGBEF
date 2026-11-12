@@ -24,8 +24,8 @@ computador Windows e executada com duplo-clique.
    em `SIGBEF.exe` para abrir.
 
 > O banco de dados é criado automaticamente em
-> `%APPDATA%\SIGBEF\sigbef.db` na primeira execução, com os dados de
-> demonstração.
+> `%APPDATA%\SIGBEF\sigbef.db` na primeira execução. O assistente solicita a criação do
+> administrador; dados de demonstração só entram por opção explícita.
 
 ---
 
@@ -106,7 +106,14 @@ Para fazer **backup do banco**:
 %APPDATA%\SIGBEF\sigbef.db
 ```
 
-Basta copiar esse arquivo. Para restaurar, sobrescreva-o.
+Prefira **Configurações → Ferramentas → Fazer backup agora**, que produz
+uma cópia consistente mesmo com o banco em uso. Para recuperar uma cópia,
+use **Restaurar backup...** na mesma seção: o sistema valida o arquivo,
+mostra uma comparação e exige a confirmação digitada `RESTAURAR`.
+
+Para uma cópia manual do arquivo, feche todas as instâncias do SIGBEF
+antes. Não substitua o banco enquanto o aplicativo estiver aberto,
+pois o SQLite usa arquivos auxiliares no modo WAL.
 
 ---
 

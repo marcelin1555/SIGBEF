@@ -1,7 +1,9 @@
 # Publicando o SIGBEF no GitHub
 
-Há **dois caminhos** para publicar o projeto. Escolha o que for mais
-confortável para você.
+O repositório oficial já existe. Para manutenção, use a seção
+[Atualizando o repositório depois](#atualizando-o-repositório-depois).
+Os caminhos de criação abaixo são apenas para um repositório novo;
+não reinicialize nem reconfigure a origem da cópia existente.
 
 ---
 
@@ -55,19 +57,20 @@ git push -u origin main
 
 ## O que vai para o GitHub
 
-O `.gitignore` já garante que **NÃO** sejam enviados:
+O `.gitignore` exclui estes arquivos novos por padrão. Ele não remove
+arquivos já rastreados nem substitui a revisão de `git diff --cached`:
 
 - `data/` (banco SQLite local)
 - `__pycache__/` (bytecode do Python)
 - arquivos temporários do OneDrive
 - `db.py` (arquivo legado)
+- `apresentacao/` e `HANDOFF_CLAUDE_CODE.md` (material privado)
 
 Vão para o repositório:
 
 - Todo o código-fonte em `sigbef/`
 - `sigbef.py`, `requirements.txt`, `README.md`, `LICENSE`
 - `docs/` (documento de requisitos, manual do usuário, changelog, guias)
-- `apresentacao/` (slides e material institucional)
 - `tools/setup_github.bat` e demais scripts auxiliares
 
 ---
@@ -77,7 +80,14 @@ Vão para o repositório:
 Após qualquer mudança no código:
 
 ```bash
-git add .
-git commit -m "Descrição da mudança"
-git push
+git status --short
+git diff
+git add caminho/do/arquivo
+git diff --cached
+git commit -m "docs: descrição da mudança"
+git push origin main
 ```
+
+Não inclua bancos, dados de alunos, chaves de assinatura ou senhas.
+Commits sem trailer `Co-Authored-By`. Publicar o site é um passo separado
+do envio do código; veja o [guia do site](../site/README.md).

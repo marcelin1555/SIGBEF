@@ -73,6 +73,11 @@ curl -X POST http://IP:8765/api/v1/login \
 Usa o mesmo login do sistema, com a mesma proteção contra tentativa em
 massa. Matrícula ou senha errada devolve **401**.
 
+Só **leitores** entram por aqui (perfis `ALUNO` e `PROFESSOR`). Conta de
+bibliotecária ou administrador também recebe **401**, mesmo com a senha
+certa, e a tentativa não conta para o bloqueio da conta: assim ninguém
+na rede consegue travar o balcão errando a senha da equipe.
+
 Trate os tokens como senhas. A API foi pensada para a **rede local da
 escola**; não exponha a porta pra internet.
 
@@ -97,8 +102,15 @@ curl -H "Authorization: Bearer $TOKEN" http://IP_DA_BIBLIOTECA:8765/api/v1/estat
 
 ### `GET /api/v1/livros?q=&disponiveis=1&pagina=1&limite=50`
 
-Acervo com agregados, **em páginas**. `q` busca por título, autor, ISBN
-ou categoria; `disponiveis=1` filtra só o que tem exemplar livre.
+Acervo com agregados, **em páginas**. `q` busca por título, autor, ISBN,
+categoria ou tombo; `disponiveis=1` filtra só o que tem exemplar livre.
+
+Com FTS5 disponível no SQLite, a pesquisa ignora acentos e maiúsculas,
+combina palavras de campos diferentes e aceita prefixos de palavras.
+Os resultados vêm por relevância. Trechos do meio de uma palavra não
+correspondem: `casm` encontra *Casmurro*, mas `murro` não. Sem FTS5,
+o sistema mantém a busca de compatibilidade por `LIKE`, que não oferece
+as mesmas regras de acentuação e relevância.
 
 `limite` vai de 1 a 500 (padrão 50) e `pagina` começa em 1. Valor fora
 da faixa é ajustado para o limite mais próximo, não vira erro: quem
@@ -224,7 +236,9 @@ fila automaticamente.
 
 ### `POST /api/v1/emprestimos/{id}/renovar`
 
-Estende o prazo do próprio empréstimo, pelo prazo do perfil.
+Estende o prazo do próprio empréstimo, pelo prazo do perfil (ou pelo
+prazo de coleção, se o exemplar faz parte de uma). O prazo é somado à
+data prevista atual, e não a hoje: renovar cedo não encurta o empréstimo.
 
 ```json
 {"data_prevista": "2026-08-10"}
